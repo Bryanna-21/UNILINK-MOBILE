@@ -264,12 +264,16 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ) : (
           cats.slice(0, 5).map((cat) => (
-            <View key={cat._id} style={styles.emptyCard}>
+            <TouchableOpacity
+              key={cat._id}
+              style={styles.emptyCard}
+              onPress={() => router.push(`/cat/${cat._id}` as any)}
+            >
               <Text style={styles.noteTitle}>{cat.title}</Text>
               <Text style={styles.noteCourse}>
                 {cat.courseTitle}{cat.date ? ` · ${cat.date}` : ''}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>

@@ -1,43 +1,51 @@
-import { ShellScreen } from '../../src/components/ShellScreen';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { router } from 'expo-router';
+import { StatusBanner } from '../../src/components/StatusBanner';
+import { Colors, Radius, Spacing } from '../../src/constants/theme';
 
-// STATUS: SHELL — none of these have a backend model. The spec
-// grouped these as sibling concepts to the Post feed, but they're
-// structurally different (a Club has members and an owner; a Poll
-// has options and votes; a Study Group has a schedule) — each is
-// its own model, not a variant of Post.
+// STATUS: REAL — navigates to five real, backend-connected screens.
+// Each of Clubs, Projects, Study Groups, Polls, and Announcements has
+// its own model, list/create routes, and (where applicable) join
+// routes on the real backend now — see community.routes.js.
+
+const SECTIONS = [
+  { title: 'Clubs', subtitle: 'Join or start a club', href: '/clubs' },
+  { title: 'Projects', subtitle: 'Collaborative student projects', href: '/projects' },
+  { title: 'Study Groups', subtitle: 'Find or start a study group', href: '/study-groups' },
+  { title: 'Polls', subtitle: 'Vote on active polls', href: '/polls' },
+  { title: 'Announcements', subtitle: 'Campus and course announcements', href: '/announcements' },
+] as const;
 
 export default function CommunityHubScreen() {
   return (
-    <ShellScreen
-      title="Community Hub"
-      subtitle="Clubs, Projects, Study Groups, Polls, Announcements"
-      sections={[
-        {
-          title: 'Clubs',
-          items: ['No clubs yet'],
-          backendNote: 'Needs: Club model (name, description, members, owner), join/leave routes.',
-        },
-        {
-          title: 'Projects',
-          items: ['No projects listed'],
-          backendNote: 'Needs: Project model, likely with a status field and contributor list.',
-        },
-        {
-          title: 'Study Groups',
-          items: ['No study groups'],
-          backendNote: 'Needs: StudyGroup model with a schedule/meeting-time field.',
-        },
-        {
-          title: 'Polls',
-          items: ['No active polls'],
-          backendNote: 'Needs: Poll model (question, options, votes) + a vote route with duplicate-vote prevention.',
-        },
-        {
-          title: 'Announcements',
-          items: ['No announcements'],
-          backendNote: 'Needs: Announcement model, likely restricted to lecturer/admin roles to create.',
-        },
-      ]}
-    />
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md, gap: Spacing.md }}>
+      <Text style={styles.title}>Community Hub</Text>
+      <StatusBanner status="real" note="Clubs, Projects, Study Groups, Polls, and Announcements are all connected to the real backend now." />
+
+      {SECTIONS.map((section) => (
+        <TouchableOpacity
+          key={section.href}
+          style={styles.card}
+          onPress={() => router.push(section.href as any)}
+        >
+          <Text style={styles.cardTitle}>{section.title}</Text>
+          <Text style={styles.cardSubtitle}>{section.subtitle}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  title: { fontSize: 24, fontWeight: '700', color: Colors.text },
+  card: {
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+  },
+  cardTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
+  cardSubtitle: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
+});

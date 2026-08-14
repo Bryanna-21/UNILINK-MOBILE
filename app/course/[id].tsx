@@ -6,12 +6,14 @@ import { Colors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
-// STATUS: MIXED — the course header and the Timetable section below
-// are now real (fetch the actual course, and lecturers can add real
-// timetable entries via POST /courses/:courseId/timetable). Units,
-// Notes, Assignments, CATs, Past Papers, and Discussion links below
-// still point at placeholder ids — that part of this screen is
-// unchanged and remains a shell, not claimed as fixed here.
+// STATUS: MIXED — course header and Timetable are real (fetch the
+// actual course; lecturers can add real timetable entries via POST
+// /courses/:courseId/timetable). Assignments and CATs now link to
+// real list screens (app/course/[id]/assignments.tsx,
+// app/course/[id]/cats.tsx) which link to the real detail/submission/
+// grading screens. Discussion links to the real per-course discussion
+// feed. Notes, Past Papers, and the AI link still point at placeholder
+// ids / an unbuilt route — those three remain genuinely unwired.
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
@@ -88,10 +90,10 @@ export default function CourseDetailScreen() {
 
   const sections = [
     { key: 'notes', title: 'Notes', route: `/notes/${id}-note-1`, note: 'Needs: Note model + file storage + PDF viewer library.' },
-    { key: 'assignment', title: 'Assignments', route: `/assignment/${id}-assign-1`, note: 'Needs: Assignment model + submission routes.' },
-    { key: 'cat', title: 'CATs', route: `/cat/${id}-cat-1`, note: 'Needs: CAT model.' },
+    { key: 'assignment', title: 'Assignments', route: `/course/${id}/assignments`, note: null },
+    { key: 'cat', title: 'CATs', route: `/course/${id}/cats`, note: null },
     { key: 'paper', title: 'Past Papers', route: `/paper/${id}-paper-1`, note: 'Needs: file storage + PastPaper model.' },
-    { key: 'discussion', title: 'Discussion', route: `/discussion/${id}`, note: 'Needs: Discussion/Thread model.' },
+    { key: 'discussion', title: 'Discussion', route: `/discussion/${id}`, note: null },
     { key: 'ai', title: 'Ask AI about this course', route: '/ai', note: 'Needs: LLM proxy route on the backend.' },
   ] as const;
 
