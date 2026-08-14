@@ -1,0 +1,26 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+
+# Native
+android/
+ios/
+
+# Env
+.env
+.env.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Expo
+.expo-shared/
+expo-env.d.ts

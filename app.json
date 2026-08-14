@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "UniLink",
+    "slug": "unilink-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "unilink",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.unilink.app"
+    },
+    "android": {
+      "package": "com.unilink.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B6BFF"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "backgroundColor": "#0B6BFF"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "81a897c1-4013-417e-8836-42f1235bda41"
+      }
+    }
+  }
+}
