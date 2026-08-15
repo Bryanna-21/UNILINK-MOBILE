@@ -94,7 +94,7 @@ export default function CourseDetailScreen() {
     { key: 'cat', title: 'CATs', route: `/course/${id}/cats`, note: null },
     { key: 'paper', title: 'Past Papers', route: `/paper/${id}-paper-1`, note: 'Needs: file storage + PastPaper model.' },
     { key: 'discussion', title: 'Discussion', route: `/discussion/${id}`, note: null },
-    { key: 'ai', title: 'Ask AI about this course', route: '/ai', note: 'Needs: LLM proxy route on the backend.' },
+    { key: 'ai', title: 'Ask UNILINK AI', route: '/ai', note: null },
   ] as const;
 
   return (

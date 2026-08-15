@@ -48,7 +48,7 @@ first (it's harder to forget to update) but fix this file too.
 | CATs (detail screen) | ✅ REAL | `app/cat/[id].tsx` now shows real published results to students and a real publish form to lecturers/admins. Known rough edge, kept deliberately: publishing requires a `studentId` and no backend endpoint exposes a course roster with student names to a lecturer, so the publish form takes a raw ID rather than a name picker. Reached from `app/course/[id]/cats.tsx`, a new list screen. |
 | Past Papers | 🚧 SHELL | Needs file storage (Mongo alone isn't right for files) — this one is still genuinely backend-blocked, not just unwired. |
 | Discussion | 🚧 SHELL | See Community section — same screen, reached from a course. |
-| AI Assistant (per-course) | 🚧 SHELL | Links to the global `/ai` shell — not a separate per-course implementation. |
+| AI Assistant (per-course) | ✅ REAL (not course-scoped) | Links to the global `/ai` assistant, which is now real — but it has no awareness of which course it was opened from. See the AI section below for the deliberate scope decision. |
 
 ## Community
 
@@ -113,8 +113,10 @@ first (it's harder to forget to update) but fix this file too.
 
 | Item | Status | Notes |
 |---|---|---|
-| Summarize notes, explain concepts, quizzes, flashcards | ⛔ NOT BUILT | Needs a real LLM API decision + backend proxy (never call an LLM API key directly from the mobile app). |
-| Study timetable, career advice | ⛔ NOT BUILT | |
+| General chat assistant | ✅ REAL | `app/ai/index.tsx` calls `POST /api/ai/ask`, proxied through the backend (OpenAI `gpt-4o-mini`) so the API key never ships in the mobile app. Server enforces a 30-request/day/user cap backed by a real `AiUsage` model (survives Render's free-tier restarts, unlike an in-memory counter) and returns a clear 429 message when hit. Conversation history is client-held only, not persisted server-side. |
+| Course-scoped context (AI aware of a specific course's notes/timetable) | ⛔ NOT BUILT | The "Ask AI about this course" link (now labeled "Ask UNILINK AI") opens the same general assistant with no course context passed in. Deliberately scoped this way for the first real version — feeding student notes/timetable data to an external LLM raises real privacy questions (should other students' or a lecturer's data ever reach the prompt?) worth deciding deliberately, not bolting on quietly. |
+| Structured output (quiz generation, flashcards as distinct UI, not just chat text) | ⛔ NOT BUILT | The assistant can be asked for these in chat and will respond in prose, but there's no dedicated flashcard/quiz UI parsing structured output from it - it's a general chat, not these specific tools. |
+| Study timetable, career advice | ⛔ NOT BUILT | Same as above - answerable via general chat, no dedicated feature. |
 
 ## Cross-cutting infrastructure (not single features)
 
