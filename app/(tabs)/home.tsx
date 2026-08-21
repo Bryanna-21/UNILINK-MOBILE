@@ -1,24 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
-
-// STATUS: REAL — greeting/role, Continue Learning, Upcoming CAT,
-// Today's Classes, and Attendance are all live now. Same aggregation
-// pattern throughout: fetch all courses, filter to ones where
-// enrolledStudentIds includes this user, then fetch and merge
-// per-course data across just those courses.
-//
-// Today's Classes reads each course's MERGED schedule
-// (GET /courses/:courseId/timetable/mine, which already folds in any
-// personal override) and keeps only entries matching today's weekday.
-// Attendance lets the student sign for a course for today's date via
-// POST /courses/:courseId/attendance — the backend enforces one
-// signature per student/course/date, so a duplicate tap just surfaces
-// the "already signed" message rather than causing a real problem.
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -60,6 +46,7 @@ interface AttendanceStatus {
 }
 
 export default function HomeScreen() {
+  const colors = useColors();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
 
@@ -70,6 +57,57 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [signingCourseId, setSigningCourseId] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: Spacing.md,
+          paddingTop: Spacing.xl,
+        },
+        greeting: { fontSize: 22, fontWeight: '800', color: colors.text },
+        role: { fontSize: 13, color: colors.textMuted, textTransform: 'capitalize', marginTop: 2 },
+        logout: { color: colors.danger, fontWeight: '600', fontSize: 13 },
+        section: { marginTop: Spacing.lg },
+        sectionTitle: {
+          fontSize: 17,
+          fontWeight: '700',
+          color: colors.text,
+          paddingHorizontal: Spacing.md,
+          marginBottom: Spacing.xs,
+        },
+        emptyCard: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.lg,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        emptyText: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
+        spinner: { marginTop: Spacing.sm },
+        noteTitle: { color: colors.text, fontSize: 14, fontWeight: '600' },
+        noteCourse: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+        rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+        signButton: {
+          backgroundColor: colors.primary,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.xs,
+          borderRadius: Radius.sm,
+        },
+        signButtonText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+        signedTag: { color: colors.secondary, fontSize: 13, fontWeight: '700' },
+        quickActions: { flexDirection: 'row', paddingHorizontal: Spacing.md, gap: Spacing.sm },
+        quickAction: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.md },
+        quickActionText: { color: colors.white, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const loadDashboard = useCallback(async () => {
     if (!user?.id) return;
@@ -203,7 +241,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Today's Classes</Text>
         <StatusBanner status="real" note="Pulled live from your enrolled courses' timetables." />
         {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={Colors.primary} />
+          <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>{loadError}</Text>
@@ -230,7 +268,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Continue Learning</Text>
         <StatusBanner status="real" note="Notes are pulled live from your enrolled courses." />
         {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={Colors.primary} />
+          <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>{loadError}</Text>
@@ -253,7 +291,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Upcoming CAT</Text>
         <StatusBanner status="real" note="CATs are pulled live from your enrolled courses." />
         {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={Colors.primary} />
+          <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>{loadError}</Text>
@@ -282,7 +320,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Attendance</Text>
         <StatusBanner status="real" note="Sign in per course for today. One signature per day, enforced by the backend." />
         {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={Colors.primary} />
+          <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>{loadError}</Text>
@@ -319,19 +357,19 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: Colors.danger }]}
+            style={[styles.quickAction, { backgroundColor: colors.danger }]}
             onPress={() => router.push('/(tabs)/emergency' as any)}
           >
             <Text style={styles.quickActionText}>🆘 Emergency</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: Colors.accent }]}
+            style={[styles.quickAction, { backgroundColor: colors.accent }]}
             onPress={() => router.push('/ai' as any)}
           >
             <Text style={styles.quickActionText}>✨ Ask AI</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: Colors.secondary }]}
+            style={[styles.quickAction, { backgroundColor: colors.secondary }]}
             onPress={() => router.push('/lost-and-found' as any)}
           >
             <Text style={styles.quickActionText}>🔎 Lost & Found</Text>
@@ -341,105 +379,3 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: Spacing.md,
-    paddingTop: Spacing.xl,
-  },
-  greeting: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  role: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    textTransform: 'capitalize',
-    marginTop: 2,
-  },
-  logout: {
-    color: Colors.danger,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  section: {
-    marginTop: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: Colors.text,
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.xs,
-  },
-  emptyCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.lg,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  emptyText: {
-    color: Colors.textMuted,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  spinner: {
-    marginTop: Spacing.sm,
-  },
-  noteTitle: {
-    color: Colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  noteCourse: {
-    color: Colors.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  signButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.sm,
-  },
-  signButtonText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  signedTag: {
-    color: Colors.secondary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-  },
-  quickAction: {
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.md,
-  },
-  quickActionText: {
-    color: Colors.white,
-    fontWeight: '700',
-  },
-});

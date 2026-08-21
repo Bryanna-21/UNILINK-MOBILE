@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
@@ -30,6 +30,7 @@ interface Announcement {
 }
 
 export default function AnnouncementsScreen() {
+  const colors = useColors();
   const currentUser = useAuthStore((s) => s.user);
   const canPost = currentUser?.role === 'lecturer' || currentUser?.role === 'admin';
 
@@ -41,6 +42,77 @@ export default function AnnouncementsScreen() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        headerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Spacing.md,
+          paddingTop: Spacing.md,
+        },
+        title: { fontSize: 22, fontWeight: '700', color: colors.text },
+        createButton: { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
+        createButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        card: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.lg,
+          padding: Spacing.md,
+          gap: 4,
+        },
+        cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+        cardBody: { fontSize: 14, color: colors.text },
+        meta: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
+        postButtonDisabled: { opacity: 0.5 },
+        modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+        modalCard: {
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: Radius.xl,
+          borderTopRightRadius: Radius.xl,
+          padding: Spacing.lg,
+          gap: Spacing.sm,
+        },
+        modalTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+        },
+        multiline: { minHeight: 90, textAlignVertical: 'top' },
+        modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+        modalCancel: {
+          flex: 1,
+          paddingVertical: 10,
+          alignItems: 'center',
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        modalCancelText: { color: colors.text, fontWeight: '600' },
+        modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: colors.primary },
+        modalSubmitText: { color: colors.white, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -90,7 +162,7 @@ export default function AnnouncementsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       )}
 
@@ -123,14 +195,31 @@ export default function AnnouncementsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Announcement</Text>
-            <TextInput style={styles.input} placeholder="Title" placeholderTextColor={Colors.textMuted} value={title} onChangeText={setTitle} />
-            <TextInput style={[styles.input, styles.multiline]} placeholder="Body" placeholderTextColor={Colors.textMuted} value={body} onChangeText={setBody} multiline />
+            <TextInput
+              style={styles.input}
+              placeholder="Title"
+              placeholderTextColor={colors.textMuted}
+              value={title}
+              onChangeText={setTitle}
+            />
+            <TextInput
+              style={[styles.input, styles.multiline]}
+              placeholder="Body"
+              placeholderTextColor={colors.textMuted}
+              value={body}
+              onChangeText={setBody}
+              multiline
+            />
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setCreateOpen(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalSubmit, (!title.trim() || !body.trim()) && styles.postButtonDisabled]} onPress={handleCreate} disabled={!title.trim() || !body.trim() || isCreating}>
-                {isCreating ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.modalSubmitText}>Post</Text>}
+              <TouchableOpacity
+                style={[styles.modalSubmit, (!title.trim() || !body.trim()) && styles.postButtonDisabled]}
+                onPress={handleCreate}
+                disabled={!title.trim() || !body.trim() || isCreating}
+              >
+                {isCreating ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.modalSubmitText}>Post</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -139,30 +228,3 @@ export default function AnnouncementsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.md, paddingTop: Spacing.md },
-  title: { fontSize: 22, fontWeight: '700', color: Colors.text },
-  createButton: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
-  createButtonText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted, marginTop: Spacing.xl },
-  retryButton: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.primary, borderRadius: Radius.md },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, gap: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  cardBody: { fontSize: 14, color: Colors.text },
-  meta: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
-  postButtonDisabled: { opacity: 0.5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: Colors.white, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text },
-  multiline: { minHeight: 90, textAlignVertical: 'top' },
-  modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  modalCancel: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border },
-  modalCancelText: { color: Colors.text, fontWeight: '600' },
-  modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: Colors.primary },
-  modalSubmitText: { color: Colors.white, fontWeight: '700' },
-});

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
@@ -47,6 +47,7 @@ interface Submission {
 }
 
 export default function AssignmentDetailScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const currentUser = useAuthStore((s) => s.user);
   const isGrader = currentUser?.role === 'lecturer' || currentUser?.role === 'admin';
@@ -64,6 +65,72 @@ export default function AssignmentDetailScreen() {
   const [gradeInput, setGradeInput] = useState('');
   const [feedbackInput, setFeedbackInput] = useState('');
   const [isGrading, setIsGrading] = useState(false);
+
+  // useMemo runs unconditionally, above both early returns below —
+  // hooks must always run in the same order every render.
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        card: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.lg,
+          padding: Spacing.md,
+          gap: 8,
+        },
+        assignmentTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
+        instructions: { fontSize: 14, color: colors.text },
+        metaRow: { flexDirection: 'row', gap: 16, marginTop: 4 },
+        meta: { fontSize: 12, color: colors.textMuted },
+        sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 },
+        gradeBanner: { backgroundColor: colors.background, borderRadius: Radius.md, padding: Spacing.sm, gap: 4 },
+        gradeBannerText: { fontWeight: '700', color: colors.secondary },
+        feedbackText: { fontSize: 13, color: colors.text },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+        },
+        multiline: { minHeight: 90, textAlignVertical: 'top' },
+        submitButton: { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: 12, alignItems: 'center', marginTop: 4 },
+        submitButtonText: { color: colors.white, fontWeight: '700' },
+        disabledButton: { opacity: 0.5 },
+        submissionCard: { borderWidth: 1, borderColor: colors.border, borderRadius: Radius.md, padding: Spacing.sm, gap: 4 },
+        studentIdText: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
+        answerText: { fontSize: 14, color: colors.text },
+        gradedTag: { fontSize: 12, fontWeight: '700', color: colors.secondary },
+        gradeLink: { marginTop: 4 },
+        gradeLinkText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+        modalCancel: {
+          flex: 1,
+          paddingVertical: 8,
+          alignItems: 'center',
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        modalCancelText: { color: colors.text, fontWeight: '600', fontSize: 13 },
+        modalSubmit: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: Radius.md, backgroundColor: colors.primary },
+        modalSubmitText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -133,7 +200,7 @@ export default function AssignmentDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerFill}>
-        <ActivityIndicator color={Colors.primary} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -166,9 +233,7 @@ export default function AssignmentDetailScreen() {
 
       {!isGrader && (
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            {mySubmission ? 'Your submission' : 'Submit your answer'}
-          </Text>
+          <Text style={styles.sectionTitle}>{mySubmission ? 'Your submission' : 'Submit your answer'}</Text>
 
           {mySubmission?.grade != null && (
             <View style={styles.gradeBanner}>
@@ -182,7 +247,7 @@ export default function AssignmentDetailScreen() {
           <TextInput
             style={[styles.input, styles.multiline]}
             placeholder="Type your answer"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={answer}
             onChangeText={setAnswer}
             multiline
@@ -195,29 +260,23 @@ export default function AssignmentDetailScreen() {
             disabled={!answer.trim() || isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <Text style={styles.submitButtonText}>{mySubmission ? 'Resubmit' : 'Submit'}</Text>
             )}
           </TouchableOpacity>
 
           {mySubmission && (
-            <Text style={styles.meta}>
-              Last submitted {new Date(mySubmission.submittedAt).toLocaleString()}
-            </Text>
+            <Text style={styles.meta}>Last submitted {new Date(mySubmission.submittedAt).toLocaleString()}</Text>
           )}
         </View>
       )}
 
       {isGrader && (
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>
-            Submissions ({allSubmissions.length})
-          </Text>
+          <Text style={styles.sectionTitle}>Submissions ({allSubmissions.length})</Text>
 
-          {allSubmissions.length === 0 && (
-            <Text style={styles.emptyText}>No submissions yet.</Text>
-          )}
+          {allSubmissions.length === 0 && <Text style={styles.emptyText}>No submissions yet.</Text>}
 
           <FlatList
             data={allSubmissions}
@@ -239,7 +298,7 @@ export default function AssignmentDetailScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder={`Score (out of ${assignment.maxScore})`}
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={colors.textMuted}
                       value={gradeInput}
                       onChangeText={setGradeInput}
                       keyboardType="numeric"
@@ -247,7 +306,7 @@ export default function AssignmentDetailScreen() {
                     <TextInput
                       style={[styles.input, styles.multiline]}
                       placeholder="Feedback (optional)"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={colors.textMuted}
                       value={feedbackInput}
                       onChangeText={setFeedbackInput}
                       multiline
@@ -262,7 +321,7 @@ export default function AssignmentDetailScreen() {
                         disabled={!gradeInput.trim() || isGrading}
                       >
                         {isGrading ? (
-                          <ActivityIndicator size="small" color={Colors.white} />
+                          <ActivityIndicator size="small" color={colors.white} />
                         ) : (
                           <Text style={styles.modalSubmitText}>Save grade</Text>
                         )}
@@ -271,9 +330,7 @@ export default function AssignmentDetailScreen() {
                   </View>
                 ) : (
                   <TouchableOpacity style={styles.gradeLink} onPress={() => startGrading(item)}>
-                    <Text style={styles.gradeLinkText}>
-                      {item.grade != null ? 'Edit grade' : 'Grade this'}
-                    </Text>
+                    <Text style={styles.gradeLinkText}>{item.grade != null ? 'Edit grade' : 'Grade this'}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -284,35 +341,3 @@ export default function AssignmentDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted },
-  retryButton: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.primary, borderRadius: Radius.md },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, gap: 8 },
-  assignmentTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
-  instructions: { fontSize: 14, color: Colors.text },
-  metaRow: { flexDirection: 'row', gap: 16, marginTop: 4 },
-  meta: { fontSize: 12, color: Colors.textMuted },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  gradeBanner: { backgroundColor: Colors.background, borderRadius: Radius.md, padding: Spacing.sm, gap: 4 },
-  gradeBannerText: { fontWeight: '700', color: Colors.secondary },
-  feedbackText: { fontSize: 13, color: Colors.text },
-  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text },
-  multiline: { minHeight: 90, textAlignVertical: 'top' },
-  submitButton: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 12, alignItems: 'center', marginTop: 4 },
-  submitButtonText: { color: Colors.white, fontWeight: '700' },
-  disabledButton: { opacity: 0.5 },
-  submissionCard: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.sm, gap: 4 },
-  studentIdText: { fontSize: 12, fontWeight: '700', color: Colors.textMuted },
-  answerText: { fontSize: 14, color: Colors.text },
-  gradedTag: { fontSize: 12, fontWeight: '700', color: Colors.secondary },
-  gradeLink: { marginTop: 4 },
-  gradeLinkText: { color: Colors.primary, fontWeight: '600', fontSize: 13 },
-  modalCancel: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border },
-  modalCancelText: { color: Colors.text, fontWeight: '600', fontSize: 13 },
-  modalSubmit: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: Radius.md, backgroundColor: Colors.primary },
-  modalSubmitText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
-});

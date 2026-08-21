@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
@@ -26,6 +26,7 @@ interface TimetableEntry {
 }
 
 export default function CourseDetailScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const isLecturer = user?.role === 'lecturer' || user?.role === 'admin';
@@ -40,6 +41,100 @@ export default function CourseDetailScreen() {
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        sectionHeader: {
+          fontSize: 16,
+          fontWeight: '700',
+          color: colors.text,
+          paddingHorizontal: Spacing.md,
+          marginTop: Spacing.lg,
+          marginBottom: Spacing.xs,
+        },
+        card: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          opacity: 0.6,
+        },
+        itemText: { fontSize: 14, color: colors.text },
+        linkCard: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        linkCardTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
+        linkCardChevron: { fontSize: 18, color: colors.textMuted },
+        itemSubtext: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+        addButton: {
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.primary,
+          borderStyle: 'dashed',
+          alignItems: 'center',
+        },
+        addButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+        formCard: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        formLabel: {
+          fontSize: 12,
+          fontWeight: '600',
+          color: colors.textMuted,
+          marginTop: Spacing.sm,
+          marginBottom: 4,
+        },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.sm,
+          paddingHorizontal: Spacing.sm,
+          paddingVertical: Spacing.xs,
+          fontSize: 14,
+          color: colors.text,
+        },
+        dayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
+        dayChip: {
+          paddingHorizontal: Spacing.sm,
+          paddingVertical: 6,
+          borderRadius: Radius.full,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        dayChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+        dayChipText: { fontSize: 12, color: colors.text },
+        dayChipTextActive: { color: colors.white, fontWeight: '700' },
+        formActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: Spacing.sm, marginTop: Spacing.md },
+        cancelButton: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs },
+        cancelButtonText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+        saveButton: { backgroundColor: colors.primary, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Radius.sm },
+        saveButtonText: { color: colors.white, fontSize: 13, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -107,7 +202,7 @@ export default function CourseDetailScreen() {
       <Text style={styles.sectionHeader}>Timetable</Text>
       <StatusBanner status="real" note="Lecturers add entries here; students see them on Home." />
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: Spacing.sm }} color={Colors.primary} />
+        <ActivityIndicator style={{ marginTop: Spacing.sm }} color={colors.primary} />
       ) : timetable.length === 0 ? (
         <View style={styles.card}>
           <Text style={styles.itemText}>No timetable entries yet.</Text>
@@ -148,7 +243,7 @@ export default function CourseDetailScreen() {
                 value={startTime}
                 onChangeText={setStartTime}
                 placeholder="07:00"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.formLabel}>End time</Text>
@@ -157,7 +252,7 @@ export default function CourseDetailScreen() {
                 value={endTime}
                 onChangeText={setEndTime}
                 placeholder="09:00"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.formLabel}>Location (optional)</Text>
@@ -166,7 +261,7 @@ export default function CourseDetailScreen() {
                 value={location}
                 onChangeText={setLocation}
                 placeholder="Room 12, Block B"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <View style={styles.formActions}>
@@ -204,148 +299,3 @@ export default function CourseDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  sectionHeader: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    paddingHorizontal: Spacing.md,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
-  },
-  card: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    opacity: 0.6,
-  },
-  itemText: {
-    fontSize: 14,
-    color: Colors.text,
-  },
-  linkCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  linkCardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  linkCardChevron: {
-    fontSize: 18,
-    color: Colors.textMuted,
-  },
-  itemSubtext: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  addButton: {
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: Colors.primary,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  formCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  formLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    marginTop: Spacing.sm,
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    fontSize: 14,
-    color: Colors.text,
-  },
-  dayRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-  },
-  dayChip: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  dayChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  dayChipText: {
-    fontSize: 12,
-    color: Colors.text,
-  },
-  dayChipTextActive: {
-    color: Colors.white,
-    fontWeight: '700',
-  },
-  formActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-  },
-  cancelButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  cancelButtonText: {
-    color: Colors.textMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  saveButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.sm,
-  },
-  saveButtonText: {
-    color: Colors.white,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});

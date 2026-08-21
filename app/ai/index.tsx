@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 
 // STATUS: REAL — POST /api/ai/ask, proxied through the backend so the
@@ -40,10 +40,68 @@ const CAPABILITIES = [
 ];
 
 export default function AiAssistantScreen() {
+  const colors = useColors();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const listRef = useRef<FlatList>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        capabilitiesBox: {
+          margin: Spacing.md,
+          padding: Spacing.lg,
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        capabilitiesTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: Spacing.sm },
+        capabilityItem: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
+        bubble: { borderRadius: Radius.md, padding: Spacing.md, maxWidth: '80%' },
+        userBubble: { backgroundColor: colors.primary, alignSelf: 'flex-end' },
+        assistantBubble: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          alignSelf: 'flex-start',
+        },
+        errorBubble: { backgroundColor: '#FEF2F2', borderColor: colors.danger },
+        bubbleText: { fontSize: 14, color: colors.text },
+        // Was an inline `{ color: Colors.white }` object literal spread
+        // into the style array for user bubbles specifically — pulled
+        // into a named style so it goes through the same themed styles
+        // object as everything else, rather than sitting outside it.
+        userBubbleText: { color: colors.white },
+        errorBubbleText: { color: colors.danger },
+        typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md, paddingBottom: 4 },
+        typingText: { fontSize: 12, color: colors.textMuted },
+        composer: {
+          flexDirection: 'row',
+          padding: Spacing.md,
+          gap: Spacing.sm,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          backgroundColor: colors.surface,
+        },
+        input: {
+          flex: 1,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+        },
+        sendButton: { backgroundColor: colors.primary, borderRadius: Radius.md, paddingHorizontal: Spacing.md, justifyContent: 'center' },
+        sendButtonDisabled: { opacity: 0.5 },
+        sendButtonText: { color: colors.white, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const handleSend = async () => {
     const text = draft.trim();
@@ -55,9 +113,6 @@ export default function AiAssistantScreen() {
     setIsSending(true);
 
     try {
-      // Send the last few turns as context, in the shape the backend
-      // expects — not the full LocalMessage objects (which include
-      // fields like isError the backend doesn't need or want).
       const history = messages.slice(-10).map((m) => ({
         role: m.role,
         content: m.text,
@@ -117,7 +172,7 @@ export default function AiAssistantScreen() {
               <Text
                 style={[
                   styles.bubbleText,
-                  item.role === 'user' && { color: Colors.white },
+                  item.role === 'user' && styles.userBubbleText,
                   item.isError && styles.errorBubbleText,
                 ]}
               >
@@ -130,7 +185,7 @@ export default function AiAssistantScreen() {
 
       {isSending && (
         <View style={styles.typingRow}>
-          <ActivityIndicator size="small" color={Colors.primary} />
+          <ActivityIndicator size="small" color={colors.primary} />
           <Text style={styles.typingText}>Thinking…</Text>
         </View>
       )}
@@ -139,7 +194,7 @@ export default function AiAssistantScreen() {
         <TextInput
           style={styles.input}
           placeholder="Ask UNILINK AI"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={draft}
           onChangeText={setDraft}
           editable={!isSending}
@@ -155,46 +210,3 @@ export default function AiAssistantScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  capabilitiesBox: {
-    margin: Spacing.md,
-    padding: Spacing.lg,
-    backgroundColor: Colors.white,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  capabilitiesTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: Spacing.sm },
-  capabilityItem: { fontSize: 14, color: Colors.textMuted, marginTop: 4 },
-  bubble: { borderRadius: Radius.md, padding: Spacing.md, maxWidth: '80%' },
-  userBubble: { backgroundColor: Colors.primary, alignSelf: 'flex-end' },
-  assistantBubble: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, alignSelf: 'flex-start' },
-  errorBubble: { backgroundColor: '#FEF2F2', borderColor: Colors.danger },
-  bubbleText: { fontSize: 14, color: Colors.text },
-  errorBubbleText: { color: Colors.danger },
-  typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Spacing.md, paddingBottom: 4 },
-  typingText: { fontSize: 12, color: Colors.textMuted },
-  composer: {
-    flexDirection: 'row',
-    padding: Spacing.md,
-    gap: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.white,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: 14,
-    color: Colors.text,
-  },
-  sendButton: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingHorizontal: Spacing.md, justifyContent: 'center' },
-  sendButtonDisabled: { opacity: 0.5 },
-  sendButtonText: { color: Colors.white, fontWeight: '700' },
-});

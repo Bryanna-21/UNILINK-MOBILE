@@ -1,7 +1,8 @@
+import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: LIVE — this screen's navigation is real, and now so are
 // all three destinations. Library, Marketplace, and Events each fetch
@@ -14,6 +15,37 @@ const EXPLORE_ITEMS = [
 ] as const;
 
 export default function ExploreScreen() {
+  const colors = useColors();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        title: {
+          fontSize: 24,
+          fontWeight: '800',
+          color: colors.text,
+          padding: Spacing.md,
+          paddingTop: Spacing.xl,
+          paddingBottom: 0,
+        },
+        grid: { flexDirection: 'row', flexWrap: 'wrap', padding: Spacing.md, gap: Spacing.sm },
+        card: {
+          width: '47%',
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: Spacing.lg,
+          alignItems: 'center',
+          gap: Spacing.xs,
+        },
+        cardIcon: { fontSize: 32 },
+        cardTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+      }),
+    [colors]
+  );
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Explore</Text>
@@ -21,11 +53,7 @@ export default function ExploreScreen() {
 
       <View style={styles.grid}>
         {EXPLORE_ITEMS.map((item) => (
-          <TouchableOpacity
-            key={item.key}
-            style={styles.card}
-            onPress={() => router.push(item.route as any)}
-          >
+          <TouchableOpacity key={item.key} style={styles.card} onPress={() => router.push(item.route as any)}>
             <Text style={styles.cardIcon}>{item.icon}</Text>
             <Text style={styles.cardTitle}>{item.title}</Text>
           </TouchableOpacity>
@@ -34,42 +62,3 @@ export default function ExploreScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-    padding: Spacing.md,
-    paddingTop: Spacing.xl,
-    paddingBottom: 0,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: Spacing.md,
-    gap: Spacing.sm,
-  },
-  card: {
-    width: '47%',
-    backgroundColor: Colors.white,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.lg,
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  cardIcon: {
-    fontSize: 32,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-});

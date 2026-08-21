@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 
 // STATUS: REAL — GET/POST /api/projects. No join/leave route exists
@@ -37,6 +37,7 @@ const STATUS_LABEL: Record<ProjectStatus, string> = {
 };
 
 export default function ProjectsScreen() {
+  const colors = useColors();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -46,6 +47,100 @@ export default function ProjectsScreen() {
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('planning');
   const [isCreating, setIsCreating] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        headerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Spacing.md,
+          paddingTop: Spacing.md,
+        },
+        title: { fontSize: 22, fontWeight: '700', color: colors.text },
+        createButton: { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
+        createButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        card: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.lg,
+          padding: Spacing.md,
+          gap: 4,
+        },
+        cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+        cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 },
+        statusBadge: {
+          backgroundColor: colors.background,
+          borderRadius: Radius.full,
+          paddingVertical: 3,
+          paddingHorizontal: 10,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        statusBadgeText: { fontSize: 11, fontWeight: '700', color: colors.textMuted },
+        cardBody: { fontSize: 14, color: colors.text },
+        memberCount: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+        postButtonDisabled: { opacity: 0.5 },
+        modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+        modalCard: {
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: Radius.xl,
+          borderTopRightRadius: Radius.xl,
+          padding: Spacing.lg,
+          gap: Spacing.sm,
+        },
+        modalTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+        },
+        multiline: { minHeight: 70, textAlignVertical: 'top' },
+        fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.textMuted, marginTop: 4 },
+        statusPicker: { flexDirection: 'row', gap: 8 },
+        statusOption: {
+          flex: 1,
+          paddingVertical: 8,
+          alignItems: 'center',
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        statusOptionActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+        statusOptionText: { fontSize: 12, fontWeight: '600', color: colors.text },
+        statusOptionTextActive: { color: colors.white },
+        modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+        modalCancel: {
+          flex: 1,
+          paddingVertical: 10,
+          alignItems: 'center',
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        modalCancelText: { color: colors.text, fontWeight: '600' },
+        modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: colors.primary },
+        modalSubmitText: { color: colors.white, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -98,7 +193,7 @@ export default function ProjectsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       )}
 
@@ -138,8 +233,21 @@ export default function ProjectsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Project</Text>
-            <TextInput style={styles.input} placeholder="Title" placeholderTextColor={Colors.textMuted} value={title} onChangeText={setTitle} />
-            <TextInput style={[styles.input, styles.multiline]} placeholder="Description (optional)" placeholderTextColor={Colors.textMuted} value={description} onChangeText={setDescription} multiline />
+            <TextInput
+              style={styles.input}
+              placeholder="Title"
+              placeholderTextColor={colors.textMuted}
+              value={title}
+              onChangeText={setTitle}
+            />
+            <TextInput
+              style={[styles.input, styles.multiline]}
+              placeholder="Description (optional)"
+              placeholderTextColor={colors.textMuted}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+            />
 
             <Text style={styles.fieldLabel}>Status</Text>
             <View style={styles.statusPicker}>
@@ -160,8 +268,12 @@ export default function ProjectsScreen() {
               <TouchableOpacity style={styles.modalCancel} onPress={() => setCreateOpen(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalSubmit, !title.trim() && styles.postButtonDisabled]} onPress={handleCreate} disabled={!title.trim() || isCreating}>
-                {isCreating ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.modalSubmitText}>Create</Text>}
+              <TouchableOpacity
+                style={[styles.modalSubmit, !title.trim() && styles.postButtonDisabled]}
+                onPress={handleCreate}
+                disabled={!title.trim() || isCreating}
+              >
+                {isCreating ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.modalSubmitText}>Create</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -170,39 +282,3 @@ export default function ProjectsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.md, paddingTop: Spacing.md },
-  title: { fontSize: 22, fontWeight: '700', color: Colors.text },
-  createButton: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
-  createButtonText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted, marginTop: Spacing.xl },
-  retryButton: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.primary, borderRadius: Radius.md },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, gap: 4 },
-  cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, flex: 1 },
-  statusBadge: { backgroundColor: Colors.background, borderRadius: Radius.full, paddingVertical: 3, paddingHorizontal: 10, borderWidth: 1, borderColor: Colors.border },
-  statusBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.textMuted },
-  cardBody: { fontSize: 14, color: Colors.text },
-  memberCount: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  postButtonDisabled: { opacity: 0.5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: Colors.white, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text },
-  multiline: { minHeight: 70, textAlignVertical: 'top' },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textMuted, marginTop: 4 },
-  statusPicker: { flexDirection: 'row', gap: 8 },
-  statusOption: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border },
-  statusOptionActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  statusOptionText: { fontSize: 12, fontWeight: '600', color: Colors.text },
-  statusOptionTextActive: { color: Colors.white },
-  modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  modalCancel: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border },
-  modalCancelText: { color: Colors.text, fontWeight: '600' },
-  modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: Colors.primary },
-  modalSubmitText: { color: Colors.white, fontWeight: '700' },
-});

@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 
 // STATUS: LIVE — events are fetched from GET /api/events on the real
@@ -20,10 +20,41 @@ interface EventItem {
 }
 
 export default function EventsScreen() {
+  const colors = useColors();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        title: {
+          fontSize: 24,
+          fontWeight: '800',
+          color: colors.text,
+          padding: Spacing.md,
+          paddingTop: Spacing.xl,
+          paddingBottom: 0,
+        },
+        card: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        cardTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
+        noteBox: { margin: Spacing.md, padding: Spacing.md },
+        noteText: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic' },
+        spinner: { marginTop: Spacing.xl },
+        cardMuted: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setIsRefreshing(true);
@@ -53,7 +84,7 @@ export default function EventsScreen() {
       <StatusBanner status="real" note="Events are fetched live from your account." />
 
       {isLoading ? (
-        <ActivityIndicator style={styles.spinner} color={Colors.primary} />
+        <ActivityIndicator style={styles.spinner} color={colors.primary} />
       ) : error ? (
         <View style={styles.card}>
           <Text style={styles.cardMuted}>{error}</Text>
@@ -64,11 +95,7 @@ export default function EventsScreen() {
         </View>
       ) : (
         events.map((event) => (
-          <TouchableOpacity
-            key={event._id}
-            style={styles.card}
-            onPress={() => router.push(`/event/${event._id}` as any)}
-          >
+          <TouchableOpacity key={event._id} style={styles.card} onPress={() => router.push(`/event/${event._id}` as any)}>
             <Text style={styles.cardTitle}>{event.title}</Text>
             {event.date ? <Text style={styles.cardMuted}>{event.date}</Text> : null}
             {event.location ? <Text style={styles.cardMuted}>{event.location}</Text> : null}
@@ -84,49 +111,3 @@ export default function EventsScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-    padding: Spacing.md,
-    paddingTop: Spacing.xl,
-    paddingBottom: 0,
-  },
-  card: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  noteBox: {
-    margin: Spacing.md,
-    padding: Spacing.md,
-  },
-  noteText: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    fontStyle: 'italic',
-  },
-  spinner: {
-    marginTop: Spacing.xl,
-  },
-  cardMuted: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-});

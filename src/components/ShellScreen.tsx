@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { StatusBanner } from './StatusBanner';
-import { Colors, Radius, Spacing } from '../constants/theme';
+import { useColors, Radius, Spacing } from '../constants/theme';
 
 interface ShellSection {
   title: string;
@@ -23,12 +24,65 @@ interface ShellScreenProps {
  * once that backend work lands, don't just delete the banner.
  */
 export function ShellScreen({ title, subtitle, sections }: ShellScreenProps) {
+  const colors = useColors();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        header: {
+          padding: Spacing.md,
+          paddingTop: Spacing.xl,
+        },
+        title: {
+          fontSize: 24,
+          fontWeight: '800',
+          color: colors.text,
+        },
+        subtitle: {
+          fontSize: 13,
+          color: colors.textMuted,
+          marginTop: 2,
+        },
+        section: {
+          marginTop: Spacing.lg,
+        },
+        sectionTitle: {
+          fontSize: 16,
+          fontWeight: '700',
+          color: colors.text,
+          paddingHorizontal: Spacing.md,
+          marginBottom: Spacing.xs,
+        },
+        itemCard: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          opacity: 0.6,
+        },
+        itemText: {
+          fontSize: 14,
+          color: colors.text,
+        },
+      }),
+    [colors]
+  );
+
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-      </View>
+      {title ? (
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        </View>
+      ) : null}
 
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>
@@ -44,48 +98,3 @@ export function ShellScreen({ title, subtitle, sections }: ShellScreenProps) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    padding: Spacing.md,
-    paddingTop: Spacing.xl,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  section: {
-    marginTop: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.xs,
-  },
-  itemCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    opacity: 0.6,
-  },
-  itemText: {
-    fontSize: 14,
-    color: Colors.text,
-  },
-});

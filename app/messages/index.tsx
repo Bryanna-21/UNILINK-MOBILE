@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: REAL — calls GET /api/messages (conversation list) and
 // resolves each conversation's other participant's name via
@@ -29,11 +29,63 @@ interface ConversationDisplay extends Conversation {
 }
 
 export default function MessagesScreen() {
+  const colors = useColors();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const [conversations, setConversations] = useState<ConversationDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: Spacing.md,
+          paddingTop: Spacing.xl,
+        },
+        title: { fontSize: 24, fontWeight: '800', color: colors.text },
+        newButton: {
+          backgroundColor: colors.primary,
+          borderRadius: Radius.sm,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.xs,
+        },
+        newButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        error: { color: colors.danger, textAlign: 'center', fontSize: 13, marginTop: Spacing.sm },
+        emptyText: {
+          textAlign: 'center',
+          color: colors.textMuted,
+          marginTop: Spacing.xl,
+          paddingHorizontal: Spacing.lg,
+        },
+        chatRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.surface,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          gap: Spacing.sm,
+        },
+        avatar: {
+          width: 44,
+          height: 44,
+          borderRadius: Radius.full,
+          backgroundColor: colors.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        avatarText: { color: colors.white, fontWeight: '700' },
+        chatName: { fontSize: 15, fontWeight: '700', color: colors.text },
+        chatTime: { fontSize: 12, color: colors.textMuted },
+      }),
+    [colors]
+  );
 
   const loadConversations = async () => {
     try {
@@ -105,7 +157,7 @@ export default function MessagesScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={Colors.primary} />
+        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
       ) : (
         <FlatList
           data={conversations}
@@ -137,75 +189,3 @@ export default function MessagesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.xl,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  newButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  newButtonText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  error: {
-    color: Colors.danger,
-    textAlign: 'center',
-    fontSize: 13,
-    marginTop: Spacing.sm,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: Colors.textMuted,
-    marginTop: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
-  },
-  chatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: Colors.white,
-    fontWeight: '700',
-  },
-  chatName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  chatTime: {
-    fontSize: 12,
-    color: Colors.textMuted,
-  },
-});

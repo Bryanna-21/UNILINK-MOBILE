@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { StatusBanner } from '../../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../../src/constants/theme';
 import { api } from '../../../src/api/client';
 
 // STATUS: REAL — GET /courses/:courseId/assignments. Lists real
@@ -17,10 +17,40 @@ interface Assignment {
 }
 
 export default function CourseAssignmentsScreen() {
+  const colors = useColors();
   const { id: courseId } = useLocalSearchParams<{ id: string }>();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        card: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.lg,
+          padding: Spacing.md,
+          gap: 4,
+        },
+        cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+        metaRow: { flexDirection: 'row', gap: 12 },
+        meta: { fontSize: 12, color: colors.textMuted },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     if (!courseId) return;
@@ -46,7 +76,7 @@ export default function CourseAssignmentsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       )}
 
@@ -79,15 +109,3 @@ export default function CourseAssignmentsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted, marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
-  retryButton: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.primary, borderRadius: Radius.md },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, gap: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  metaRow: { flexDirection: 'row', gap: 12 },
-  meta: { fontSize: 12, color: Colors.textMuted },
-});

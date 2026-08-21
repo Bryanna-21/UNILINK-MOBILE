@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: REAL — calls POST /api/auth/register on the live backend.
 // Fields match auth.routes.js exactly: name, email, password,
@@ -20,6 +20,7 @@ import { Colors, Radius, Spacing } from '../../src/constants/theme';
 // defaults to "student" server-side if omitted.
 
 export default function RegisterScreen() {
+  const colors = useColors();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +28,52 @@ export default function RegisterScreen() {
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        content: {
+          flexGrow: 1,
+          justifyContent: 'center',
+          paddingHorizontal: Spacing.lg,
+          paddingVertical: Spacing.xl,
+        },
+        title: { fontSize: 30, fontWeight: '800', color: colors.text, textAlign: 'center' },
+        subtitle: {
+          fontSize: 14,
+          color: colors.textMuted,
+          textAlign: 'center',
+          marginTop: Spacing.xs,
+          marginBottom: Spacing.xl,
+        },
+        form: { gap: Spacing.md },
+        input: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: 14,
+          fontSize: 16,
+          color: colors.text,
+        },
+        error: { color: colors.danger, fontSize: 13, textAlign: 'center' },
+        button: {
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+          paddingVertical: 16,
+          alignItems: 'center',
+          marginTop: Spacing.sm,
+        },
+        buttonDisabled: { opacity: 0.6 },
+        buttonText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+        linkButton: { alignItems: 'center', marginTop: Spacing.sm },
+        linkText: { color: colors.textMuted, fontSize: 14 },
+        linkTextBold: { color: colors.primary, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password || !confirmPassword) return;
@@ -42,10 +89,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>Join UniLink</Text>
@@ -54,7 +98,7 @@ export default function RegisterScreen() {
           <TextInput
             style={styles.input}
             placeholder="Full name"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={name}
             onChangeText={setName}
             editable={!isLoading}
@@ -62,7 +106,7 @@ export default function RegisterScreen() {
           <TextInput
             style={styles.input}
             placeholder="Email"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -72,7 +116,7 @@ export default function RegisterScreen() {
           <TextInput
             style={styles.input}
             placeholder="Password (min. 6 characters)"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -81,7 +125,7 @@ export default function RegisterScreen() {
           <TextInput
             style={styles.input}
             placeholder="Confirm password"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -95,11 +139,7 @@ export default function RegisterScreen() {
             onPress={handleRegister}
             disabled={isLoading}
           >
-            {isLoading ? (
-              <ActivityIndicator color={Colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>Sign Up</Text>
-            )}
+            {isLoading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Sign Up</Text>}
           </TouchableOpacity>
 
           <Link href="/auth/login" asChild>
@@ -114,74 +154,3 @@ export default function RegisterScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xl,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: Colors.text,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.xl,
-  },
-  form: {
-    gap: Spacing.md,
-  },
-  input: {
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: Colors.text,
-  },
-  error: {
-    color: Colors.danger,
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.md,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  linkButton: {
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  linkText: {
-    color: Colors.textMuted,
-    fontSize: 14,
-  },
-  linkTextBold: {
-    color: Colors.primary,
-    fontWeight: '700',
-  },
-});

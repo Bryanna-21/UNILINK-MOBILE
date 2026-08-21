@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: SHELL — "RSVP" below only flips local state, nothing is
 // saved anywhere. QR check-in shows a placeholder box, not a real
@@ -10,8 +10,47 @@ import { Colors, Radius, Spacing } from '../../src/constants/theme';
 // backend route once RSVPs are real).
 
 export default function EventDetailScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [isRsvped, setIsRsvped] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        card: {
+          margin: Spacing.md,
+          padding: Spacing.lg,
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        title: { fontSize: 20, fontWeight: '800', color: colors.text },
+        meta: { fontSize: 13, color: colors.textMuted, marginTop: Spacing.xs, marginBottom: Spacing.lg },
+        rsvpButton: {
+          backgroundColor: colors.background,
+          borderWidth: 1,
+          borderColor: colors.primary,
+          borderRadius: Radius.md,
+          paddingVertical: Spacing.md,
+          alignItems: 'center',
+        },
+        rsvpButtonActive: { backgroundColor: colors.secondary, borderColor: colors.secondary },
+        rsvpButtonText: { color: colors.primary, fontWeight: '700' },
+        rsvpButtonTextActive: { color: colors.white },
+        qrBox: {
+          marginTop: Spacing.lg,
+          alignItems: 'center',
+          padding: Spacing.lg,
+          backgroundColor: colors.background,
+          borderRadius: Radius.md,
+        },
+        qrPlaceholder: { fontSize: 32, letterSpacing: 4, color: colors.text },
+        qrNote: { fontSize: 11, color: colors.textMuted, marginTop: Spacing.sm },
+      }),
+    [colors]
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -43,64 +82,3 @@ export default function EventDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  card: {
-    margin: Spacing.md,
-    padding: Spacing.lg,
-    backgroundColor: Colors.white,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  meta: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.lg,
-  },
-  rsvpButton: {
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-  },
-  rsvpButtonActive: {
-    backgroundColor: Colors.secondary,
-    borderColor: Colors.secondary,
-  },
-  rsvpButtonText: {
-    color: Colors.primary,
-    fontWeight: '700',
-  },
-  rsvpButtonTextActive: {
-    color: Colors.white,
-  },
-  qrBox: {
-    marginTop: Spacing.lg,
-    alignItems: 'center',
-    padding: Spacing.lg,
-    backgroundColor: Colors.background,
-    borderRadius: Radius.md,
-  },
-  qrPlaceholder: {
-    fontSize: 32,
-    letterSpacing: 4,
-  },
-  qrNote: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginTop: Spacing.sm,
-  },
-});

@@ -1,23 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
-
-// STATUS: REAL — two-step flow: pick a course you're enrolled in
-// (GET /api/courses, filtered client-side to ones where your own id
-// is in enrolledStudentIds — same filter pattern home.tsx already
-// uses), then GET /api/courses/:courseId/students for that course's
-// roster, then POST /api/messages/start with the chosen classmate's
-// id. The roster endpoint enforces enrollment server-side, so this
-// screen can only ever show rosters for courses you're actually in.
-//
-// This intentionally only supports "message a classmate" — there's no
-// broader student directory. That's a real scope boundary, not an
-// oversight: a wide-open "message anyone" list wasn't built here on
-// purpose.
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 interface Course {
   _id: string;
@@ -33,6 +20,7 @@ interface Student {
 }
 
 export default function NewConversationScreen() {
+  const colors = useColors();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const [step, setStep] = useState<'course' | 'student'>('course');
   const [courses, setCourses] = useState<Course[]>([]);
@@ -41,6 +29,52 @@ export default function NewConversationScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        header: { paddingHorizontal: Spacing.md, paddingTop: Spacing.xl },
+        title: { fontSize: 24, fontWeight: '800', color: colors.text },
+        backLink: { fontSize: 15, fontWeight: '600', color: colors.primary },
+        sectionLabel: {
+          fontSize: 13,
+          fontWeight: '700',
+          color: colors.textMuted,
+          paddingHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+        },
+        error: { color: colors.danger, textAlign: 'center', fontSize: 13, marginTop: Spacing.sm },
+        emptyText: {
+          textAlign: 'center',
+          color: colors.textMuted,
+          marginTop: Spacing.xl,
+          paddingHorizontal: Spacing.lg,
+        },
+        row: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.surface,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          gap: Spacing.sm,
+        },
+        rowTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+        rowSubtitle: { fontSize: 12, color: colors.textMuted, marginLeft: 'auto' },
+        avatar: {
+          width: 36,
+          height: 36,
+          borderRadius: Radius.full,
+          backgroundColor: colors.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        avatarText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+      }),
+    [colors]
+  );
 
   const loadCourses = async () => {
     setIsLoading(true);
@@ -70,8 +104,6 @@ export default function NewConversationScreen() {
     try {
       const res = await api.get(`/courses/${course._id}/students`);
       const roster: Student[] = res.data?.data || [];
-      // Exclude yourself from the pick list — messaging yourself isn't
-      // a real use case and would just be confusing to show.
       setStudents(roster.filter((s) => s._id !== currentUserId));
       setError(null);
     } catch (err: any) {
@@ -124,15 +156,13 @@ export default function NewConversationScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={Colors.primary} />
+        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
       ) : step === 'course' ? (
         <FlatList
           data={courses}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>You're not enrolled in any courses yet.</Text>
-          }
+          ListEmptyComponent={<Text style={styles.emptyText}>You're not enrolled in any courses yet.</Text>}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.row} onPress={() => handleSelectCourse(item)}>
               <Text style={styles.rowTitle}>{item.title}</Text>
@@ -147,15 +177,9 @@ export default function NewConversationScreen() {
             data={students}
             keyExtractor={(item) => item._id}
             contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No other students in this course yet.</Text>
-            }
+            ListEmptyComponent={<Text style={styles.emptyText}>No other students in this course yet.</Text>}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.row}
-                onPress={() => handleSelectStudent(item)}
-                disabled={isStarting}
-              >
+              <TouchableOpacity style={styles.row} onPress={() => handleSelectStudent(item)} disabled={isStarting}>
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
                 </View>
@@ -168,76 +192,3 @@ export default function NewConversationScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.xl,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  backLink: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    paddingHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  error: {
-    color: Colors.danger,
-    textAlign: 'center',
-    fontSize: 13,
-    marginTop: Spacing.sm,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: Colors.textMuted,
-    marginTop: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  rowTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  rowSubtitle: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginLeft: 'auto',
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-});

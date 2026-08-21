@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,24 +19,10 @@ import axios from 'axios';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
-
-// STATUS: REAL — calls GET /api/posts/feed, POST /api/posts/create,
-// and POST /api/posts/like/:id on the live backend. This is the
-// "Community" tab's post-feed portion only; Clubs/Projects/Study
-// Groups/Polls sections from the spec are separate, unbuilt features.
-//
-// Media upload uses a dedicated axios call (not the shared `api`
-// client) deliberately: the shared client's cold-start interceptor
-// retries a failed request by replaying the same config object, which
-// is unsafe for a FormData body containing a file — React Native's
-// FormData file entries aren't reliably re-readable on a second send.
-// Media uploads instead use one generous timeout up front and no
-// automatic retry, matching the same cold-start reality without the
-// replay risk.
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 const MAX_MEDIA_ITEMS = 4;
-const MEDIA_UPLOAD_TIMEOUT_MS = 90000; // generous single attempt, no retry
+const MEDIA_UPLOAD_TIMEOUT_MS = 90000;
 
 interface PostMedia {
   url: string;
@@ -55,9 +41,6 @@ interface Post {
   createdAt: string;
 }
 
-// Local-only shape for an asset the user has picked but not yet
-// uploaded — separate from PostMedia, which describes an already
-// uploaded, Cloudinary-hosted attachment.
 interface PendingAsset {
   uri: string;
   type: 'image' | 'video';
@@ -66,26 +49,26 @@ interface PendingAsset {
 }
 
 function InlineVideo({ uri }: { uri: string }) {
+  const colors = useColors();
   const player = useVideoPlayer(uri, (p) => {
     p.loop = false;
-    // Deliberately not calling p.play() here — no autoplay. Video
-    // starts paused; the visible native controls let the user start
-    // it themselves. Scroll-triggered autoplay is a real feature with
-    // its own cost (bandwidth, viewport tracking) and was intentionally
-    // left out of this pass.
   });
 
-  return (
-    <VideoView
-      player={player}
-      style={styles.media}
-      nativeControls
-      allowsFullscreen
-    />
+  const mediaStyle = useMemo(
+    () => ({
+      width: '100%' as const,
+      height: 220,
+      borderRadius: Radius.sm,
+      backgroundColor: colors.border,
+    }),
+    [colors]
   );
+
+  return <VideoView player={player} style={mediaStyle} nativeControls allowsFullscreen />;
 }
 
 export default function CommunityScreen() {
+  const colors = useColors();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const [pendingAssets, setPendingAssets] = useState<PendingAsset[]>([]);
@@ -93,6 +76,97 @@ export default function CommunityScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        header: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: Spacing.md,
+          paddingTop: Spacing.xl,
+        },
+        headerTitle: { fontSize: 24, fontWeight: '800', color: colors.text },
+        headerAction: { fontSize: 13, fontWeight: '600', color: colors.primary },
+        headerActions: { flexDirection: 'row', gap: Spacing.md },
+        composer: {
+          backgroundColor: colors.surface,
+          margin: Spacing.md,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        composerInput: { fontSize: 15, color: colors.text, minHeight: 44 },
+        pendingRow: { marginTop: Spacing.sm },
+        pendingThumbWrap: { marginRight: Spacing.sm, position: 'relative' },
+        pendingThumb: {
+          width: 64,
+          height: 64,
+          borderRadius: Radius.sm,
+          backgroundColor: colors.border,
+        },
+        pendingVideoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+        pendingVideoIcon: { fontSize: 20, color: colors.textMuted },
+        removeThumbButton: {
+          position: 'absolute',
+          top: -6,
+          right: -6,
+          backgroundColor: colors.danger,
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        removeThumbText: { color: colors.white, fontSize: 11, fontWeight: '700' },
+        composerFooter: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: Spacing.sm,
+        },
+        attachButton: { paddingVertical: Spacing.xs },
+        attachButtonText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+        postButton: {
+          backgroundColor: colors.primary,
+          borderRadius: Radius.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.lg,
+          alignItems: 'center',
+        },
+        postButtonDisabled: { opacity: 0.5 },
+        postButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        error: { color: colors.danger, textAlign: 'center', fontSize: 13, marginTop: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl },
+        postCard: {
+          backgroundColor: colors.surface,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        postContent: { fontSize: 15, color: colors.text, lineHeight: 21 },
+        mediaWrap: { marginTop: Spacing.sm, position: 'relative' },
+        media: { width: '100%', height: 220, borderRadius: Radius.sm, backgroundColor: colors.border },
+        moreBadge: {
+          position: 'absolute',
+          bottom: Spacing.sm,
+          right: Spacing.sm,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          paddingHorizontal: Spacing.sm,
+          paddingVertical: 4,
+          borderRadius: Radius.sm,
+        },
+        moreBadgeText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+        postFooter: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
+        likeButton: { color: colors.textMuted, fontSize: 13 },
+        commentCount: { color: colors.textMuted, fontSize: 13 },
+      }),
+    [colors]
+  );
 
   const loadFeed = async () => {
     try {
@@ -123,29 +197,24 @@ export default function CommunityScreen() {
       Alert.alert('Limit reached', `You can attach up to ${MAX_MEDIA_ITEMS} items per post.`);
       return;
     }
-
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Permission required', 'Permission to access your photos and videos is required.');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'],
       allowsMultipleSelection: true,
       selectionLimit: MAX_MEDIA_ITEMS - pendingAssets.length,
       quality: 0.7,
     });
-
     if (result.canceled || !result.assets?.length) return;
-
     const picked: PendingAsset[] = result.assets.map((asset) => ({
       uri: asset.uri,
       type: asset.type === 'video' ? 'video' : 'image',
       fileName: asset.fileName || `upload-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`,
       mimeType: asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
     }));
-
     setPendingAssets((prev) => [...prev, ...picked].slice(0, MAX_MEDIA_ITEMS));
   };
 
@@ -157,27 +226,20 @@ export default function CommunityScreen() {
     if (!newPost.trim() || isPosting) return;
     setIsPosting(true);
     setError(null);
-
     try {
       if (pendingAssets.length === 0) {
-        // No attachments — plain JSON body, same as before, still
-        // goes through the shared `api` client and its retry logic
-        // since there's no file re-read risk here.
         await api.post('/posts/create', { content: newPost.trim() });
       } else {
         const token = await SecureStore.getItemAsync('unilink_token');
         const formData = new FormData();
         formData.append('content', newPost.trim());
         pendingAssets.forEach((asset) => {
-          // React Native's FormData accepts this { uri, name, type }
-          // shape directly as a file entry.
           formData.append('media', {
             uri: asset.uri,
             name: asset.fileName,
             type: asset.mimeType,
           } as any);
         });
-
         await axios.post(`${api.defaults.baseURL}/posts/create`, formData, {
           headers: {
             Authorization: token ? `Bearer ${token}` : undefined,
@@ -186,7 +248,6 @@ export default function CommunityScreen() {
           timeout: MEDIA_UPLOAD_TIMEOUT_MS,
         });
       }
-
       setNewPost('');
       setPendingAssets([]);
       loadFeed();
@@ -203,10 +264,7 @@ export default function CommunityScreen() {
   };
 
   const handleLike = async (postId: string) => {
-    // Optimistic update so the tap feels instant; reconciled on next feed load.
-    setPosts((prev) =>
-      prev.map((p) => (p._id === postId ? { ...p, likes: p.likes + 1 } : p))
-    );
+    setPosts((prev) => prev.map((p) => (p._id === postId ? { ...p, likes: p.likes + 1 } : p)));
     try {
       await api.post(`/posts/like/${postId}`);
     } catch {
@@ -218,7 +276,6 @@ export default function CommunityScreen() {
     if (!media || media.length === 0) return null;
     const first = media[0];
     const extraCount = media.length - 1;
-
     return (
       <View style={styles.mediaWrap}>
         {first.type === 'video' ? (
@@ -255,7 +312,7 @@ export default function CommunityScreen() {
         <TextInput
           style={styles.composerInput}
           placeholder="Share something with your campus..."
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={newPost}
           onChangeText={setNewPost}
           multiline
@@ -272,10 +329,7 @@ export default function CommunityScreen() {
                 ) : (
                   <Image source={{ uri: asset.uri }} style={styles.pendingThumb} />
                 )}
-                <TouchableOpacity
-                  style={styles.removeThumbButton}
-                  onPress={() => handleRemovePendingAsset(index)}
-                >
+                <TouchableOpacity style={styles.removeThumbButton} onPress={() => handleRemovePendingAsset(index)}>
                   <Text style={styles.removeThumbText}>✕</Text>
                 </TouchableOpacity>
               </View>
@@ -284,11 +338,7 @@ export default function CommunityScreen() {
         )}
 
         <View style={styles.composerFooter}>
-          <TouchableOpacity
-            style={styles.attachButton}
-            onPress={handlePickMedia}
-            disabled={isPosting}
-          >
+          <TouchableOpacity style={styles.attachButton} onPress={handlePickMedia} disabled={isPosting}>
             <Text style={styles.attachButtonText}>📎 Add photo/video</Text>
           </TouchableOpacity>
 
@@ -297,11 +347,7 @@ export default function CommunityScreen() {
             onPress={handlePost}
             disabled={!newPost.trim() || isPosting}
           >
-            {isPosting ? (
-              <ActivityIndicator size="small" color={Colors.white} />
-            ) : (
-              <Text style={styles.postButtonText}>Post</Text>
-            )}
+            {isPosting ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.postButtonText}>Post</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -309,18 +355,14 @@ export default function CommunityScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={Colors.primary} />
+        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
       ) : (
         <FlatList
           data={posts}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
-          refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
-          }
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No posts yet. Be the first to share something.</Text>
-          }
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+          ListEmptyComponent={<Text style={styles.emptyText}>No posts yet. Be the first to share something.</Text>}
           renderItem={({ item }) => (
             <View style={styles.postCard}>
               <Text style={styles.postContent}>{item.content}</Text>
@@ -340,170 +382,3 @@ export default function CommunityScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.xl,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  headerAction: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  composer: {
-    backgroundColor: Colors.white,
-    margin: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  composerInput: {
-    fontSize: 15,
-    color: Colors.text,
-    minHeight: 44,
-  },
-  pendingRow: {
-    marginTop: Spacing.sm,
-  },
-  pendingThumbWrap: {
-    marginRight: Spacing.sm,
-    position: 'relative',
-  },
-  pendingThumb: {
-    width: 64,
-    height: 64,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.border,
-  },
-  pendingVideoPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pendingVideoIcon: {
-    fontSize: 20,
-    color: Colors.textMuted,
-  },
-  removeThumbButton: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: Colors.danger,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeThumbText: {
-    color: Colors.white,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  composerFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-  },
-  attachButton: {
-    paddingVertical: Spacing.xs,
-  },
-  attachButtonText: {
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  postButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.sm,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    alignItems: 'center',
-  },
-  postButtonDisabled: {
-    opacity: 0.5,
-  },
-  postButtonText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  error: {
-    color: Colors.danger,
-    textAlign: 'center',
-    fontSize: 13,
-    marginTop: Spacing.sm,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: Colors.textMuted,
-    marginTop: Spacing.xl,
-  },
-  postCard: {
-    backgroundColor: Colors.white,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  postContent: {
-    fontSize: 15,
-    color: Colors.text,
-    lineHeight: 21,
-  },
-  mediaWrap: {
-    marginTop: Spacing.sm,
-    position: 'relative',
-  },
-  media: {
-    width: '100%',
-    height: 220,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.border,
-  },
-  moreBadge: {
-    position: 'absolute',
-    bottom: Spacing.sm,
-    right: Spacing.sm,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: Radius.sm,
-  },
-  moreBadgeText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  postFooter: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  likeButton: {
-    color: Colors.textMuted,
-    fontSize: 13,
-  },
-  commentCount: {
-    color: Colors.textMuted,
-    fontSize: 13,
-  },
-});

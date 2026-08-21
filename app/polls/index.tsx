@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
@@ -33,6 +33,7 @@ interface Poll {
 }
 
 export default function PollsScreen() {
+  const colors = useColors();
   const currentUser = useAuthStore((s) => s.user);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +44,87 @@ export default function PollsScreen() {
   const [question, setQuestion] = useState('');
   const [optionInputs, setOptionInputs] = useState(['', '']);
   const [isCreating, setIsCreating] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        headerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Spacing.md,
+          paddingTop: Spacing.md,
+        },
+        title: { fontSize: 22, fontWeight: '700', color: colors.text },
+        createButton: { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
+        createButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        card: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.lg,
+          padding: Spacing.md,
+          gap: 8,
+        },
+        cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 2 },
+        optionRow: { position: 'relative', borderWidth: 1, borderColor: colors.border, borderRadius: Radius.md, overflow: 'hidden' },
+        optionRowActive: { borderColor: colors.primary },
+        // Same '22' hex-alpha-suffix technique as the original — still
+        // works correctly since colors.accent resolves to the same hex
+        // string in both palettes, this isn't a simple reference swap
+        // but the concatenation pattern itself needed no change.
+        optionFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: colors.accent + '22' },
+        optionContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12 },
+        optionText: { fontSize: 14, color: colors.text, flex: 1 },
+        optionTextActive: { fontWeight: '700', color: colors.primary },
+        optionPct: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
+        voteCount: { fontSize: 12, color: colors.textMuted },
+        postButtonDisabled: { opacity: 0.5 },
+        modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+        modalCard: {
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: Radius.xl,
+          borderTopRightRadius: Radius.xl,
+          padding: Spacing.lg,
+          gap: Spacing.sm,
+        },
+        modalTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+        },
+        addOptionText: { color: colors.primary, fontWeight: '600', fontSize: 13, paddingVertical: 4 },
+        modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+        modalCancel: {
+          flex: 1,
+          paddingVertical: 10,
+          alignItems: 'center',
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        modalCancelText: { color: colors.text, fontWeight: '600' },
+        modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: colors.primary },
+        modalSubmitText: { color: colors.white, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -119,7 +201,7 @@ export default function PollsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       )}
 
@@ -180,14 +262,20 @@ export default function PollsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Poll</Text>
-            <TextInput style={styles.input} placeholder="Question" placeholderTextColor={Colors.textMuted} value={question} onChangeText={setQuestion} />
+            <TextInput
+              style={styles.input}
+              placeholder="Question"
+              placeholderTextColor={colors.textMuted}
+              value={question}
+              onChangeText={setQuestion}
+            />
 
             {optionInputs.map((value, index) => (
               <TextInput
                 key={index}
                 style={styles.input}
                 placeholder={`Option ${index + 1}`}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={value}
                 onChangeText={(v) => updateOptionInput(index, v)}
               />
@@ -201,8 +289,12 @@ export default function PollsScreen() {
               <TouchableOpacity style={styles.modalCancel} onPress={() => setCreateOpen(false)}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalSubmit, !canSubmitCreate && styles.postButtonDisabled]} onPress={handleCreate} disabled={!canSubmitCreate || isCreating}>
-                {isCreating ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.modalSubmitText}>Create</Text>}
+              <TouchableOpacity
+                style={[styles.modalSubmit, !canSubmitCreate && styles.postButtonDisabled]}
+                onPress={handleCreate}
+                disabled={!canSubmitCreate || isCreating}
+              >
+                {isCreating ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.modalSubmitText}>Create</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -211,36 +303,3 @@ export default function PollsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.md, paddingTop: Spacing.md },
-  title: { fontSize: 22, fontWeight: '700', color: Colors.text },
-  createButton: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
-  createButtonText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted, marginTop: Spacing.xl },
-  retryButton: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.primary, borderRadius: Radius.md },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, gap: 8 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  optionRow: { position: 'relative', borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, overflow: 'hidden' },
-  optionRowActive: { borderColor: Colors.primary },
-  optionFill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: Colors.accent + '22' },
-  optionContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12 },
-  optionText: { fontSize: 14, color: Colors.text, flex: 1 },
-  optionTextActive: { fontWeight: '700', color: Colors.primary },
-  optionPct: { fontSize: 12, fontWeight: '700', color: Colors.textMuted },
-  voteCount: { fontSize: 12, color: Colors.textMuted },
-  postButtonDisabled: { opacity: 0.5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: Colors.white, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text },
-  addOptionText: { color: Colors.primary, fontWeight: '600', fontSize: 13, paddingVertical: 4 },
-  modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  modalCancel: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border },
-  modalCancelText: { color: Colors.text, fontWeight: '600' },
-  modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: Colors.primary },
-  modalSubmitText: { color: Colors.white, fontWeight: '700' },
-});

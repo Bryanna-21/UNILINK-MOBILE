@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 
 // STATUS: LIVE — listings and job listings are fetched from
@@ -23,11 +23,56 @@ interface JobListing {
 }
 
 export default function MarketplaceScreen() {
+  const colors = useColors();
   const [listings, setListings] = useState<Listing[]>([]);
   const [jobs, setJobs] = useState<JobListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        centerContainer: {
+          flex: 1,
+          backgroundColor: colors.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        header: { padding: Spacing.md, paddingTop: Spacing.xl },
+        title: { fontSize: 24, fontWeight: '800', color: colors.text },
+        sectionTitle: {
+          fontSize: 16,
+          fontWeight: '700',
+          color: colors.text,
+          paddingHorizontal: Spacing.md,
+          marginTop: Spacing.lg,
+          marginBottom: Spacing.xs,
+        },
+        card: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        cardTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+        cardMuted: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+        errorText: { fontSize: 13, color: colors.textMuted },
+        rowBetween: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: Spacing.xs,
+        },
+        priceText: { fontSize: 14, fontWeight: '700', color: colors.primary },
+        soldTag: { fontSize: 11, fontWeight: '700', color: colors.danger, marginTop: Spacing.xs },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setIsRefreshing(true);
@@ -55,7 +100,7 @@ export default function MarketplaceScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator color={Colors.primary} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -114,73 +159,3 @@ export default function MarketplaceScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    padding: Spacing.md,
-    paddingTop: Spacing.xl,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    paddingHorizontal: Spacing.md,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xs,
-  },
-  card: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.md,
-    marginTop: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  cardMuted: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  errorText: {
-    fontSize: 13,
-    color: Colors.textMuted,
-  },
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: Spacing.xs,
-  },
-  priceText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  soldTag: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.danger,
-    marginTop: Spacing.xs,
-  },
-});

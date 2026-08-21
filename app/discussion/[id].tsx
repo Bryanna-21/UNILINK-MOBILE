@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
@@ -34,6 +34,7 @@ interface DiscussionEntry {
 }
 
 export default function DiscussionScreen() {
+  const colors = useColors();
   const { id: courseId } = useLocalSearchParams<{ id: string }>();
   const currentUser = useAuthStore((s) => s.user);
 
@@ -42,6 +43,62 @@ export default function DiscussionScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        replyCard: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          padding: Spacing.md,
+        },
+        replyAuthor: { fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 4 },
+        replyText: { fontSize: 14, color: colors.text },
+        composer: {
+          flexDirection: 'row',
+          padding: Spacing.md,
+          gap: Spacing.sm,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          backgroundColor: colors.surface,
+        },
+        input: {
+          flex: 1,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+          maxHeight: 100,
+        },
+        postButton: {
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          justifyContent: 'center',
+          minWidth: 64,
+          alignItems: 'center',
+        },
+        postButtonDisabled: { opacity: 0.6 },
+        postButtonText: { color: colors.white, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const loadDiscussion = useCallback(async () => {
     if (!courseId) return;
@@ -77,15 +134,12 @@ export default function DiscussionScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBanner status="real" note="Discussion posts are saved to the real backend." />
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       )}
 
@@ -103,14 +157,10 @@ export default function DiscussionScreen() {
           data={entries}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No discussion posts yet. Be the first.</Text>
-          }
+          ListEmptyComponent={<Text style={styles.emptyText}>No discussion posts yet. Be the first.</Text>}
           renderItem={({ item }) => (
             <View style={styles.replyCard}>
-              <Text style={styles.replyAuthor}>
-                {item.userId === currentUser?.id ? 'You' : 'Student'}
-              </Text>
+              <Text style={styles.replyAuthor}>{item.userId === currentUser?.id ? 'You' : 'Student'}</Text>
               <Text style={styles.replyText}>{item.content}</Text>
             </View>
           )}
@@ -121,7 +171,7 @@ export default function DiscussionScreen() {
         <TextInput
           style={styles.input}
           placeholder="Reply to this course's discussion"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={draft}
           onChangeText={setDraft}
           multiline
@@ -132,65 +182,9 @@ export default function DiscussionScreen() {
           onPress={handlePost}
           disabled={isPosting}
         >
-          {isPosting ? (
-            <ActivityIndicator size="small" color={Colors.white} />
-          ) : (
-            <Text style={styles.postButtonText}>Post</Text>
-          )}
+          {isPosting ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.postButtonText}>Post</Text>}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted, marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
-  retryButton: {
-    marginTop: Spacing.sm,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.md,
-  },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  replyCard: {
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-  },
-  replyAuthor: { fontSize: 12, fontWeight: '700', color: Colors.textMuted, marginBottom: 4 },
-  replyText: { fontSize: 14, color: Colors.text },
-  composer: {
-    flexDirection: 'row',
-    padding: Spacing.md,
-    gap: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.white,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    fontSize: 14,
-    color: Colors.text,
-    maxHeight: 100,
-  },
-  postButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    justifyContent: 'center',
-    minWidth: 64,
-    alignItems: 'center',
-  },
-  postButtonDisabled: { opacity: 0.6 },
-  postButtonText: { color: Colors.white, fontWeight: '700' },
-});

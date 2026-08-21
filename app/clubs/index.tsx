@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,9 @@ import {
   Modal,
 } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
-
-// STATUS: REAL — GET/POST /api/clubs, POST /api/clubs/:id/join, /leave.
 
 interface Club {
   _id: string;
@@ -25,6 +23,7 @@ interface Club {
 }
 
 export default function ClubsScreen() {
+  const colors = useColors();
   const currentUser = useAuthStore((s) => s.user);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +34,82 @@ export default function ClubsScreen() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        headerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Spacing.md,
+          paddingTop: Spacing.md,
+        },
+        title: { fontSize: 22, fontWeight: '700', color: colors.text },
+        createButton: { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
+        createButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        card: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.lg,
+          padding: Spacing.md,
+          gap: 6,
+        },
+        cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+        cardBody: { fontSize: 14, color: colors.text },
+        memberCount: { fontSize: 12, color: colors.textMuted },
+        joinButton: { marginTop: 8, backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: 8, alignItems: 'center' },
+        leaveButton: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
+        joinButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        leaveButtonText: { color: colors.text },
+        ownerTag: { marginTop: 8, fontSize: 12, color: colors.textMuted, fontStyle: 'italic' },
+        postButtonDisabled: { opacity: 0.5 },
+        modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+        modalCard: {
+          backgroundColor: colors.surface,
+          borderTopLeftRadius: Radius.xl,
+          borderTopRightRadius: Radius.xl,
+          padding: Spacing.lg,
+          gap: Spacing.sm,
+        },
+        modalTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+        },
+        multiline: { minHeight: 70, textAlignVertical: 'top' },
+        modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+        modalCancel: {
+          flex: 1,
+          paddingVertical: 10,
+          alignItems: 'center',
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        modalCancelText: { color: colors.text, fontWeight: '600' },
+        modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: colors.primary },
+        modalSubmitText: { color: colors.white, fontWeight: '700' },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -96,7 +171,7 @@ export default function ClubsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       )}
 
@@ -133,7 +208,7 @@ export default function ClubsScreen() {
                     disabled={pendingId === item._id}
                   >
                     {pendingId === item._id ? (
-                      <ActivityIndicator size="small" color={isMember ? Colors.text : Colors.white} />
+                      <ActivityIndicator size="small" color={isMember ? colors.text : colors.white} />
                     ) : (
                       <Text style={[styles.joinButtonText, isMember && styles.leaveButtonText]}>
                         {isMember ? 'Leave' : 'Join'}
@@ -155,14 +230,14 @@ export default function ClubsScreen() {
             <TextInput
               style={styles.input}
               placeholder="Club name"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={name}
               onChangeText={setName}
             />
             <TextInput
               style={[styles.input, styles.multiline]}
               placeholder="Description (optional)"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -176,7 +251,7 @@ export default function ClubsScreen() {
                 onPress={handleCreate}
                 disabled={!name.trim() || isCreating}
               >
-                {isCreating ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={styles.modalSubmitText}>Create</Text>}
+                {isCreating ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.modalSubmitText}>Create</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -185,41 +260,3 @@ export default function ClubsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
-  },
-  title: { fontSize: 22, fontWeight: '700', color: Colors.text },
-  createButton: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 8, paddingHorizontal: 12 },
-  createButtonText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted, marginTop: Spacing.xl },
-  retryButton: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.primary, borderRadius: Radius.md },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, gap: 6 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  cardBody: { fontSize: 14, color: Colors.text },
-  memberCount: { fontSize: 12, color: Colors.textMuted },
-  joinButton: { marginTop: 8, backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 8, alignItems: 'center' },
-  leaveButton: { backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border },
-  joinButtonText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
-  leaveButtonText: { color: Colors.text },
-  ownerTag: { marginTop: 8, fontSize: 12, color: Colors.textMuted, fontStyle: 'italic' },
-  postButtonDisabled: { opacity: 0.5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: Colors.white, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: Spacing.lg, gap: Spacing.sm },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text },
-  multiline: { minHeight: 70, textAlignVertical: 'top' },
-  modalActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  modalCancel: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border },
-  modalCancelText: { color: Colors.text, fontWeight: '600' },
-  modalSubmit: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: Radius.md, backgroundColor: Colors.primary },
-  modalSubmitText: { color: Colors.white, fontWeight: '700' },
-});

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
-import { Colors, Radius, Spacing } from '../../src/constants/theme';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
@@ -45,6 +45,7 @@ interface Result {
 }
 
 export default function CatDetailScreen() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const currentUser = useAuthStore((s) => s.user);
   const isPublisher = currentUser?.role === 'lecturer' || currentUser?.role === 'admin';
@@ -59,6 +60,55 @@ export default function CatDetailScreen() {
   const [feedback, setFeedback] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.background },
+        centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+        emptyText: { textAlign: 'center', color: colors.textMuted },
+        retryButton: {
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+        },
+        retryText: { color: colors.white, fontWeight: '600' },
+        card: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.lg,
+          padding: Spacing.md,
+          gap: 8,
+        },
+        catTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
+        coverage: { fontSize: 14, color: colors.text },
+        metaRow: { flexDirection: 'row', gap: 16, marginTop: 4, flexWrap: 'wrap' },
+        meta: { fontSize: 12, color: colors.textMuted },
+        sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 },
+        gradeBanner: { backgroundColor: colors.background, borderRadius: Radius.md, padding: Spacing.sm, gap: 4 },
+        gradeBannerText: { fontSize: 18, fontWeight: '700', color: colors.secondary },
+        feedbackText: { fontSize: 13, color: colors.text },
+        roughEdgeNote: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic', marginBottom: 2 },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          fontSize: 14,
+          color: colors.text,
+        },
+        multiline: { minHeight: 70, textAlignVertical: 'top' },
+        publishMessage: { fontSize: 13, color: colors.primary, fontWeight: '600' },
+        submitButton: { backgroundColor: colors.primary, borderRadius: Radius.md, paddingVertical: 12, alignItems: 'center', marginTop: 4 },
+        submitButtonText: { color: colors.white, fontWeight: '700' },
+        disabledButton: { opacity: 0.5 },
+      }),
+    [colors]
+  );
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -108,7 +158,7 @@ export default function CatDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerFill}>
-        <ActivityIndicator color={Colors.primary} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -147,9 +197,7 @@ export default function CatDetailScreen() {
                 {myResult.score}/{cat.maxScore}
               </Text>
               {!!myResult.feedback && <Text style={styles.feedbackText}>{myResult.feedback}</Text>}
-              <Text style={styles.meta}>
-                Published {new Date(myResult.publishedAt).toLocaleDateString()}
-              </Text>
+              <Text style={styles.meta}>Published {new Date(myResult.publishedAt).toLocaleDateString()}</Text>
             </View>
           ) : (
             <Text style={styles.emptyText}>No result published yet.</Text>
@@ -167,7 +215,7 @@ export default function CatDetailScreen() {
           <TextInput
             style={styles.input}
             placeholder="Student ID"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={studentId}
             onChangeText={setStudentId}
             autoCapitalize="none"
@@ -175,7 +223,7 @@ export default function CatDetailScreen() {
           <TextInput
             style={styles.input}
             placeholder={`Score (out of ${cat.maxScore})`}
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={score}
             onChangeText={setScore}
             keyboardType="numeric"
@@ -183,7 +231,7 @@ export default function CatDetailScreen() {
           <TextInput
             style={[styles.input, styles.multiline]}
             placeholder="Feedback (optional)"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={feedback}
             onChangeText={setFeedback}
             multiline
@@ -197,7 +245,7 @@ export default function CatDetailScreen() {
             disabled={!studentId.trim() || !score.trim() || isPublishing}
           >
             {isPublishing ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color={colors.white} />
             ) : (
               <Text style={styles.submitButtonText}>Publish result</Text>
             )}
@@ -207,27 +255,3 @@ export default function CatDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  centerFill: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  emptyText: { textAlign: 'center', color: Colors.textMuted },
-  retryButton: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, backgroundColor: Colors.primary, borderRadius: Radius.md },
-  retryText: { color: Colors.white, fontWeight: '600' },
-  card: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, gap: 8 },
-  catTitle: { fontSize: 20, fontWeight: '700', color: Colors.text },
-  coverage: { fontSize: 14, color: Colors.text },
-  metaRow: { flexDirection: 'row', gap: 16, marginTop: 4, flexWrap: 'wrap' },
-  meta: { fontSize: 12, color: Colors.textMuted },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  gradeBanner: { backgroundColor: Colors.background, borderRadius: Radius.md, padding: Spacing.sm, gap: 4 },
-  gradeBannerText: { fontSize: 18, fontWeight: '700', color: Colors.secondary },
-  feedbackText: { fontSize: 13, color: Colors.text },
-  roughEdgeNote: { fontSize: 12, color: Colors.textMuted, fontStyle: 'italic', marginBottom: 2 },
-  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text },
-  multiline: { minHeight: 70, textAlignVertical: 'top' },
-  publishMessage: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  submitButton: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 12, alignItems: 'center', marginTop: 4 },
-  submitButtonText: { color: Colors.white, fontWeight: '700' },
-  disabledButton: { opacity: 0.5 },
-});
