@@ -13,11 +13,9 @@ import { Link, router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
-// STATUS: REAL — this screen calls the live backend at
-// unilink-backend-1.onrender.com/api/auth/login and works end to end.
-// No OTP, no biometrics, no "remember device" yet — those are deferred,
-// not silently faked. Plain email/password only, matching what the
-// backend actually supports today.
+// STATUS: REAL — calls the live backend. Now branches on all three
+// /auth/login outcomes (full success, requiresVerification,
+// requiresTwoFactor) instead of assuming a token always comes back.
 
 export default function LoginScreen() {
   const colors = useColors();
@@ -73,10 +71,21 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) return;
-    const success = await login(email.trim(), password);
-    if (success) {
-      router.replace('/(tabs)/home');
+    const result = await login(email.trim(), password);
+
+    if (!result.success) {
+      if (result.reason === 'requiresVerification') {
+        router.push({ pathname: '/auth/verify-otp', params: { userId: result.userId } });
+        return;
+      }
+      if (result.reason === 'requiresTwoFactor') {
+        router.push({ pathname: '/auth/verify-login-otp', params: { userId: result.userId } });
+        return;
+      }
+      return;
     }
+
+    router.replace('/(tabs)/home');
   };
 
   return (
