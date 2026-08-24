@@ -15,9 +15,9 @@ import { useAuthStore } from '../../src/store/authStore';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: REAL — calls POST /api/auth/register on the live backend.
-// Fields match auth.routes.js exactly: name, email, password,
-// confirmPassword are required; universityId is optional; role
-// defaults to "student" server-side if omitted.
+// This never returns a token - the account exists but is unverified
+// until verify-otp succeeds. Routes there with the returned userId
+// instead of assuming a token exists.
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -77,15 +77,19 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password || !confirmPassword) return;
-    const success = await register({
+    const result = await register({
       name: name.trim(),
       email: email.trim(),
       password,
       confirmPassword,
     });
-    if (success) {
-      router.replace('/(tabs)/home');
+
+    if (!result.success) {
+      // store already set `error`, which renders below.
+      return;
     }
+
+    router.push({ pathname: '/auth/verify-otp', params: { userId: result.userId } });
   };
 
   return (
