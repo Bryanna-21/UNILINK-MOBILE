@@ -1,16 +1,18 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import { ShellScreen } from '../../src/components/ShellScreen';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/store/themeStore';
 
-// STATUS: Appearance/Dark mode is now REAL — everything else on this
-// screen is still SHELL (i18n for languages, expo-notifications for
-// push prefs, dedicated settings routes for privacy/security, offline
-// downloads for storage, accessibility props screen-by-screen). Those
-// remain listed via ShellScreen below, unchanged, each still stating
-// exactly what it's waiting on.
+// STATUS: Appearance/Dark mode and "Change password" are now REAL —
+// everything else on this screen is still SHELL (i18n for languages,
+// expo-notifications for push prefs, dedicated settings routes for
+// privacy/security beyond password, offline downloads for storage,
+// accessibility props screen-by-screen). Those remain listed via
+// ShellScreen below, unchanged, each still stating exactly what it's
+// waiting on.
 
 export default function SettingsScreen() {
   const colors = useColors();
@@ -59,6 +61,10 @@ export default function SettingsScreen() {
           fontSize: 14,
           color: colors.text,
         },
+        rowChevron: {
+          fontSize: 18,
+          color: colors.textMuted,
+        },
       }),
     [colors]
   );
@@ -83,6 +89,15 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Security</Text>
+        <StatusBanner status="real" note="Password changes are confirmed by email code, same as the web app." />
+        <TouchableOpacity style={styles.row} onPress={() => router.push('/settings/change-password')}>
+          <Text style={styles.rowText}>Change password</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       <ShellScreen
         title=""
         sections={[
@@ -93,8 +108,8 @@ export default function SettingsScreen() {
           },
           {
             title: 'Privacy & Security',
-            items: ['Privacy settings', 'Security settings', 'Change password'],
-            backendNote: 'Needs: dedicated settings routes on the User model.',
+            items: ['Privacy settings', 'Security settings'],
+            backendNote: 'Needs: dedicated settings routes on the User model. (Change password is now real - see the Security section above.)',
           },
           {
             title: 'Storage',
