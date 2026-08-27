@@ -115,7 +115,7 @@ export default function ClubsScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await api.get('/clubs');
+      const res = await api.get('/community/clubs');
       setClubs(res.data?.data ?? []);
     } catch {
       setLoadError('Could not load clubs.');
@@ -133,7 +133,7 @@ export default function ClubsScreen() {
     const isMember = club.memberIds.includes(currentUser.id);
     setPendingId(club._id);
     try {
-      const res = await api.post(`/clubs/${club._id}/${isMember ? 'leave' : 'join'}`);
+      const res = await api.post(`/community/clubs/${club._id}/${isMember ? 'leave' : 'join'}`);
       setClubs((prev) => prev.map((c) => (c._id === club._id ? res.data.data : c)));
     } catch {
       // Leave list state as-is on failure; user can retry the tap.
@@ -146,7 +146,7 @@ export default function ClubsScreen() {
     if (!name.trim()) return;
     setIsCreating(true);
     try {
-      const res = await api.post('/clubs', { name: name.trim(), description: description.trim() || undefined });
+      const res = await api.post('/community/clubs', { name: name.trim(), description: description.trim() || undefined });
       setClubs((prev) => [res.data.data, ...prev]);
       setName('');
       setDescription('');

@@ -14,7 +14,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
-// STATUS: REAL — GET/POST /api/polls, POST /api/polls/:id/vote.
+// STATUS: REAL — GET/POST /api/community/polls, POST /api/community/polls/:id/vote.
 // The backend does not return a separate "did I vote / on what" flag —
 // it only returns each option's voterIds array. This screen derives
 // the user's current vote by scanning voterIds itself, rather than
@@ -130,7 +130,7 @@ export default function PollsScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await api.get('/polls');
+      const res = await api.get('/community/polls');
       setPolls(res.data?.data ?? []);
     } catch {
       setLoadError('Could not load polls.');
@@ -154,7 +154,7 @@ export default function PollsScreen() {
   const handleVote = async (pollId: string, optionIndex: number) => {
     setVotingId(pollId);
     try {
-      const res = await api.post(`/polls/${pollId}/vote`, { optionIndex });
+      const res = await api.post(`/community/polls/${pollId}/vote`, { optionIndex });
       setPolls((prev) => prev.map((p) => (p._id === pollId ? res.data.data : p)));
     } catch {
       // no-op, allow retry
@@ -174,7 +174,7 @@ export default function PollsScreen() {
     if (!question.trim() || cleanOptions.length < 2) return;
     setIsCreating(true);
     try {
-      const res = await api.post('/polls', { question: question.trim(), options: cleanOptions });
+      const res = await api.post('/community/polls', { question: question.trim(), options: cleanOptions });
       setPolls((prev) => [res.data.data, ...prev]);
       setQuestion('');
       setOptionInputs(['', '']);

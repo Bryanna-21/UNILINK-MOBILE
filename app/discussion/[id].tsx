@@ -16,7 +16,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
-// STATUS: REAL — calls GET/POST /api/courses/:courseId/discussion on
+// STATUS: REAL — calls GET/POST /api/community/courses/:courseId/discussion on
 // the live backend. Same shape/caveat as post comments: userId is a
 // raw string with no populated name, so entries show "You" or a
 // generic label rather than a fabricated name.
@@ -105,7 +105,7 @@ export default function DiscussionScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await api.get(`/courses/${courseId}/discussion`);
+      const res = await api.get(`/community/courses/${courseId}/discussion`);
       setEntries(res.data?.data ?? []);
     } catch {
       setLoadError('Could not load this discussion.');
@@ -123,7 +123,7 @@ export default function DiscussionScreen() {
     const content = draft.trim();
     setIsPosting(true);
     try {
-      const res = await api.post(`/courses/${courseId}/discussion`, { content });
+      const res = await api.post(`/community/courses/${courseId}/discussion`, { content });
       setEntries((prev) => [...prev, res.data.data]);
       setDraft('');
     } catch {

@@ -13,7 +13,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 
-// STATUS: REAL — GET/POST /api/projects. No join/leave route exists
+// STATUS: REAL — GET/POST /api/community/projects. No join/leave route exists
 // for Projects (unlike Clubs/Study Groups) — contributorIds is set
 // from the creator only at creation time on the backend, so this
 // screen doesn't offer a join action that doesn't exist server-side.
@@ -146,7 +146,7 @@ export default function ProjectsScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await api.get('/projects');
+      const res = await api.get('/community/projects');
       setProjects(res.data?.data ?? []);
     } catch {
       setLoadError('Could not load projects.');
@@ -163,7 +163,7 @@ export default function ProjectsScreen() {
     if (!title.trim()) return;
     setIsCreating(true);
     try {
-      const res = await api.post('/projects', {
+      const res = await api.post('/community/projects', {
         title: title.trim(),
         description: description.trim() || undefined,
         status,

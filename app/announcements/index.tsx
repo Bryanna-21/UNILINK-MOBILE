@@ -14,7 +14,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
-// STATUS: REAL — GET /api/announcements, POST /api/announcements
+// STATUS: REAL — GET /api/community/announcements, POST /api/community/announcements
 // (backend restricts creation to lecturer/admin roles - isStaff check
 // in community.controller.js). The create button is hidden for
 // students client-side as a UX nicety; the real enforcement is
@@ -118,7 +118,7 @@ export default function AnnouncementsScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await api.get('/announcements');
+      const res = await api.get('/community/announcements');
       setAnnouncements(res.data?.data ?? []);
     } catch {
       setLoadError('Could not load announcements.');
@@ -135,7 +135,7 @@ export default function AnnouncementsScreen() {
     if (!title.trim() || !body.trim()) return;
     setIsCreating(true);
     try {
-      const res = await api.post('/announcements', { title: title.trim(), body: body.trim() });
+      const res = await api.post('/community/announcements', { title: title.trim(), body: body.trim() });
       setAnnouncements((prev) => [res.data.data, ...prev]);
       setTitle('');
       setBody('');
