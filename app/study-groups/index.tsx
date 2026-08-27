@@ -14,7 +14,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 
-// STATUS: REAL — GET/POST /api/study-groups, POST /api/study-groups/:id/join.
+// STATUS: REAL — GET/POST /api/community/study-groups, POST /api/community/study-groups/:id/join.
 // Note: there is no /leave route for study groups on the backend
 // (unlike Clubs) — only join exists. That's a real backend asymmetry,
 // not a mobile oversight, so "Leave" isn't offered here.
@@ -124,7 +124,7 @@ export default function StudyGroupsScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await api.get('/study-groups');
+      const res = await api.get('/community/study-groups');
       setGroups(res.data?.data ?? []);
     } catch {
       setLoadError('Could not load study groups.');
@@ -140,7 +140,7 @@ export default function StudyGroupsScreen() {
   const handleJoin = async (group: StudyGroup) => {
     setPendingId(group._id);
     try {
-      const res = await api.post(`/study-groups/${group._id}/join`);
+      const res = await api.post(`/community/study-groups/${group._id}/join`);
       setGroups((prev) => prev.map((g) => (g._id === group._id ? res.data.data : g)));
     } catch {
       // no-op, allow retry
@@ -153,7 +153,7 @@ export default function StudyGroupsScreen() {
     if (!title.trim()) return;
     setIsCreating(true);
     try {
-      const res = await api.post('/study-groups', {
+      const res = await api.post('/community/study-groups', {
         title: title.trim(),
         description: description.trim() || undefined,
         meetingTime: meetingTime.trim() || undefined,
