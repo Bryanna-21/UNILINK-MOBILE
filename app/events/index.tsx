@@ -4,11 +4,13 @@ import { router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
+import { useAuthStore } from '../../src/store/authStore';
 
 // STATUS: LIVE — events are fetched from GET /api/events on the real
-// backend. RSVP and QR check-in also exist on the backend
-// (POST /api/events/:id/rsvp, POST /api/events/check-in) but aren't
-// wired into the UI yet — that's still open, not claimed as done here.
+// backend. RSVP and QR check-in are now BOTH wired into the UI: RSVP
+// + real QR display live on the event detail screen
+// (app/event/[id].tsx), and lecturers/admins get a "Scan check-in"
+// entry point below leading to app/event/scan-checkin.tsx.
 // Calendar sync & reminders: needs expo-calendar + reminder scheduling.
 // Genuinely not built — noted below rather than silently dropped.
 
@@ -21,6 +23,8 @@ interface EventItem {
 
 export default function EventsScreen() {
   const colors = useColors();
+  const role = useAuthStore((s) => s.user?.role);
+  const isStaff = role === 'lecturer' || role === 'admin';
   const [events, setEvents] = useState<EventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -52,6 +56,15 @@ export default function EventsScreen() {
         noteText: { fontSize: 12, color: colors.textMuted, fontStyle: 'italic' },
         spinner: { marginTop: Spacing.xl },
         cardMuted: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+        scanButton: {
+          backgroundColor: colors.primary,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          alignItems: 'center',
+        },
+        scanButtonText: { color: colors.white, fontWeight: '700', fontSize: 14 },
       }),
     [colors]
   );
@@ -84,6 +97,17 @@ export default function EventsScreen() {
         Events
       </Text>
       <StatusBanner status="real" note="Events are fetched live from your account." />
+
+      {isStaff && (
+        <TouchableOpacity
+          style={styles.scanButton}
+          onPress={() => router.push('/event/scan-checkin' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Scan check-in QR code"
+        >
+          <Text style={styles.scanButtonText}>📷 Scan Check-in</Text>
+        </TouchableOpacity>
+      )}
 
       {isLoading ? (
         <ActivityIndicator style={styles.spinner} color={colors.primary} />

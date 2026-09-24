@@ -34,10 +34,25 @@ interface AuthState {
   isHydrated: boolean;
   error: string | null;
 
+  // True when hydrate() found a valid stored session AND biometric
+  // lock is enabled, but the biometric prompt hasn't succeeded yet
+  // this app-open. `user` stays null while this is true — the
+  // session token itself is still safely in SecureStore untouched,
+  // it's simply not been exposed to the app's UI/API layer yet.
+  // RootLayout renders a dedicated unlock screen while this is true,
+  // instead of the login screen or the authenticated tabs.
+  pendingBiometricUnlock: boolean;
+
   // Locally updates the cached user object without a network call —
   // for merging in fields a mutation (like profile edit) just
   // confirmed were saved, without needing a full re-fetch/re-login.
   setUser: (user: UniLinkUser) => void;
+
+  // Called once the biometric prompt succeeds (see RootLayout) —
+  // releases the already-hydrated-but-held user into real state.
+  // Does NOT re-read SecureStore or make a network call: the user
+  // object was already loaded during hydrate(), just not exposed yet.
+  completeBiometricUnlock: () => void;
 
   login: (email: string, password: string) => Promise<AuthActionResult>;
   register: (payload: {
@@ -70,6 +85,14 @@ interface AuthState {
   ) => Promise<SimpleResult>;
   logout: () => Promise<void>;
   hydrate: () => Promise<void>;
+
+  // Internal holding spot for a user object hydrate() has loaded but
+  // not yet released to `user`, because biometric unlock is pending.
+  // Not meant to be read by screens directly — go through `user` and
+  // `pendingBiometricUnlock` instead. Exported on the interface only
+  // because zustand's `set`/`get` need it to be part of the same
+  // store object; treat it as private.
+  _heldUser: UniLinkUser | null;
 }
 
 // Persists token + user and flips auth state - shared by login(),
@@ -81,12 +104,14 @@ async function completeAuth(token: string, user: UniLinkUser, set: (partial: Par
   set({ user, isLoading: false, isWakingServer: false, error: null });
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: false,
   isWakingServer: false,
   isHydrated: false,
   error: null,
+  pendingBiometricUnlock: false,
+  _heldUser: null,
 
   // Same persistence approach as completeAuth above — must write to
   // SecureStore, not just update in-memory Zustand state, or a
@@ -258,18 +283,48 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await SecureStore.deleteItemAsync('unilink_token');
     await SecureStore.deleteItemAsync('unilink_user');
-    set({ user: null });
+    set({ user: null, pendingBiometricUnlock: false, _heldUser: null });
   },
 
+  // Reads the stored session same as before. NEW: if biometric lock
+  // is enabled, the loaded user is held in `_heldUser` and
+  // `pendingBiometricUnlock` is raised instead of setting `user`
+  // directly — RootLayout renders an unlock prompt in that state and
+  // calls completeBiometricUnlock() once the scan succeeds. If
+  // biometric is disabled (the default), behavior is byte-for-byte
+  // identical to before this feature existed: `user` is set directly,
+  // nothing is held back.
+  //
+  // Deliberately checks isBiometricEnabled() dynamically here rather
+  // than caching it — if the user just toggled the setting off in
+  // Settings, the NEXT cold start should honor that immediately
+  // without needing any other cache to be invalidated.
   hydrate: async () => {
     try {
       const storedUser = await SecureStore.getItemAsync('unilink_user');
       const storedToken = await SecureStore.getItemAsync('unilink_token');
       if (storedUser && storedToken) {
-        set({ user: JSON.parse(storedUser) });
+        const parsedUser = JSON.parse(storedUser) as UniLinkUser;
+        const { isBiometricEnabled, isBiometricSupported } = await import('../utils/biometricAuth');
+        const wantsLock = await isBiometricEnabled();
+        // Also re-check hardware/enrollment, not just the saved
+        // preference — if the user disabled their device's Face ID
+        // entirely after enabling this setting, don't strand them
+        // behind a prompt that can never succeed.
+        const canLock = wantsLock && (await isBiometricSupported());
+        if (canLock) {
+          set({ _heldUser: parsedUser, pendingBiometricUnlock: true });
+        } else {
+          set({ user: parsedUser });
+        }
       }
     } finally {
       set({ isHydrated: true });
     }
+  },
+
+  completeBiometricUnlock: () => {
+    const held = get()._heldUser;
+    set({ user: held, pendingBiometricUnlock: false, _heldUser: null });
   },
 }));

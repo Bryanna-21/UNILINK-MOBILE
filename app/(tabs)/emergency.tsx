@@ -20,6 +20,14 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 // integration, and the SOS button from the spec are NOT built — this
 // is a report-submission form plus a link to view your own past
 // reports (see emergency/my-reports.tsx), nothing more.
+//
+// Request Help (below the emergency form) is ALSO now REAL — calls
+// POST /api/emergency/help, which used to be a stub returning 200
+// with no persistence at all. It is deliberately styled and worded
+// as distinct from the emergency form above: this is for routine,
+// non-urgent assistance ("I need help finding X", "I'm stuck on Y"),
+// not a fourth emergency type, and it does not use the danger-red
+// treatment the emergency types use above.
 
 const EMERGENCY_TYPES = [
   { value: 'medical', label: '🏥 Medical', a11yLabel: 'Medical' },
@@ -33,6 +41,29 @@ export default function EmergencyScreen() {
   const [type, setType] = useState<'medical' | 'safety' | 'abuse' | null>(null);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [helpMessage, setHelpMessage] = useState('');
+  const [isSubmittingHelp, setIsSubmittingHelp] = useState(false);
+
+  const handleSubmitHelp = async () => {
+    if (!helpMessage.trim()) {
+      Alert.alert('Add a note', 'Let us know briefly what you need help with.');
+      return;
+    }
+    setIsSubmittingHelp(true);
+    try {
+      await api.post('/emergency/help', { message: helpMessage.trim() });
+      Alert.alert('Request sent', 'Your request has been sent. Support will reach out.');
+      setHelpMessage('');
+    } catch (err: any) {
+      Alert.alert(
+        'Could not submit',
+        err?.response?.data?.message || 'Something went wrong. Please try again.'
+      );
+    } finally {
+      setIsSubmittingHelp(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!type) {
@@ -59,7 +90,7 @@ export default function EmergencyScreen() {
     <ScrollView style={styles.container}>
       <StatusBanner
         status="real"
-        note="Submits to the real backend. Live location & trusted contacts are not built yet."
+        note="Emergency reports and Request Help both submit to the real backend. Live location & trusted contacts (emergency reports only) are not built yet."
       />
 
       <Text style={styles.title} accessibilityRole="header">
@@ -121,6 +152,41 @@ export default function EmergencyScreen() {
           <Text style={styles.submitButtonText}>Submit Report</Text>
         )}
       </TouchableOpacity>
+
+      <View style={styles.helpSection}>
+        <Text style={styles.helpTitle} accessibilityRole="header">
+          Request Help
+        </Text>
+        <Text style={styles.helpSubtitle}>
+          Not an emergency? Use this for routine assistance — support will follow up, not respond urgently.
+        </Text>
+
+        <TextInput
+          style={styles.messageInput}
+          placeholder="What do you need help with?"
+          placeholderTextColor={colors.textMuted}
+          value={helpMessage}
+          onChangeText={setHelpMessage}
+          multiline
+          numberOfLines={3}
+          accessibilityLabel="What do you need help with"
+        />
+
+        <TouchableOpacity
+          style={[styles.helpButton, (!helpMessage.trim() || isSubmittingHelp) && styles.submitButtonDisabled]}
+          onPress={handleSubmitHelp}
+          disabled={!helpMessage.trim() || isSubmittingHelp}
+          accessibilityRole="button"
+          accessibilityLabel="Send help request"
+          accessibilityState={{ disabled: !helpMessage.trim() || isSubmittingHelp, busy: isSubmittingHelp }}
+        >
+          {isSubmittingHelp ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.submitButtonText}>Send Request</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -203,6 +269,33 @@ function useEmergencyStyles(colors: ReturnType<typeof useColors>) {
           color: colors.white,
           fontWeight: '700',
           fontSize: 16,
+        },
+        // Request Help section deliberately uses colors.primary, not
+        // colors.danger — visually distinct from the emergency form
+        // above so it reads as "routine assistance", not "urgent".
+        helpSection: {
+          marginTop: Spacing.xl,
+          paddingTop: Spacing.lg,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        helpTitle: {
+          fontSize: 18,
+          fontWeight: '800',
+          color: colors.text,
+          marginBottom: Spacing.xs,
+        },
+        helpSubtitle: {
+          fontSize: 13,
+          color: colors.textMuted,
+          marginBottom: Spacing.md,
+        },
+        helpButton: {
+          backgroundColor: colors.primary,
+          borderRadius: Radius.md,
+          paddingVertical: 16,
+          alignItems: 'center',
+          marginTop: Spacing.md,
         },
       }),
     [colors]

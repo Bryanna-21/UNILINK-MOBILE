@@ -33,7 +33,20 @@
         }
       ],
       "expo-video",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow UniLink to use Face ID to unlock the app."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow UniLink to use the camera to scan event check-in QR codes."
+        }
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

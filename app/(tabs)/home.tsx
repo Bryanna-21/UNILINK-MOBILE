@@ -6,6 +6,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { cacheResponse, getCachedResponse, formatCacheAge } from '../../src/utils/offlineCache';
+import { useNetworkStatus } from '../../src/utils/useNetworkStatus';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -61,6 +62,7 @@ export default function HomeScreen() {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [isShowingOfflineData, setIsShowingOfflineData] = useState(false);
   const [offlineCacheAge, setOfflineCacheAge] = useState<string | null>(null);
+  const { isOffline } = useNetworkStatus();
 
   const styles = useMemo(
     () =>
@@ -340,7 +342,9 @@ export default function HomeScreen() {
       {isShowingOfflineData ? (
         <View style={styles.offlineBanner} accessibilityLiveRegion="polite">
           <Text style={styles.offlineBannerText}>
-            📡 Showing saved data from {offlineCacheAge} — pull down to try reconnecting.
+            {isOffline
+              ? `📡 You're offline — showing saved data from ${offlineCacheAge}.`
+              : `📡 Couldn't reach the server — showing saved data from ${offlineCacheAge}. Pull down to try again.`}
           </Text>
         </View>
       ) : null}

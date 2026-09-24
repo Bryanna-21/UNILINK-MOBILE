@@ -4,14 +4,21 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // "Downloads / offline mode" feature the old Settings shell
 // described — that would mean deciding what to cache app-wide, when
 // to invalidate it, and building a real storage-usage UI, which is
-// legitimately a bigger architecture decision than one file built
-// under time pressure should attempt. What this IS: a real,
+// legitimately a bigger architecture decision than a couple of files
+// built under time pressure should attempt. What this IS: a real,
 // reusable primitive — cache the last successful response for a
-// given key, serve it when a live fetch fails — that any screen can
-// adopt incrementally. Not wired into every screen tonight; wiring
-// it into one real screen (home.tsx's dashboard) to prove it works,
-// same "prove the pattern on real usage before claiming it's done
-// everywhere" discipline as every other feature built tonight.
+// given key, serve it when a live fetch fails — paired with
+// useNetworkStatus.ts for genuine proactive connectivity detection
+// (NetInfo), not just error-guessing. Wired into two real,
+// high-traffic read screens so far (home.tsx's dashboard and
+// courses.tsx) to prove the pattern generalizes, not into every
+// screen in the app.
+//
+// Still explicitly OUT of scope, same as before: no offline
+// mutations (creating/editing anything while offline), no sync/
+// conflict-resolution queue, no user-facing storage-usage or
+// "manage downloads" UI. Those are each their own real feature, not
+// a follow-on to this file.
 //
 // Deliberately NOT a fake "Download" button like web's
 // Student/Notes.js and Student/Results.js, which just console.log
