@@ -66,7 +66,7 @@ function InlineVideo({ uri }: { uri: string }) {
     [colors]
   );
 
-  return <VideoView player={player} style={mediaStyle} nativeControls allowsFullscreen />;
+  return <VideoView player={player} style={mediaStyle} nativeControls fullscreenOptions={{ enable: true }} />;
 }
 
 export default function CommunityScreen() {

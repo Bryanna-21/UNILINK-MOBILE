@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { api } from '../../../src/api/client';
-import { StatusBanner } from '../../../src/components/StatusBanner';
-import { useColors, Radius, Spacing } from '../../../src/constants/theme';
+import { api } from '../../../../src/api/client';
+import { StatusBanner } from '../../../../src/components/StatusBanner';
+import { useColors, Radius, Spacing } from '../../../../src/constants/theme';
 
 // STATUS: REAL — GET /api/courses/assignments/:id,
 // GET /api/courses/assignments/:assignmentId/submissions, and

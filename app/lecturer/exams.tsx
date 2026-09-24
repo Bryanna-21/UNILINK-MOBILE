@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { api } from '../../../src/api/client';
-import { StatusBanner } from '../../../src/components/StatusBanner';
-import { useColors, Radius, Spacing } from '../../../src/constants/theme';
+import { api } from '../../src/api/client';
+import { StatusBanner } from '../../src/components/StatusBanner';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: REAL — every action here (list, publish, close, duplicate,
 // delete) calls the real backend built two sessions ago. Ownership

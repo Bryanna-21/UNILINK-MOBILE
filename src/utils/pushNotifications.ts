@@ -42,7 +42,8 @@ Notifications.setNotificationHandler({
     const type = notification.request.content.data?.type as string | undefined;
     const muted = await isCategoryMuted(type);
     return {
-      shouldShowAlert: !muted,
+      shouldShowBanner: !muted,
+      shouldShowList: !muted,
       shouldPlaySound: !muted,
       shouldSetBadge: false,
     };

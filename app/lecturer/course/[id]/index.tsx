@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { api } from '../../../src/api/client';
-import { StatusBanner } from '../../../src/components/StatusBanner';
-import { useColors, Radius, Spacing } from '../../../src/constants/theme';
+import { api } from '../../../../src/api/client';
+import { StatusBanner } from '../../../../src/components/StatusBanner';
+import { useColors, Radius, Spacing } from '../../../../src/constants/theme';
 
 // STATUS: REAL — GET /api/courses/:id, /:courseId/students,
 // /:courseId/units, /:courseId/assignments all call the live backend.
