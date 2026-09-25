@@ -255,8 +255,13 @@ export default function SettingsScreen() {
           },
           {
             title: 'Storage',
-            items: ['Downloads', 'Storage usage'],
-            backendNote: 'A real offline read-cache now exists (dashboard, courses) but there is no user-facing "manage downloads" or storage-usage UI yet — that\'s still a separate feature.',
+            items: [
+              'Storage usage breakdown',
+              'Clear cached data',
+              'Manage downloads',
+              'Download over Wi-Fi only',
+            ],
+            backendNote: 'Scoped but not yet built. A real offline read-cache already exists for dashboard and courses (offlineCache.ts + useNetworkStatus.ts), but there is no user-facing view of what is cached, no way to clear it, and no true "download for offline" feature (that would mean explicit, user-chosen content saved for offline use, not just the last successful response). Building these next, after this shell ships.',
           },
           {
             title: 'Accessibility',
