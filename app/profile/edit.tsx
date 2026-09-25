@@ -47,6 +47,13 @@ export default function EditProfileScreen() {
   const [name, setName] = useState(user?.name ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  const [admissionNumber, setAdmissionNumber] = useState(user?.admissionNumber ?? '');
+  // Locked once the account already has a value — matches the
+  // backend's own one-time-set enforcement in updateMyProfile;
+  // this is a UX convenience only, not the actual security
+  // boundary (the server ignores this field entirely once set,
+  // even if called directly).
+  const admissionNumberLocked = !!user?.admissionNumber;
   const [avatarUri, setAvatarUri] = useState(user?.avatarUrl ?? null);
   const [coverUri, setCoverUri] = useState(user?.coverUrl ?? null);
   const [pendingAvatarUpload, setPendingAvatarUpload] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -117,6 +124,7 @@ export default function EditProfileScreen() {
           marginBottom: Spacing.md,
         },
         bioInput: { minHeight: 100, textAlignVertical: 'top' },
+        inputLocked: { opacity: 0.6 },
         error: { color: colors.danger, fontSize: 13, marginBottom: Spacing.md },
         success: { color: colors.secondary, fontSize: 13, marginBottom: Spacing.md },
         button: {
@@ -204,7 +212,12 @@ export default function EditProfileScreen() {
         newCoverUrl = await uploadImage('/profile/me/cover', 'cover', pendingCoverUpload);
       }
 
-      await api.put('/profile/me', { name, bio, phone });
+      await api.put('/profile/me', {
+        name,
+        bio,
+        phone,
+        ...(admissionNumberLocked ? {} : { admissionNumber }),
+      });
 
       setUser({
         ...(user as any),
@@ -213,6 +226,7 @@ export default function EditProfileScreen() {
         phone,
         avatarUrl: newAvatarUrl ?? user?.avatarUrl,
         coverUrl: newCoverUrl ?? user?.coverUrl,
+        admissionNumber: admissionNumberLocked ? user?.admissionNumber : admissionNumber,
       });
 
       setPendingAvatarUpload(null);
@@ -288,6 +302,21 @@ export default function EditProfileScreen() {
             onChangeText={setPhone}
             keyboardType="phone-pad"
             editable={!loading}
+          />
+
+          <Text style={styles.label}>
+            Admission Number{admissionNumberLocked ? '' : ' (can only be set once)'}
+          </Text>
+          <TextInput
+            style={[styles.input, admissionNumberLocked && styles.inputLocked]}
+            placeholder="e.g. CIT/2024/001234"
+            placeholderTextColor={colors.textMuted}
+            value={admissionNumber}
+            onChangeText={setAdmissionNumber}
+            editable={!loading && !admissionNumberLocked}
+            autoCapitalize="characters"
+            accessibilityLabel="Admission number"
+            accessibilityHint={admissionNumberLocked ? 'This value cannot be changed once set' : undefined}
           />
 
           <Text style={styles.label}>Bio</Text>

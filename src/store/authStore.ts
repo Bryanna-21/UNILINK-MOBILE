@@ -12,6 +12,7 @@ export interface UniLinkUser {
   universityId?: string;
   bio?: string;
   phone?: string;
+  admissionNumber?: string;
   avatarUrl?: string;
   coverUrl?: string;
 }
