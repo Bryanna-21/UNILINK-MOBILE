@@ -173,17 +173,39 @@ export default function EmergencyReportDetail({ reportId }: { reportId: string }
       <Text style={styles.meta}>Filed {formatDate(report.createdAt)}</Text>
 
       {canEscalate && (
-        <TouchableOpacity style={styles.escalateButton} onPress={handleEscalate} disabled={busy === 'escalate'}>
+        <TouchableOpacity
+          style={styles.escalateButton}
+          onPress={handleEscalate}
+          disabled={busy === 'escalate'}
+          accessibilityRole="button"
+          accessibilityLabel="Escalate this report"
+          accessibilityHint="Notifies admins of this report"
+          accessibilityState={{ disabled: busy === 'escalate', busy: busy === 'escalate' }}
+        >
           {busy === 'escalate' ? <ActivityIndicator color={colors.white} /> : <Text style={styles.escalateButtonText}>Escalate</Text>}
         </TouchableOpacity>
       )}
 
       {canResolve && (
         <View style={styles.resolveRow}>
-          <TouchableOpacity style={styles.resolveButton} onPress={() => handleSetStatus('RESOLVED')} disabled={!!busy}>
+          <TouchableOpacity
+            style={styles.resolveButton}
+            onPress={() => handleSetStatus('RESOLVED')}
+            disabled={!!busy}
+            accessibilityRole="button"
+            accessibilityLabel="Mark report as resolved"
+            accessibilityState={{ disabled: !!busy, busy: busy === 'RESOLVED' }}
+          >
             <Text style={styles.resolveButtonText}>{busy === 'RESOLVED' ? '...' : 'Resolve'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.dismissButton} onPress={() => handleSetStatus('DISMISSED')} disabled={!!busy}>
+          <TouchableOpacity
+            style={styles.dismissButton}
+            onPress={() => handleSetStatus('DISMISSED')}
+            disabled={!!busy}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss report"
+            accessibilityState={{ disabled: !!busy, busy: busy === 'DISMISSED' }}
+          >
             <Text style={styles.dismissButtonText}>{busy === 'DISMISSED' ? '...' : 'Dismiss'}</Text>
           </TouchableOpacity>
         </View>
@@ -208,8 +230,17 @@ export default function EmergencyReportDetail({ reportId }: { reportId: string }
         value={note}
         onChangeText={setNote}
         multiline
+        accessibilityLabel="Response note"
+        accessibilityHint="Write an internal note about this report"
       />
-      <TouchableOpacity style={styles.respondButton} onPress={handleRespond} disabled={busy === 'respond'}>
+      <TouchableOpacity
+        style={styles.respondButton}
+        onPress={handleRespond}
+        disabled={busy === 'respond'}
+        accessibilityRole="button"
+        accessibilityLabel="Add note"
+        accessibilityState={{ disabled: busy === 'respond', busy: busy === 'respond' }}
+      >
         {busy === 'respond' ? <ActivityIndicator color={colors.white} /> : <Text style={styles.respondButtonText}>Add Note</Text>}
       </TouchableOpacity>
     </ScrollView>
