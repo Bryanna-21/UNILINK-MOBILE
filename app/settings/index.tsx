@@ -243,8 +243,15 @@ export default function SettingsScreen() {
         sections={[
           {
             title: 'Privacy & Security',
-            items: ['Privacy settings', 'Security settings'],
-            backendNote: 'Needs: dedicated settings routes on the User model. (Change password is now real - see the Security section above.)',
+            items: [
+              'Two-factor authentication',
+              'Active sessions',
+              'Blocked users',
+              'Who can message me',
+              'Download my data',
+              'Delete my account',
+            ],
+            backendNote: 'Scoped but not yet built. Two-factor authentication and active-session listing extend existing OTP/auth infrastructure. Blocked users and messaging-privacy need new fields on the User model plus enforcement in message.controller.js. Download-my-data and delete-account need dedicated export/deletion endpoints. None of these have a backend route yet — building these next, after this shell ships.',
           },
           {
             title: 'Storage',
