@@ -80,7 +80,13 @@ export default function EmergencyReportsList({ basePath }: { basePath: '/lecture
   };
 
   const renderItem = ({ item }: { item: ReportListItem }) => (
-    <TouchableOpacity style={styles.card} onPress={() => router.push(`${basePath}/${item._id}` as any)}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push(`${basePath}/${item._id}` as any)}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.type} report, status ${item.status}${item.location ? `, at ${item.location}` : ''}, ${formatDate(item.createdAt)}`}
+      accessibilityHint="Opens report details"
+    >
       <View style={styles.cardHeader}>
         <Text style={styles.typeLabel}>{item.type}</Text>
         <View style={[styles.statusPill, { borderColor: statusColor(item.status) }]}>
@@ -125,7 +131,14 @@ export default function EmergencyReportsList({ basePath }: { basePath: '/lecture
           {loadError && <Text style={styles.errorText}>{loadError}</Text>}
           <View style={styles.filterRow}>
             {(['active', 'all'] as const).map((f) => (
-              <TouchableOpacity key={f} style={[styles.filterButton, filter === f && styles.filterButtonActive]} onPress={() => setFilter(f)}>
+              <TouchableOpacity
+                key={f}
+                style={[styles.filterButton, filter === f && styles.filterButtonActive]}
+                onPress={() => setFilter(f)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: filter === f }}
+                accessibilityLabel={f === 'active' ? 'Show active reports' : 'Show all reports'}
+              >
                 <Text style={[styles.filterButtonText, filter === f && styles.filterButtonTextActive]}>
                   {f === 'active' ? 'Active' : 'All'}
                 </Text>
