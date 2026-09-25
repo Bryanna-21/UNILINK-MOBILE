@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review",
+  "common": {
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "back": "رجوع",
+    "continue": "متابعة",
+    "loading": "جارٍ التحميل...",
+    "retry": "إعادة المحاولة",
+    "done": "تم",
+    "confirm": "تأكيد",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "search": "بحث",
+    "logOut": "تسجيل الخروج"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "تواصل · تعلّم · انمُ",
+      "emailLabel": "البريد الإلكتروني",
+      "passwordLabel": "كلمة المرور",
+      "submit": "تسجيل الدخول",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "noAccount": "ليس لديك حساب؟",
+      "signUp": "إنشاء حساب"
+    },
+    "register": {
+      "title": "إنشاء حساب",
+      "subtitle": "انضم إلى UniLink",
+      "nameLabel": "الاسم الكامل",
+      "emailLabel": "البريد الإلكتروني",
+      "passwordLabel": "كلمة المرور (6 أحرف على الأقل)",
+      "confirmPasswordLabel": "تأكيد كلمة المرور",
+      "submit": "إنشاء حساب",
+      "haveAccount": "لديك حساب بالفعل؟",
+      "logIn": "تسجيل الدخول"
+    },
+    "verifyOtp": {
+      "title": "تحقق من بريدك الإلكتروني",
+      "subtitle": "أدخل الرمز المكون من 6 أرقام الذي أرسلناه إلى بريدك الإلكتروني. تحقق من مجلد البريد المزعج إذا لزم الأمر.",
+      "submit": "تحقق",
+      "resendPrompt": "لم تستلم الرمز؟",
+      "resend": "إعادة إرسال الرمز",
+      "resendCooldown": "إعادة الإرسال خلال {{seconds}} ثانية"
+    }
+  },
+  "home": {
+    "greeting": "مرحبًا، {{name}} 👋",
+    "todaysClasses": "حصص اليوم",
+    "continueLearning": "متابعة التعلّم",
+    "upcomingCat": "الاختبار القادم",
+    "attendance": "الحضور",
+    "quickActions": "إجراءات سريعة",
+    "signIn": "توقيع الحضور",
+    "signing": "جارٍ التوقيع…",
+    "signed": "تم التوقيع ✓",
+    "emergency": "طوارئ",
+    "askAi": "اسأل الذكاء الاصطناعي",
+    "lostAndFound": "المفقودات"
+  },
+  "courses": {
+    "title": "المقررات",
+    "exams": "الامتحانات",
+    "noCourses": "لا توجد مقررات بعد."
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "languageNotYetTranslated": "لم تتم ترجمته بعد — يُعرض بالإنجليزية",
+    "getApp": "الحصول على التطبيق"
+  }
 }

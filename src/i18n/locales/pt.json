@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review",
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "back": "Voltar",
+    "continue": "Continuar",
+    "loading": "Carregando...",
+    "retry": "Tentar novamente",
+    "done": "Concluído",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "add": "Adicionar",
+    "search": "Pesquisar",
+    "logOut": "Sair"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "Conectar · Aprender · Crescer",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Senha",
+      "submit": "Entrar",
+      "forgotPassword": "Esqueceu sua senha?",
+      "noAccount": "Não tem uma conta?",
+      "signUp": "Cadastre-se"
+    },
+    "register": {
+      "title": "Criar conta",
+      "subtitle": "Junte-se ao UniLink",
+      "nameLabel": "Nome completo",
+      "emailLabel": "E-mail",
+      "passwordLabel": "Senha (mín. 6 caracteres)",
+      "confirmPasswordLabel": "Confirmar senha",
+      "submit": "Cadastrar",
+      "haveAccount": "Já tem uma conta?",
+      "logIn": "Entrar"
+    },
+    "verifyOtp": {
+      "title": "Verifique seu e-mail",
+      "subtitle": "Digite o código de 6 dígitos enviado ao seu e-mail. Verifique o spam se não o encontrar.",
+      "submit": "Verificar",
+      "resendPrompt": "Não recebeu o código?",
+      "resend": "Reenviar código",
+      "resendCooldown": "Reenviar em {{seconds}}s"
+    }
+  },
+  "home": {
+    "greeting": "Olá, {{name}} 👋",
+    "todaysClasses": "Aulas de hoje",
+    "continueLearning": "Continuar aprendendo",
+    "upcomingCat": "Próximo CAT",
+    "attendance": "Presença",
+    "quickActions": "Ações rápidas",
+    "signIn": "Assinar",
+    "signing": "Assinando…",
+    "signed": "Assinado ✓",
+    "emergency": "Emergência",
+    "askAi": "Perguntar à IA",
+    "lostAndFound": "Achados e perdidos"
+  },
+  "courses": {
+    "title": "Cursos",
+    "exams": "Exames",
+    "noCourses": "Ainda não há cursos."
+  },
+  "settings": {
+    "title": "Configurações",
+    "language": "Idioma",
+    "languageNotYetTranslated": "Ainda não traduzido — mostrando inglês",
+    "getApp": "Obter o app"
+  }
 }

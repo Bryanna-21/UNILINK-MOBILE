@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review",
+  "common": {
+    "cancel": "Ghairi",
+    "save": "Hifadhi",
+    "back": "Rudi",
+    "continue": "Endelea",
+    "loading": "Inapakia...",
+    "retry": "Jaribu tena",
+    "done": "Imekamilika",
+    "confirm": "Thibitisha",
+    "delete": "Futa",
+    "edit": "Hariri",
+    "add": "Ongeza",
+    "search": "Tafuta",
+    "logOut": "Toka"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "Unganisha · Jifunze · Kua",
+      "emailLabel": "Barua pepe",
+      "passwordLabel": "Nywila",
+      "submit": "Ingia",
+      "forgotPassword": "Umesahau nywila yako?",
+      "noAccount": "Huna akaunti?",
+      "signUp": "Jisajili"
+    },
+    "register": {
+      "title": "Fungua Akaunti",
+      "subtitle": "Jiunge na UniLink",
+      "nameLabel": "Jina kamili",
+      "emailLabel": "Barua pepe",
+      "passwordLabel": "Nywila (herufi 6 kwa uchache)",
+      "confirmPasswordLabel": "Thibitisha nywila",
+      "submit": "Jisajili",
+      "haveAccount": "Una akaunti tayari?",
+      "logIn": "Ingia"
+    },
+    "verifyOtp": {
+      "title": "Thibitisha Barua Pepe Yako",
+      "subtitle": "Weka namba 6 tulizotuma kwa barua pepe yako. Usipoiona, angalia kwenye spam au junk.",
+      "submit": "Thibitisha",
+      "resendPrompt": "Hukupata namba?",
+      "resend": "Tuma tena",
+      "resendCooldown": "Tuma tena baada ya sekunde {{seconds}}"
+    }
+  },
+  "home": {
+    "greeting": "Habari, {{name}} 👋",
+    "todaysClasses": "Masomo ya Leo",
+    "continueLearning": "Endelea Kujifunza",
+    "upcomingCat": "CAT Inayokuja",
+    "attendance": "Mahudhurio",
+    "quickActions": "Vitendo vya Haraka",
+    "signIn": "Weka Sahihi",
+    "signing": "Inaweka sahihi…",
+    "signed": "Umesaini ✓",
+    "emergency": "Dharura",
+    "askAi": "Uliza AI",
+    "lostAndFound": "Vilivyopotea na Kupatikana"
+  },
+  "courses": {
+    "title": "Masomo",
+    "exams": "Mitihani",
+    "noCourses": "Hakuna masomo bado."
+  },
+  "settings": {
+    "title": "Mipangilio",
+    "language": "Lugha",
+    "languageNotYetTranslated": "Bado haijatafsiriwa — inaonyesha Kiingereza",
+    "getApp": "Pata Programu"
+  }
 }

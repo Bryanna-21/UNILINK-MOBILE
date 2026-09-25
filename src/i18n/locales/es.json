@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review",
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "back": "Atrás",
+    "continue": "Continuar",
+    "loading": "Cargando...",
+    "retry": "Reintentar",
+    "done": "Hecho",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Añadir",
+    "search": "Buscar",
+    "logOut": "Cerrar sesión"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "Conectar · Aprender · Crecer",
+      "emailLabel": "Correo electrónico",
+      "passwordLabel": "Contraseña",
+      "submit": "Iniciar sesión",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "noAccount": "¿No tienes cuenta?",
+      "signUp": "Regístrate"
+    },
+    "register": {
+      "title": "Crear cuenta",
+      "subtitle": "Únete a UniLink",
+      "nameLabel": "Nombre completo",
+      "emailLabel": "Correo electrónico",
+      "passwordLabel": "Contraseña (mín. 6 caracteres)",
+      "confirmPasswordLabel": "Confirmar contraseña",
+      "submit": "Registrarse",
+      "haveAccount": "¿Ya tienes cuenta?",
+      "logIn": "Iniciar sesión"
+    },
+    "verifyOtp": {
+      "title": "Verifica tu correo",
+      "subtitle": "Ingresa el código de 6 dígitos enviado a tu correo. Revisa spam si no lo ves.",
+      "submit": "Verificar",
+      "resendPrompt": "¿No recibiste el código?",
+      "resend": "Reenviar código",
+      "resendCooldown": "Reenviar en {{seconds}}s"
+    }
+  },
+  "home": {
+    "greeting": "Hola, {{name}} 👋",
+    "todaysClasses": "Clases de hoy",
+    "continueLearning": "Continuar aprendiendo",
+    "upcomingCat": "Próximo CAT",
+    "attendance": "Asistencia",
+    "quickActions": "Acciones rápidas",
+    "signIn": "Firmar",
+    "signing": "Firmando…",
+    "signed": "Firmado ✓",
+    "emergency": "Emergencia",
+    "askAi": "Preguntar a la IA",
+    "lostAndFound": "Objetos perdidos"
+  },
+  "courses": {
+    "title": "Cursos",
+    "exams": "Exámenes",
+    "noCourses": "Aún no hay cursos."
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": "Idioma",
+    "languageNotYetTranslated": "Aún no traducido — mostrando inglés",
+    "getApp": "Obtener la app"
+  }
 }

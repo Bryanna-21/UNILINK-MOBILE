@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review_low_confidence",
+  "common": {
+    "cancel": "取消",
+    "save": "保存",
+    "back": "返回",
+    "continue": "继续",
+    "loading": "加载中...",
+    "retry": "重试",
+    "done": "完成",
+    "confirm": "确认",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "search": "搜索",
+    "logOut": "退出登录"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "连接 · 学习 · 成长",
+      "emailLabel": "邮箱",
+      "passwordLabel": "密码",
+      "submit": "登录",
+      "forgotPassword": "忘记密码？",
+      "noAccount": "还没有账号？",
+      "signUp": "注册"
+    },
+    "register": {
+      "title": "创建账号",
+      "subtitle": "加入 UniLink",
+      "nameLabel": "姓名",
+      "emailLabel": "邮箱",
+      "passwordLabel": "密码（至少6位）",
+      "confirmPasswordLabel": "确认密码",
+      "submit": "注册",
+      "haveAccount": "已有账号？",
+      "logIn": "登录"
+    },
+    "verifyOtp": {
+      "title": "验证您的邮箱",
+      "subtitle": "请输入发送到您邮箱的6位验证码。如未收到，请检查垃圾邮件文件夹。",
+      "submit": "验证",
+      "resendPrompt": "没有收到验证码？",
+      "resend": "重新发送验证码",
+      "resendCooldown": "{{seconds}}秒后重新发送"
+    }
+  },
+  "home": {
+    "greeting": "你好，{{name}} 👋",
+    "todaysClasses": "今日课程",
+    "continueLearning": "继续学习",
+    "upcomingCat": "即将到来的CAT",
+    "attendance": "出勤",
+    "quickActions": "快捷操作",
+    "signIn": "签到",
+    "signing": "签到中…",
+    "signed": "已签到 ✓",
+    "emergency": "紧急情况",
+    "askAi": "咨询AI",
+    "lostAndFound": "失物招领"
+  },
+  "courses": {
+    "title": "课程",
+    "exams": "考试",
+    "noCourses": "暂无课程。"
+  },
+  "settings": {
+    "title": "设置",
+    "language": "语言",
+    "languageNotYetTranslated": "尚未翻译 — 显示英文",
+    "getApp": "获取应用"
+  }
 }

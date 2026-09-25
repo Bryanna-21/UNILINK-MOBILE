@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review_low_confidence",
+  "common": {
+    "cancel": "キャンセル",
+    "save": "保存",
+    "back": "戻る",
+    "continue": "続ける",
+    "loading": "読み込み中...",
+    "retry": "再試行",
+    "done": "完了",
+    "confirm": "確認",
+    "delete": "削除",
+    "edit": "編集",
+    "add": "追加",
+    "search": "検索",
+    "logOut": "ログアウト"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "つながる · 学ぶ · 成長する",
+      "emailLabel": "メールアドレス",
+      "passwordLabel": "パスワード",
+      "submit": "ログイン",
+      "forgotPassword": "パスワードをお忘れですか？",
+      "noAccount": "アカウントをお持ちでないですか？",
+      "signUp": "登録する"
+    },
+    "register": {
+      "title": "アカウント作成",
+      "subtitle": "UniLinkに参加",
+      "nameLabel": "氏名",
+      "emailLabel": "メールアドレス",
+      "passwordLabel": "パスワード（6文字以上）",
+      "confirmPasswordLabel": "パスワードの確認",
+      "submit": "登録",
+      "haveAccount": "すでにアカウントをお持ちですか？",
+      "logIn": "ログイン"
+    },
+    "verifyOtp": {
+      "title": "メールアドレスを確認",
+      "subtitle": "メールに送信された6桁のコードを入力してください。見当たらない場合は迷惑メールフォルダをご確認ください。",
+      "submit": "確認",
+      "resendPrompt": "コードが届きませんか？",
+      "resend": "コードを再送信",
+      "resendCooldown": "{{seconds}}秒後に再送信"
+    }
+  },
+  "home": {
+    "greeting": "こんにちは、{{name}}さん 👋",
+    "todaysClasses": "今日の授業",
+    "continueLearning": "学習を続ける",
+    "upcomingCat": "次のCAT",
+    "attendance": "出席",
+    "quickActions": "クイックアクション",
+    "signIn": "サインイン",
+    "signing": "サインイン中…",
+    "signed": "サイン済み ✓",
+    "emergency": "緊急",
+    "askAi": "AIに聞く",
+    "lostAndFound": "落とし物"
+  },
+  "courses": {
+    "title": "コース",
+    "exams": "試験",
+    "noCourses": "まだコースがありません。"
+  },
+  "settings": {
+    "title": "設定",
+    "language": "言語",
+    "languageNotYetTranslated": "まだ翻訳されていません — 英語で表示中",
+    "getApp": "アプリを入手"
+  }
 }

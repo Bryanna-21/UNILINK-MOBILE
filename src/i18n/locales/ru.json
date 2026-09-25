@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review",
+  "common": {
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "back": "Назад",
+    "continue": "Продолжить",
+    "loading": "Загрузка...",
+    "retry": "Повторить",
+    "done": "Готово",
+    "confirm": "Подтвердить",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "add": "Добавить",
+    "search": "Поиск",
+    "logOut": "Выйти"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "Общайся · Учись · Развивайся",
+      "emailLabel": "Эл. почта",
+      "passwordLabel": "Пароль",
+      "submit": "Войти",
+      "forgotPassword": "Забыли пароль?",
+      "noAccount": "Нет аккаунта?",
+      "signUp": "Зарегистрироваться"
+    },
+    "register": {
+      "title": "Создать аккаунт",
+      "subtitle": "Присоединиться к UniLink",
+      "nameLabel": "Полное имя",
+      "emailLabel": "Эл. почта",
+      "passwordLabel": "Пароль (мин. 6 символов)",
+      "confirmPasswordLabel": "Подтвердите пароль",
+      "submit": "Зарегистрироваться",
+      "haveAccount": "Уже есть аккаунт?",
+      "logIn": "Войти"
+    },
+    "verifyOtp": {
+      "title": "Подтвердите эл. почту",
+      "subtitle": "Введите 6-значный код, отправленный на вашу почту. Проверьте папку со спамом, если не видите его.",
+      "submit": "Подтвердить",
+      "resendPrompt": "Не получили код?",
+      "resend": "Отправить код повторно",
+      "resendCooldown": "Повторная отправка через {{seconds}} с"
+    }
+  },
+  "home": {
+    "greeting": "Привет, {{name}} 👋",
+    "todaysClasses": "Занятия сегодня",
+    "continueLearning": "Продолжить обучение",
+    "upcomingCat": "Ближайший CAT",
+    "attendance": "Посещаемость",
+    "quickActions": "Быстрые действия",
+    "signIn": "Отметиться",
+    "signing": "Отмечаемся…",
+    "signed": "Отмечено ✓",
+    "emergency": "Экстренная помощь",
+    "askAi": "Спросить ИИ",
+    "lostAndFound": "Бюро находок"
+  },
+  "courses": {
+    "title": "Курсы",
+    "exams": "Экзамены",
+    "noCourses": "Пока нет курсов."
+  },
+  "settings": {
+    "title": "Настройки",
+    "language": "Язык",
+    "languageNotYetTranslated": "Ещё не переведено — показан английский",
+    "getApp": "Скачать приложение"
+  }
 }

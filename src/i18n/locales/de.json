@@ -1,3 +1,74 @@
 {
-  "_status": "not_yet_translated"
+  "_status": "machine_translated_pending_review",
+  "common": {
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "back": "Zurück",
+    "continue": "Weiter",
+    "loading": "Wird geladen...",
+    "retry": "Erneut versuchen",
+    "done": "Fertig",
+    "confirm": "Bestätigen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "search": "Suchen",
+    "logOut": "Abmelden"
+  },
+  "auth": {
+    "login": {
+      "title": "UniLink",
+      "subtitle": "Verbinden · Lernen · Wachsen",
+      "emailLabel": "E-Mail",
+      "passwordLabel": "Passwort",
+      "submit": "Anmelden",
+      "forgotPassword": "Passwort vergessen?",
+      "noAccount": "Kein Konto?",
+      "signUp": "Registrieren"
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "UniLink beitreten",
+      "nameLabel": "Vollständiger Name",
+      "emailLabel": "E-Mail",
+      "passwordLabel": "Passwort (mind. 6 Zeichen)",
+      "confirmPasswordLabel": "Passwort bestätigen",
+      "submit": "Registrieren",
+      "haveAccount": "Bereits ein Konto?",
+      "logIn": "Anmelden"
+    },
+    "verifyOtp": {
+      "title": "E-Mail bestätigen",
+      "subtitle": "Gib den 6-stelligen Code ein, den wir an deine E-Mail gesendet haben. Prüfe ggf. den Spam-Ordner.",
+      "submit": "Bestätigen",
+      "resendPrompt": "Keinen Code erhalten?",
+      "resend": "Code erneut senden",
+      "resendCooldown": "Erneut senden in {{seconds}}s"
+    }
+  },
+  "home": {
+    "greeting": "Hallo, {{name}} 👋",
+    "todaysClasses": "Heutige Kurse",
+    "continueLearning": "Weiterlernen",
+    "upcomingCat": "Nächster CAT",
+    "attendance": "Anwesenheit",
+    "quickActions": "Schnellzugriff",
+    "signIn": "Unterschreiben",
+    "signing": "Unterschreiben…",
+    "signed": "Unterschrieben ✓",
+    "emergency": "Notfall",
+    "askAi": "KI fragen",
+    "lostAndFound": "Fundbüro"
+  },
+  "courses": {
+    "title": "Kurse",
+    "exams": "Prüfungen",
+    "noCourses": "Noch keine Kurse."
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "languageNotYetTranslated": "Noch nicht übersetzt — zeigt Englisch an",
+    "getApp": "App herunterladen"
+  }
 }
