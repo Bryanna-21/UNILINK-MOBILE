@@ -14,6 +14,7 @@ interface Message {
   senderId: string;
   text: string;
   createdAt: string;
+  readBy: string[];
 }
 
 export default function ChatDetailScreen() {
@@ -25,6 +26,8 @@ export default function ChatDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conversationType, setConversationType] = useState<'direct' | 'course' | 'group' | null>(null);
+  const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const styles = useMemo(
@@ -48,6 +51,7 @@ export default function ChatDetailScreen() {
         },
         bubbleText: { color: colors.text, fontSize: 14 },
         bubbleTextMine: { color: colors.white },
+        seenText: { fontSize: 11, color: colors.textMuted, alignSelf: 'flex-end', marginTop: 2, marginRight: 4 },
         composer: {
           flexDirection: 'row',
           padding: Spacing.md,
@@ -97,14 +101,35 @@ export default function ChatDetailScreen() {
     }
   };
 
+  // Fetched once per screen visit, not on every poll — a
+  // conversation's type and participants don't change while you're
+  // sitting in the chat, so there's no reason to re-fetch this on
+  // the same 4s cadence as messages.
+  const loadConversationInfo = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await api.get(`/messages/${id}/info`);
+      const info = res.data?.data;
+      setConversationType(info?.type ?? null);
+      if (info?.type === 'direct' && Array.isArray(info.participantIds)) {
+        const other = info.participantIds.find((pid: string) => pid !== currentUserId);
+        setOtherParticipantId(other ?? null);
+      }
+    } catch {
+      // Non-fatal: read receipts simply won't show if this fails,
+      // the chat itself still works via loadMessages independently.
+    }
+  }, [id, currentUserId]);
+
   useFocusEffect(
     useCallback(() => {
+      loadConversationInfo();
       loadMessages(true);
       pollRef.current = setInterval(() => loadMessages(false), POLL_INTERVAL_MS);
       return () => {
         if (pollRef.current) clearInterval(pollRef.current);
       };
-    }, [id])
+    }, [id, loadConversationInfo])
   );
 
   const handleSend = async () => {
@@ -144,14 +169,34 @@ export default function ChatDetailScreen() {
               No messages yet. Say hello.
             </Text>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const isMine = item.senderId === currentUserId;
+            // Only the LAST message you sent gets a receipt shown —
+            // matches standard chat-app convention (WhatsApp,
+            // iMessage), avoids a "Seen" label under every single
+            // past message you've sent, which would be clutter and
+            // also redundant (if the newest is seen, the ones before
+            // it necessarily are too, since messages are read in
+            // order via getMessages' bulk markAsRead).
+            const isLastMineMessage =
+              isMine && index === messages.map((m) => m.senderId).lastIndexOf(currentUserId);
+            const isSeen =
+              conversationType === 'direct' &&
+              !!otherParticipantId &&
+              item.readBy?.includes(otherParticipantId);
             return (
-              <View
-                style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleTheirs]}
-                accessibilityLabel={`${isMine ? 'You' : 'Them'}: ${item.text}`}
-              >
-                <Text style={[styles.bubbleText, isMine && styles.bubbleTextMine]}>{item.text}</Text>
+              <View>
+                <View
+                  style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleTheirs]}
+                  accessibilityLabel={`${isMine ? 'You' : 'Them'}: ${item.text}`}
+                >
+                  <Text style={[styles.bubbleText, isMine && styles.bubbleTextMine]}>{item.text}</Text>
+                </View>
+                {isLastMineMessage && isSeen ? (
+                  <Text style={styles.seenText} accessibilityLabel="Seen">
+                    Seen
+                  </Text>
+                ) : null}
               </View>
             );
           }}
