@@ -38,6 +38,7 @@ interface Conversation {
     preview: string;
     createdAt: string;
   } | null;
+  isPinned?: boolean;
 }
 
 const TABS = ['Messages', 'Unread', 'Communities', 'Lecturers'] as const;
@@ -118,6 +119,7 @@ export default function MessagesScreen() {
         avatarText: { color: colors.white, fontWeight: '700' },
         chatName: { fontSize: 15, fontWeight: '700', color: colors.text },
         chatPreview: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+        pinIcon: { fontSize: 12, marginRight: -4 },
         chatTime: { fontSize: 12, color: colors.textMuted },
         rightCol: { alignItems: 'flex-end', gap: 4 },
         typeBadge: {
@@ -227,22 +229,49 @@ export default function MessagesScreen() {
     loadConversations();
   };
 
+  // Optimistic toggle — flips the UI immediately rather than waiting
+  // on the round-trip, since pin/unpin has no meaningful failure mode
+  // a user needs to see mid-action (unlike sending a message, where
+  // failure matters). Reverts only if the call actually fails, so a
+  // slow Render cold-start doesn't leave the row looking unresponsive.
+  const handleTogglePin = async (conversationId: string) => {
+    setConversations((prev) =>
+      prev.map((c) => (c._id === conversationId ? { ...c, isPinned: !c.isPinned } : c))
+    );
+    try {
+      await api.post(`/messages/${conversationId}/pin`);
+    } catch {
+      setConversations((prev) =>
+        prev.map((c) => (c._id === conversationId ? { ...c, isPinned: !c.isPinned } : c))
+      );
+    }
+  };
+
   const filteredConversations = useMemo(() => {
+    let list: Conversation[];
     switch (activeTab) {
       case 'Unread':
-        return conversations.filter((c) => (c.unreadCount || 0) > 0);
+        list = conversations.filter((c) => (c.unreadCount || 0) > 0);
+        break;
       case 'Communities':
-        return conversations.filter((c) => c.type === 'course' || c.type === 'group');
+        list = conversations.filter((c) => c.type === 'course' || c.type === 'group');
+        break;
       case 'Lecturers':
-        return conversations.filter((c) => {
+        list = conversations.filter((c) => {
           if (c.type !== 'direct') return false;
           const otherId = getOtherParticipantId(c);
           return participantRoles[otherId] === 'lecturer';
         });
+        break;
       case 'Messages':
       default:
-        return conversations;
+        list = conversations;
     }
+    // Pinned first, each group keeping its existing lastMessageAt
+    // order — a stable sort (Array.prototype.sort is stable per spec
+    // since ES2019) so this never re-shuffles conversations within
+    // the pinned or unpinned group on every render.
+    return [...list].sort((a, b) => Number(!!b.isPinned) - Number(!!a.isPinned));
   }, [activeTab, conversations, participantRoles, getOtherParticipantId]);
 
   const formatTime = (iso: string) => {
@@ -313,9 +342,16 @@ export default function MessagesScreen() {
               <TouchableOpacity
                 style={styles.chatRow}
                 onPress={() => router.push(`/chat/${item._id}` as any)}
+                onLongPress={() => handleTogglePin(item._id)}
                 accessibilityRole="button"
-                accessibilityLabel={`${displayTitle}${item.type !== 'direct' ? `, ${item.type}` : ''}${unread > 0 ? `, ${unread} unread` : ''}`}
+                accessibilityLabel={`${displayTitle}${item.type !== 'direct' ? `, ${item.type}` : ''}${unread > 0 ? `, ${unread} unread` : ''}${item.isPinned ? ', pinned' : ''}`}
+                accessibilityHint="Double tap to open, long press to pin or unpin"
               >
+                {item.isPinned ? (
+                  <Text style={styles.pinIcon} accessibilityElementsHidden importantForAccessibility="no">
+                    📌
+                  </Text>
+                ) : null}
                 <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
                   <Text style={styles.avatarText}>{displayTitle.charAt(0).toUpperCase()}</Text>
                 </View>
