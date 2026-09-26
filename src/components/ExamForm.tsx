@@ -210,7 +210,14 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
       <StatusBanner status="real" note="Saves to the live backend." />
       {loadError && <Text style={styles.errorText}>{loadError}</Text>}
 
-      <TextInput style={styles.input} placeholder="Exam title *" placeholderTextColor={colors.textMuted} value={title} onChangeText={setTitle} />
+      <TextInput
+        style={styles.input}
+        placeholder="Exam title *"
+        placeholderTextColor={colors.textMuted}
+        value={title}
+        onChangeText={setTitle}
+        accessibilityLabel="Exam title, required"
+      />
       <TextInput
         style={styles.input}
         placeholder="Description (optional)"
@@ -218,6 +225,7 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
         value={description}
         onChangeText={setDescription}
         multiline
+        accessibilityLabel="Exam description, optional"
       />
 
       <Text style={styles.label}>Course *</Text>
@@ -227,6 +235,9 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
             key={c._id}
             style={[styles.courseChip, courseId === c._id && styles.courseChipActive]}
             onPress={() => setCourseId(c._id)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: courseId === c._id }}
+            accessibilityLabel={`Course: ${c.title}`}
           >
             <Text style={[styles.courseChipText, courseId === c._id && styles.courseChipTextActive]}>{c.code}</Text>
           </TouchableOpacity>
@@ -236,25 +247,55 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
       <View style={styles.row}>
         <View style={styles.rowItem}>
           <Text style={styles.label}>Duration (min) *</Text>
-          <TextInput style={styles.input} keyboardType="numeric" value={duration} onChangeText={setDuration} />
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={duration}
+            onChangeText={setDuration}
+            accessibilityLabel="Duration in minutes, required"
+          />
         </View>
         <View style={styles.rowItem}>
           <Text style={styles.label}>Pass mark (%)</Text>
-          <TextInput style={styles.input} keyboardType="numeric" value={passMark} onChangeText={setPassMark} />
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={passMark}
+            onChangeText={setPassMark}
+            accessibilityLabel="Pass mark percentage"
+          />
         </View>
       </View>
 
       <Text style={styles.label}>Start time (optional)</Text>
-      <TextInput style={styles.input} placeholder="YYYY-MM-DDTHH:mm" placeholderTextColor={colors.textMuted} value={startTime} onChangeText={setStartTime} />
+      <TextInput
+        style={styles.input}
+        placeholder="YYYY-MM-DDTHH:mm"
+        placeholderTextColor={colors.textMuted}
+        value={startTime}
+        onChangeText={setStartTime}
+        accessibilityLabel="Start time, format year-month-day-hour-minute, optional"
+      />
       <Text style={styles.label}>End time (optional)</Text>
-      <TextInput style={styles.input} placeholder="YYYY-MM-DDTHH:mm" placeholderTextColor={colors.textMuted} value={endTime} onChangeText={setEndTime} />
+      <TextInput
+        style={styles.input}
+        placeholder="YYYY-MM-DDTHH:mm"
+        placeholderTextColor={colors.textMuted}
+        value={endTime}
+        onChangeText={setEndTime}
+        accessibilityLabel="End time, format year-month-day-hour-minute, optional"
+      />
 
       <Text style={styles.sectionHeader}>Questions ({questions.length})</Text>
       {questions.map((q, idx) => (
         <View key={q.key} style={styles.questionCard}>
           <View style={styles.questionHeader}>
             <Text style={styles.questionNumber}>Q{idx + 1}</Text>
-            <TouchableOpacity onPress={() => removeQuestion(q.key)}>
+            <TouchableOpacity
+              onPress={() => removeQuestion(q.key)}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove question ${idx + 1}`}
+            >
               <Text style={styles.removeText}>Remove</Text>
             </TouchableOpacity>
           </View>
@@ -266,6 +307,7 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
             value={q.text}
             onChangeText={(v) => updateQuestion(q.key, { text: v })}
             multiline
+            accessibilityLabel={`Question ${idx + 1} text`}
           />
 
           <View style={styles.typeRow}>
@@ -274,6 +316,9 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
                 key={t}
                 style={[styles.typeChip, q.type === t && styles.typeChipActive]}
                 onPress={() => updateQuestion(q.key, { type: t })}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: q.type === t }}
+                accessibilityLabel={`Question ${idx + 1} type: ${t}`}
               >
                 <Text style={[styles.typeChipText, q.type === t && styles.typeChipTextActive]}>{t}</Text>
               </TouchableOpacity>
@@ -290,9 +335,14 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
                   placeholderTextColor={colors.textMuted}
                   value={opt}
                   onChangeText={(v) => updateOption(q.key, oIdx, v)}
+                  accessibilityLabel={`Question ${idx + 1}, option ${oIdx + 1}`}
                 />
               ))}
-              <TouchableOpacity onPress={() => addOption(q.key)}>
+              <TouchableOpacity
+                onPress={() => addOption(q.key)}
+                accessibilityRole="button"
+                accessibilityLabel={`Add option to question ${idx + 1}`}
+              >
                 <Text style={styles.addOptionText}>+ Add option</Text>
               </TouchableOpacity>
             </>
@@ -305,6 +355,7 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
               placeholderTextColor={colors.textMuted}
               value={q.correctAnswer}
               onChangeText={(v) => updateQuestion(q.key, { correctAnswer: v })}
+              accessibilityLabel={`Question ${idx + 1}, correct answer`}
             />
           )}
 
@@ -314,15 +365,28 @@ export default function ExamForm({ examId, defaultCourseId }: { examId?: string;
             keyboardType="numeric"
             value={q.marks}
             onChangeText={(v) => updateQuestion(q.key, { marks: v })}
+            accessibilityLabel={`Question ${idx + 1}, marks`}
           />
         </View>
       ))}
 
-      <TouchableOpacity style={styles.addQuestionButton} onPress={addQuestion}>
+      <TouchableOpacity
+        style={styles.addQuestionButton}
+        onPress={addQuestion}
+        accessibilityRole="button"
+        accessibilityLabel="Add question"
+      >
         <Text style={styles.addQuestionText}>+ Add question</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>
+      <TouchableOpacity
+        style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+        onPress={handleSave}
+        disabled={saving}
+        accessibilityRole="button"
+        accessibilityLabel={isEdit ? 'Save changes' : 'Create exam'}
+        accessibilityState={{ disabled: saving, busy: saving }}
+      >
         {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveButtonText}>Save</Text>}
       </TouchableOpacity>
     </ScrollView>
