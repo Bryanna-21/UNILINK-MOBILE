@@ -33,6 +33,11 @@ interface Conversation {
   title?: string;
   unreadCount?: number;
   lastMessageAt: string;
+  lastMessage?: {
+    senderId: string;
+    preview: string;
+    createdAt: string;
+  } | null;
 }
 
 const TABS = ['Messages', 'Unread', 'Communities', 'Lecturers'] as const;
@@ -112,6 +117,7 @@ export default function MessagesScreen() {
         },
         avatarText: { color: colors.white, fontWeight: '700' },
         chatName: { fontSize: 15, fontWeight: '700', color: colors.text },
+        chatPreview: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
         chatTime: { fontSize: 12, color: colors.textMuted },
         rightCol: { alignItems: 'flex-end', gap: 4 },
         typeBadge: {
@@ -168,7 +174,19 @@ export default function MessagesScreen() {
         .filter((c) => c.type === 'direct')
         .map((c) => c.participantIds.find((id) => id !== currentUserId))
         .filter((id): id is string => !!id);
-      const uniqueIds = [...new Set(directOtherIds)];
+
+      // Also resolve the sender of each conversation's last message,
+      // for group/course previews ("James: Assignment is due...") —
+      // merged into the SAME lookup batch as direct-conversation
+      // participants rather than a second separate pass, since a
+      // sender's id may already be covered by the direct-participant
+      // set (e.g. the other person in a direct chat is both the
+      // "other participant" AND, if they sent last, the "sender").
+      const lastMessageSenderIds = list
+        .map((c) => c.lastMessage?.senderId)
+        .filter((id): id is string => !!id && id !== currentUserId);
+
+      const uniqueIds = [...new Set([...directOtherIds, ...lastMessageSenderIds])];
 
       const results = await Promise.allSettled(uniqueIds.map((id) => api.get(`/profile/summary/${id}`)));
 
@@ -303,6 +321,15 @@ export default function MessagesScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatName}>{displayTitle}</Text>
+                  {item.lastMessage ? (
+                    <Text style={styles.chatPreview} numberOfLines={1}>
+                      {item.type !== 'direct' && item.lastMessage.senderId !== currentUserId
+                        ? `${participantNames[item.lastMessage.senderId] || '...'}: ${item.lastMessage.preview}`
+                        : item.lastMessage.senderId === currentUserId
+                        ? `You: ${item.lastMessage.preview}`
+                        : item.lastMessage.preview}
+                    </Text>
+                  ) : null}
                 </View>
                 <View style={styles.rightCol}>
                   {item.type !== 'direct' ? (
