@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,12 @@ import {
 import { Link, router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import { api } from '../../src/api/client';
+
+interface University {
+  _id: string;
+  name: string;
+}
 
 // STATUS: REAL — calls POST /api/auth/register on the live backend.
 // This never returns a token - the account exists but is unverified
@@ -25,9 +31,21 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [universityId, setUniversityId] = useState('');
+  const [loadingUniversities, setLoadingUniversities] = useState(true);
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
+
+  // Public endpoint, no auth needed — a new user has no token yet.
+  useEffect(() => {
+    api
+      .get('/auth/universities')
+      .then((res) => setUniversities(res.data?.data ?? []))
+      .catch(() => setUniversities([]))
+      .finally(() => setLoadingUniversities(false));
+  }, []);
 
   const styles = useMemo(
     () =>
@@ -48,6 +66,20 @@ export default function RegisterScreen() {
           marginBottom: Spacing.xl,
         },
         form: { gap: Spacing.md },
+        label: { fontSize: 13, fontWeight: '700', color: colors.text },
+        universityRow: { marginBottom: Spacing.sm },
+        universityChip: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          marginRight: Spacing.sm,
+        },
+        universityChipActive: { borderColor: colors.primary, backgroundColor: colors.primary },
+        universityChipText: { fontSize: 13, color: colors.text },
+        universityChipTextActive: { color: colors.white, fontWeight: '700' },
         input: {
           backgroundColor: colors.surface,
           borderWidth: 1,
@@ -76,12 +108,13 @@ export default function RegisterScreen() {
   );
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password || !confirmPassword) return;
+    if (!name.trim() || !email.trim() || !password || !confirmPassword || !universityId) return;
     const result = await register({
       name: name.trim(),
       email: email.trim(),
       password,
       confirmPassword,
+      universityId,
     });
 
     if (!result.success) {
@@ -142,6 +175,28 @@ export default function RegisterScreen() {
             accessibilityLabel="Confirm password"
           />
 
+          <Text style={styles.label}>University</Text>
+          {loadingUniversities ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.universityRow}>
+              {universities.map((u) => (
+                <TouchableOpacity
+                  key={u._id}
+                  style={[styles.universityChip, universityId === u._id && styles.universityChipActive]}
+                  onPress={() => setUniversityId(u._id)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: universityId === u._id }}
+                  accessibilityLabel={u.name}
+                >
+                  <Text style={[styles.universityChipText, universityId === u._id && styles.universityChipTextActive]}>
+                    {u.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
           {error ? (
             <Text style={styles.error} accessibilityLiveRegion="polite">
               {error}
@@ -149,9 +204,9 @@ export default function RegisterScreen() {
           ) : null}
 
           <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[styles.button, (isLoading || !universityId) && styles.buttonDisabled]}
             onPress={handleRegister}
-            disabled={isLoading}
+            disabled={isLoading || !universityId}
             accessibilityRole="button"
             accessibilityLabel="Sign up"
             accessibilityState={{ disabled: isLoading, busy: isLoading }}
