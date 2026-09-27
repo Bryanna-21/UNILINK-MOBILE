@@ -8,6 +8,7 @@ import { useThemeStore } from '../src/store/themeStore';
 import { useColors, Radius, Spacing } from '../src/constants/theme';
 import { initI18n } from '../src/i18n';
 import { promptBiometric } from '../src/utils/biometricAuth';
+import { LoadingSplash } from '../src/components/LoadingSplash';
 import { registerForPushNotifications } from '../src/utils/pushNotifications';
 
 // STATUS: REAL — expo-updates was configured via `eas update:configure`
@@ -227,18 +228,7 @@ export default function RootLayout() {
   const isHydrated = isAuthHydrated && isThemeHydrated && isI18nReady;
 
   if (!isHydrated) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: colors.background,
-        }}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <LoadingSplash />;
   }
 
   // Checked AFTER the hydration gate, deliberately: hydrateAuth()
