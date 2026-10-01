@@ -259,3 +259,12 @@ rather than alphabetically:
    notifications, SOS/live location, trusted contacts (user-managed),
    medical profile, OTP, biometric login, offline mode, certificate
    pinning, user search/discovery, and real-time chat.
+
+## Session: search, profile posts, account deletion, financial support
+
+| Item | Status | Notes |
+|---|---|---|
+| New message: search by name | ✅ REAL | `GET /profile/search?q=`. University-scoped, min 2 chars, max 20 results. |
+| Profile: direct Message button + posts | ✅ REAL | `POST /messages/start`, `GET /posts/user/:userId` (community posts excluded). |
+| Delete account | ✅ REAL | `DELETE /profile/me { password }`. Soft delete + anonymize; admins cannot self-delete. |
+| Financial Support | 🚧 SHELL | Settings > Financial Support. "Coming soon". No backend. |

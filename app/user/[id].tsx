@@ -32,6 +32,15 @@ interface UserSummary {
   bio?: string;
 }
 
+interface UserPost {
+  _id: string;
+  title: string;
+  content: string;
+  likes?: number;
+  commentsCount?: number;
+  createdAt: string;
+}
+
 interface Achievement {
   _id: string;
   title: string;
@@ -46,6 +55,8 @@ export default function UserProfileScreen() {
 
   const [user, setUser] = useState<UserSummary | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [posts, setPosts] = useState<UserPost[]>([]);
+  const [isStartingChat, setIsStartingChat] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowActionPending, setIsFollowActionPending] = useState(false);
@@ -107,6 +118,10 @@ export default function UserProfileScreen() {
         achievementRow: { paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
         achievementTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
         emptyText: { fontSize: 13, color: colors.textMuted },
+        postRow: { paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+        postTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+        postSnippet: { fontSize: 13, color: colors.text, marginTop: 2 },
+        postMeta: { fontSize: 11, color: colors.textMuted, marginTop: 4 },
         errorText: { color: colors.danger, fontSize: 13, textAlign: 'center', marginTop: Spacing.xl },
       }),
     [colors]
@@ -117,14 +132,17 @@ export default function UserProfileScreen() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const [summaryRes, achievementsRes, statusRes] = await Promise.all([
+      const [summaryRes, achievementsRes, statusRes, postsRes] = await Promise.all([
         api.get(`/profile/summary/${id}`),
         api.get(`/profile/achievements/${id}`),
         api.get(`/follow/${id}/status`),
+        // Posts are secondary: a failure here must not blank the whole profile.
+        api.get(`/posts/user/${id}`).catch(() => null),
       ]);
       setUser(summaryRes.data?.data ?? null);
       setAchievements(achievementsRes.data?.data ?? []);
       setIsFollowing(statusRes.data?.data?.isFollowing ?? false);
+      setPosts(postsRes?.data?.data ?? []);
     } catch (err: any) {
       setLoadError(err?.response?.data?.message || 'Could not load this profile.');
     } finally {
@@ -157,16 +175,22 @@ export default function UserProfileScreen() {
     }
   };
 
-  // Honest limitation, not a bug: there is no backend endpoint to
-  // start a direct conversation by userId alone — messages/new.tsx's
-  // only flow is course-scoped (pick a course, then a classmate from
-  // it). This button opens that same flow rather than a conversation
-  // with THIS specific person, since building a real "message this
-  // exact user" endpoint wasn't in tonight's scope. Better to be
-  // honest about that here than silently ship a button that implies
-  // more than it does.
-  const handleMessage = () => {
-    router.push('/messages/new' as any);
+  // Starts (or reopens) a direct conversation with THIS user via
+  // POST /messages/start { otherUserId }. The backend validates the
+  // target (same university, not deleted, not yourself).
+  const handleMessage = async () => {
+    if (!id || isStartingChat) return;
+    setIsStartingChat(true);
+    try {
+      const res = await api.post('/messages/start', { otherUserId: id });
+      const conversationId = res.data?.data?._id;
+      if (conversationId) router.push(`/chat/${conversationId}` as any);
+    } catch {
+      // Fall back to the search/picker flow rather than dead-ending.
+      router.push('/messages/new' as any);
+    } finally {
+      setIsStartingChat(false);
+    }
   };
 
   if (isLoading) {
@@ -189,7 +213,7 @@ export default function UserProfileScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <StatusBanner status="real" note="Profile, achievements, and follow status are all live." />
+      <StatusBanner status="real" note="Profile, posts, achievements, follow status and direct messaging are all live." />
 
       <View style={styles.card}>
         <View style={styles.avatar}>
@@ -227,6 +251,7 @@ export default function UserProfileScreen() {
             <TouchableOpacity
               style={styles.messageButton}
               onPress={handleMessage}
+              disabled={isStartingChat}
               accessibilityRole="button"
               accessibilityLabel={`Message ${user.name}`}
             >
@@ -247,6 +272,33 @@ export default function UserProfileScreen() {
             <View key={a._id} style={styles.achievementRow}>
               <Text style={styles.achievementTitle}>{a.title}</Text>
             </View>
+          ))
+        )}
+      </View>
+
+      <View style={[styles.section, { marginBottom: Spacing.xl }]}>
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          Posts
+        </Text>
+        {posts.length === 0 ? (
+          <Text style={styles.emptyText}>No posts yet.</Text>
+        ) : (
+          posts.map((p) => (
+            <TouchableOpacity
+              key={p._id}
+              style={styles.postRow}
+              onPress={() => router.push(`/post/${p._id}` as any)}
+              accessibilityRole="button"
+              accessibilityLabel={`Open post: ${p.title}`}
+            >
+              <Text style={styles.postTitle}>{p.title}</Text>
+              <Text style={styles.postSnippet} numberOfLines={2}>
+                {p.content}
+              </Text>
+              <Text style={styles.postMeta}>
+                {new Date(p.createdAt).toLocaleDateString()} · {p.likes ?? 0} likes · {p.commentsCount ?? 0} comments
+              </Text>
+            </TouchableOpacity>
           ))
         )}
       </View>

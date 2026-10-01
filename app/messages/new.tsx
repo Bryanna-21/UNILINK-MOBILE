@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
@@ -29,6 +29,42 @@ export default function NewConversationScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Student[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const trimmedQuery = query.trim();
+  const isSearchMode = step === 'course' && trimmedQuery.length >= 2;
+
+  // Debounced name search (GET /profile/search). The `cancelled` flag
+  // drops out-of-order responses: typing "ann" then "anna" must never
+  // let the slower "ann" reply overwrite the "anna" results.
+  useEffect(() => {
+    if (trimmedQuery.length < 2) {
+      setResults([]);
+      setIsSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get('/profile/search', { params: { q: trimmedQuery } });
+        if (!cancelled) {
+          setResults(res.data?.data || []);
+          setError(null);
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err?.response?.data?.message || 'Search failed.');
+      } finally {
+        if (!cancelled) setIsSearching(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [trimmedQuery]);
 
   const styles = useMemo(
     () =>
@@ -63,6 +99,18 @@ export default function NewConversationScreen() {
         },
         rowTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
         rowSubtitle: { fontSize: 12, color: colors.textMuted, marginLeft: 'auto' },
+        searchInput: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: 12,
+          fontSize: 15,
+          color: colors.text,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+        },
         avatar: {
           width: 36,
           height: 36,
@@ -152,12 +200,58 @@ export default function NewConversationScreen() {
 
       <StatusBanner
         status="real"
-        note="Pick a course you're enrolled in, then a classmate to message. Only classmates from shared courses can be reached this way for now."
+        note="Search anyone at your university by name, or pick a course to message a classmate."
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      {isLoading ? (
+      {step === 'course' ? (
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search people by name"
+          placeholderTextColor={colors.textMuted}
+          value={query}
+          onChangeText={setQuery}
+          autoCorrect={false}
+          autoCapitalize="words"
+          returnKeyType="search"
+          accessibilityLabel="Search people by name"
+        />
+      ) : null}
+
+      {isSearchMode ? (
+        isSearching && results.length === 0 ? (
+          <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
+        ) : (
+          <FlatList
+            data={results}
+            keyExtractor={(item) => item._id}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
+            ListEmptyComponent={
+              <Text style={styles.emptyText} accessibilityRole="text">
+                No one at your university matches "{trimmedQuery}".
+              </Text>
+            }
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => handleSelectStudent(item)}
+                disabled={isStarting}
+                accessibilityRole="button"
+                accessibilityLabel={`Message ${item.name}`}
+                accessibilityState={{ disabled: isStarting }}
+              >
+                <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
+                  <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <Text style={styles.rowTitle}>{item.name}</Text>
+                <Text style={styles.rowSubtitle}>{item.role}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        )
+      ) : isLoading ? (
         <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
       ) : step === 'course' ? (
         <FlatList

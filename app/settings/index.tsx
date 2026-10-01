@@ -206,6 +206,37 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Financial Support</Text>
+        <StatusBanner status="shell" note="Coming soon. Nothing here is wired to a backend yet." />
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/financial-support' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Financial Support, coming soon"
+        >
+          <Text style={styles.rowText}>Financial Support</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        <StatusBanner
+          status="real"
+          note="Deleting your account is permanent. Your personal details are erased and you are signed out everywhere."
+        />
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/delete-account' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Delete my account"
+        >
+          <Text style={[styles.rowText, { color: colors.danger, fontWeight: '700' }]}>Delete my account</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Language</Text>
         <StatusBanner
           status="real"
@@ -249,9 +280,8 @@ export default function SettingsScreen() {
               'Blocked users',
               'Who can message me',
               'Download my data',
-              'Delete my account',
             ],
-            backendNote: 'Scoped but not yet built. Two-factor authentication and active-session listing extend existing OTP/auth infrastructure. Blocked users and messaging-privacy need new fields on the User model plus enforcement in message.controller.js. Download-my-data and delete-account need dedicated export/deletion endpoints. None of these have a backend route yet — building these next, after this shell ships.',
+            backendNote: 'Scoped but not yet built. Two-factor authentication and active-session listing extend existing OTP/auth infrastructure. Blocked users and messaging-privacy need new fields on the User model plus enforcement in message.controller.js. Download-my-data needs a dedicated export endpoint. (Delete account is real now: see the Account section.) None of these have a backend route yet — building these next, after this shell ships.',
           },
           {
             title: 'Storage',
