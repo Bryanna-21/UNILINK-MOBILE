@@ -6,23 +6,21 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://unilink-backend-1.onrender.com/api"
-      },
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://unilink-backend-1.onrender.com/api" },
       "channel": "preview"
     },
     "production": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://unilink-backend-1.onrender.com/api"
-      },
+      "autoIncrement": true,
+      "android": { "buildType": "app-bundle" },
+      "env": { "EXPO_PUBLIC_API_URL": "https://unilink-backend-1.onrender.com/api" },
       "channel": "production"
+    },
+    "production-apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
     }
-  }
+  },
+  "submit": { "production": {} }
 }

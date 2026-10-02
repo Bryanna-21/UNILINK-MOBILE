@@ -15,7 +15,8 @@
       "package": "com.unilink.app",
       "adaptiveIcon": {
         "backgroundColor": "#0B6BFF"
-      }
+      },
+      "versionCode": 4
     },
     "web": {
       "bundler": "metro",
