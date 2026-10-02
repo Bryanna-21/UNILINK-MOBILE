@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
 import { api } from '../api/client';
+import { clearOfflineCache } from '../utils/offlineCache';
 
 export type UserRole = 'student' | 'lecturer' | 'admin';
 
@@ -28,11 +30,76 @@ export type AuthActionResult =
 
 export type SimpleResult = { success: true; message?: string } | { success: false; message: string };
 
+// Safe-to-display summary of an account saved on this device. Tokens are
+// never put in app state; they live only in SecureStore.
+export interface SavedAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+}
+
+const ACCOUNT_IDS_KEY = 'unilink_account_ids';
+const accountKey = (id: string) => `unilink_acct_${id}`;
+
+async function readAccountIds(): Promise<string[]> {
+  try {
+    const raw = await SecureStore.getItemAsync(ACCOUNT_IDS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function saveAccount(token: string, user: UniLinkUser): Promise<void> {
+  const ids = await readAccountIds();
+  await SecureStore.setItemAsync(accountKey(user.id), JSON.stringify({ token, user }));
+  if (!ids.includes(user.id)) {
+    await SecureStore.setItemAsync(ACCOUNT_IDS_KEY, JSON.stringify([...ids, user.id]));
+  }
+}
+
+async function removeAccount(id: string): Promise<void> {
+  const ids = await readAccountIds();
+  await SecureStore.deleteItemAsync(accountKey(id)).catch(() => {});
+  await SecureStore.setItemAsync(ACCOUNT_IDS_KEY, JSON.stringify(ids.filter((x) => x !== id)));
+}
+
+async function listAccounts(): Promise<SavedAccount[]> {
+  const ids = await readAccountIds();
+  const out: SavedAccount[] = [];
+  for (const id of ids) {
+    try {
+      const raw = await SecureStore.getItemAsync(accountKey(id));
+      const u = raw ? (JSON.parse(raw).user as UniLinkUser) : null;
+      if (u) out.push({ id: u.id, name: u.name, email: u.email, role: u.role });
+    } catch {
+      // Skip unreadable entries rather than failing the whole list.
+    }
+  }
+  return out;
+}
+
+// Detach THIS phone's push token from the account being left. Expo gives
+// every account on one device the same token, so without this, the
+// previous account's notifications (message previews!) keep arriving
+// while someone else is signed in. Best-effort and short: the server
+// also reassigns the token on the next registration.
+async function clearServerPushToken(): Promise<void> {
+  try {
+    await api.delete('/profile/push-token', { timeout: 3000, _coldStartRetry: true } as any);
+  } catch {
+    // Offline / server asleep / session already dead: fine.
+  }
+}
+
 interface AuthState {
   user: UniLinkUser | null;
   isLoading: boolean;
   isWakingServer: boolean;
   isHydrated: boolean;
+  accounts: SavedAccount[];
   error: string | null;
 
   // True when hydrate() found a valid stored session AND biometric
@@ -85,6 +152,11 @@ interface AuthState {
     confirmNewPassword: string
   ) => Promise<SimpleResult>;
   logout: () => Promise<void>;
+  // Multi-account. switchAccount validates the saved session with the
+  // server before swapping; addAccount signs out but KEEPS the account saved.
+  switchAccount: (id: string) => Promise<SimpleResult>;
+  addAccount: () => Promise<void>;
+  removeSavedAccount: (id: string) => Promise<void>;
   hydrate: () => Promise<void>;
 
   // Internal holding spot for a user object hydrate() has loaded but
@@ -100,9 +172,18 @@ interface AuthState {
 // verifyOtp(), and verifyLoginOtp() since all three end the same way:
 // a real token exists, the session is now fully live.
 async function completeAuth(token: string, user: UniLinkUser, set: (partial: Partial<AuthState>) => void) {
+  // A different person signing in on top of leftover state must not inherit
+  // the previous account's offline cache.
+  try {
+    const prevRaw = await SecureStore.getItemAsync('unilink_user');
+    if (prevRaw && JSON.parse(prevRaw).id !== user.id) await clearOfflineCache();
+  } catch {
+    // ignore
+  }
   await SecureStore.setItemAsync('unilink_token', token);
   await SecureStore.setItemAsync('unilink_user', JSON.stringify(user));
-  set({ user, isLoading: false, isWakingServer: false, error: null });
+  await saveAccount(token, user).catch(() => {});
+  set({ user, accounts: await listAccounts(), isLoading: false, isWakingServer: false, error: null });
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -110,6 +191,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isLoading: false,
   isWakingServer: false,
   isHydrated: false,
+  accounts: [],
   error: null,
   pendingBiometricUnlock: false,
   _heldUser: null,
@@ -281,10 +363,78 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  // Real logout: removes THIS account from the device (other saved
+  // accounts are untouched), detaches the push token, wipes the offline cache.
   logout: async () => {
+    const leavingId = get().user?.id ?? get()._heldUser?.id;
+    await clearServerPushToken();
+    await clearOfflineCache();
     await SecureStore.deleteItemAsync('unilink_token');
     await SecureStore.deleteItemAsync('unilink_user');
-    set({ user: null, pendingBiometricUnlock: false, _heldUser: null });
+    if (leavingId) await removeAccount(leavingId);
+    set({ user: null, accounts: await listAccounts(), pendingBiometricUnlock: false, _heldUser: null });
+  },
+
+  // Signs out of the active account but keeps it saved, so the user can
+  // sign in as someone else and come back with one tap.
+  addAccount: async () => {
+    await clearServerPushToken();
+    await clearOfflineCache();
+    await SecureStore.deleteItemAsync('unilink_token');
+    await SecureStore.deleteItemAsync('unilink_user');
+    set({ user: null, accounts: await listAccounts(), pendingBiometricUnlock: false, _heldUser: null });
+  },
+
+  removeSavedAccount: async (id) => {
+    if (get().user?.id === id) return; // the active account is removed via logout()
+    await removeAccount(id);
+    set({ accounts: await listAccounts() });
+  },
+
+  switchAccount: async (id) => {
+    if (get().user?.id === id) return { success: true };
+
+    let saved: { token: string; user: UniLinkUser } | null = null;
+    try {
+      const raw = await SecureStore.getItemAsync(accountKey(id));
+      saved = raw ? JSON.parse(raw) : null;
+    } catch {
+      saved = null;
+    }
+    if (!saved?.token) {
+      await removeAccount(id);
+      set({ accounts: await listAccounts() });
+      return { success: false, message: 'That account is no longer saved on this device. Please sign in again.' };
+    }
+
+    // Validate BEFORE swapping, using plain axios so the app's request
+    // interceptor can't substitute the CURRENT account's token.
+    let fresh: UniLinkUser;
+    try {
+      const res = await axios.get(`${api.defaults.baseURL}/auth/me`, {
+        headers: { Authorization: `Bearer ${saved.token}` },
+        timeout: 30000,
+      });
+      const u = res.data?.user;
+      if (!u) throw new Error('bad response');
+      fresh = { ...saved.user, ...u, id: u.id ?? u._id ?? saved.user.id } as UniLinkUser;
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403 || status === 404) {
+        await removeAccount(id);
+        set({ accounts: await listAccounts() });
+        return { success: false, message: 'That session has expired. Please sign in to this account again.' };
+      }
+      return { success: false, message: 'Could not reach the server. Check your connection and try again.' };
+    }
+
+    await clearServerPushToken(); // still using the account we are leaving
+    await clearOfflineCache();
+    await SecureStore.setItemAsync('unilink_token', saved.token);
+    await SecureStore.setItemAsync('unilink_user', JSON.stringify(fresh));
+    await saveAccount(saved.token, fresh).catch(() => {});
+    set({ user: fresh, accounts: await listAccounts(), error: null });
+    return { success: true };
   },
 
   // Reads the stored session same as before. NEW: if biometric lock
@@ -306,6 +456,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const storedToken = await SecureStore.getItemAsync('unilink_token');
       if (storedUser && storedToken) {
         const parsedUser = JSON.parse(storedUser) as UniLinkUser;
+        // Sessions that existed before multi-account shipped: make them appear in the list.
+        await saveAccount(storedToken, parsedUser).catch(() => {});
         const { isBiometricEnabled, isBiometricSupported } = await import('../utils/biometricAuth');
         const wantsLock = await isBiometricEnabled();
         // Also re-check hardware/enrollment, not just the saved
@@ -320,6 +472,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
     } finally {
+      try {
+        set({ accounts: await listAccounts() });
+      } catch {
+        // ignore
+      }
       set({ isHydrated: true });
     }
   },

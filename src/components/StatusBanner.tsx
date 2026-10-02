@@ -8,6 +8,10 @@ interface StatusBannerProps {
   note?: string;
 }
 
+// Developer marker only. __DEV__ is false in every EAS build, so end users never see
+// "connected to backend" text. Set EXPO_PUBLIC_SHOW_STATUS_BANNERS=1 to force it on.
+export const SHOW_STATUS_BANNERS = __DEV__ || process.env.EXPO_PUBLIC_SHOW_STATUS_BANNERS === '1';
+
 /**
  * Visible-in-app marker for feature status. This is not decorative —
  * it exists so nobody (including future-you) mistakes a UI shell for
@@ -52,6 +56,8 @@ export function StatusBanner({ status, note }: StatusBannerProps) {
       }),
     [colors]
   );
+
+  if (!SHOW_STATUS_BANNERS) return null;
 
   return (
     <View style={[styles.banner, isShell ? styles.shellBanner : styles.realBanner]}>

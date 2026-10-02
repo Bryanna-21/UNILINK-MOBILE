@@ -14,7 +14,8 @@
     "android": {
       "package": "com.unilink.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B6BFF"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "versionCode": 4
     },
@@ -29,8 +30,8 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 220,
-          "backgroundColor": "#0B6BFF"
+          "imageWidth": 360,
+          "backgroundColor": "#FFFFFF"
         }
       ],
       "expo-video",

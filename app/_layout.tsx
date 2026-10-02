@@ -197,11 +197,16 @@ export default function RootLayout() {
   const themeMode = useThemeStore((s) => s.mode);
   const colors = useColors();
   const [isI18nReady, setIsI18nReady] = useState(false);
+  // Hold the branded splash for a moment so the hand-off from the native splash
+  // is smooth and the loading dots are actually seen, instead of flashing past.
+  const [minSplashDone, setMinSplashDone] = useState(false);
 
   useEffect(() => {
     hydrateAuth();
     hydrateTheme();
     initI18n().then(() => setIsI18nReady(true));
+    const splashTimer = setTimeout(() => setMinSplashDone(true), 900);
+    return () => clearTimeout(splashTimer);
   }, []);
 
   // Fires whenever a real, resolved user becomes present — covers
@@ -225,7 +230,7 @@ export default function RootLayout() {
   // i18n resolves its saved/device language would show raw
   // translation keys for a moment, the string equivalent of the
   // light-mode color flash this gate already prevents.
-  const isHydrated = isAuthHydrated && isThemeHydrated && isI18nReady;
+  const isHydrated = isAuthHydrated && isThemeHydrated && isI18nReady && minSplashDone;
 
   if (!isHydrated) {
     return <LoadingSplash />;

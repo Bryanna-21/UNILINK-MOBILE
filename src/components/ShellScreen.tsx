@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { StatusBanner } from './StatusBanner';
+import { StatusBanner, SHOW_STATUS_BANNERS } from './StatusBanner';
 import { useColors, Radius, Spacing } from '../constants/theme';
 
 interface ShellSection {
@@ -71,6 +71,12 @@ export function ShellScreen({ title, subtitle, sections }: ShellScreenProps) {
           fontSize: 14,
           color: colors.text,
         },
+        comingSoon: {
+          fontSize: 12,
+          fontWeight: '700',
+          color: colors.textMuted,
+          paddingHorizontal: Spacing.md,
+        },
       }),
     [colors]
   );
@@ -92,6 +98,7 @@ export function ShellScreen({ title, subtitle, sections }: ShellScreenProps) {
             {section.title}
           </Text>
           <StatusBanner status="shell" note={section.backendNote} />
+          {!SHOW_STATUS_BANNERS ? <Text style={styles.comingSoon}>Coming soon</Text> : null}
           {section.items.map((item) => (
             <View
               key={item}

@@ -206,6 +206,19 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Accounts</Text>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/accounts' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Switch account or log out"
+        >
+          <Text style={styles.rowText}>Switch account or log out</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Financial Support</Text>
         <StatusBanner status="shell" note="Coming soon. Nothing here is wired to a backend yet." />
         <TouchableOpacity

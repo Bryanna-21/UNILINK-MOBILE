@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
+import { SavedAccounts } from '../../src/components/SavedAccounts';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: REAL — calls the live backend. Now branches on all three
@@ -95,6 +96,8 @@ export default function LoginScreen() {
           UniLink
         </Text>
         <Text style={styles.subtitle}>Connect · Learn · Grow</Text>
+
+        <SavedAccounts />
 
         <View style={styles.form}>
           <TextInput

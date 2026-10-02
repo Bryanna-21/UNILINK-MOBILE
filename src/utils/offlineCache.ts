@@ -63,3 +63,17 @@ export function formatCacheAge(cachedAt: number): string {
   const days = Math.round(hours / 24);
   return `${days}d ago`;
 }
+
+// Removes EVERY cached response. The cache keys are not per-user, so this
+// must run whenever the signed-in account changes (logout, switch, add
+// account); otherwise account B's offline fallback would show account A's
+// dashboard and courses.
+export async function clearOfflineCache(): Promise<void> {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const mine = keys.filter((k) => k.startsWith(CACHE_PREFIX));
+    if (mine.length) await AsyncStorage.multiRemove(mine);
+  } catch {
+    // Best-effort: failing to clear must never block a logout.
+  }
+}
