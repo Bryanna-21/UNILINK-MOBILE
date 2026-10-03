@@ -27,6 +27,11 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      # Prints which Expo identity the token belongs to. It must be able to read the project
+      # @bryanna-21/unilink-mobile; if it names something else, that is the whole problem.
+      - name: Show which Expo account the token belongs to
+        run: eas whoami
+
       - run: npm ci
 
       # A type error would otherwise ship as a broken screen: Metro does not typecheck.
