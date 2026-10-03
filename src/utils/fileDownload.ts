@@ -1,6 +1,6 @@
-import { Directory, File, Paths } from 'expo-file-system/next';
+import { Directory, File, Paths } from 'expo-file-system';
 
-// STATUS: REAL, NEW TONIGHT. Uses expo-file-system/next — the current
+// STATUS: REAL, NEW TONIGHT. Uses expo-file-system — the current
 // SDK 57 object-oriented API, confirmed against Expo's own docs before
 // writing this rather than assumed from memory (a lesson learned the
 // hard way earlier tonight with a package that was used in code but
