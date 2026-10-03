@@ -1,0 +1,38 @@
+name: Publish OTA update
+
+# Manual only, on purpose: an update goes to every installed phone on its next launch,
+# so a person decides when. Runs on Linux because the Windows Hermes compiler crashes on
+# this project's bundle (hermesc.exe, exit code 3765269347) while Linux compiles it fine.
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "What changed (shown in the Expo dashboard)"
+        required: true
+        default: "OTA update"
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      # A type error would otherwise ship as a broken screen: Metro does not typecheck.
+      - run: npx tsc --noEmit
+
+      - name: Publish update to the production channel
+        env:
+          UPDATE_MESSAGE: ${{ inputs.message }}
+        run: eas update --channel production --platform android --environment production --message "$UPDATE_MESSAGE" --non-interactive

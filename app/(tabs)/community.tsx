@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,19 +10,18 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import * as SecureStore from 'expo-secure-store';
-import axios from 'axios';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { api } from '../../src/api/client';
-import { StatusBanner } from '../../src/components/StatusBanner';
+import { Avatar } from '../../src/components/Avatar';
+import { CreatePostSheet } from '../../src/components/CreatePostSheet';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
-const MAX_MEDIA_ITEMS = 4;
-const MEDIA_UPLOAD_TIMEOUT_MS = 90000;
+// STATUS: REAL — the campus feed. Search box on top, "+" button (bottom right) to create a
+// text / photo / video post, and every post shows its author's profile picture and name.
+// Posting itself lives in CreatePostSheet. Search is server-side (GET /posts/feed?q=) and
+// matches post text, title and the author's name.
 
 interface PostMedia {
   url: string;
@@ -34,7 +33,9 @@ interface Post {
   _id: string;
   userId: string;
   authorName?: string;
-  content: string;
+  authorAvatarUrl?: string | null;
+  title?: string;
+  content?: string;
   media?: PostMedia[];
   likes: number;
   liked?: boolean;
@@ -43,41 +44,120 @@ interface Post {
   createdAt: string;
 }
 
-interface PendingAsset {
-  uri: string;
-  type: 'image' | 'video';
-  fileName: string;
-  mimeType: string;
+function timeAgo(iso: string): string {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(iso).toLocaleDateString();
 }
 
-function InlineVideo({ uri }: { uri: string }) {
+function InlineVideo({ uri, height }: { uri: string; height: number }) {
   const colors = useColors();
   const player = useVideoPlayer(uri, (p) => {
     p.loop = false;
   });
 
   const mediaStyle = useMemo(
-    () => ({
-      width: '100%' as const,
-      height: 220,
-      borderRadius: Radius.sm,
-      backgroundColor: colors.border,
-    }),
-    [colors]
+    () => ({ width: '100%' as const, height, borderRadius: Radius.sm, backgroundColor: colors.border }),
+    [colors, height]
   );
 
   return <VideoView player={player} style={mediaStyle} nativeControls fullscreenOptions={{ enable: true }} />;
 }
 
+// One attachment shows as before; several become a swipeable strip with a "2/4" counter,
+// so every photo and video in a post can actually be seen (the old feed showed only the first).
+function MediaStrip({ media }: { media: PostMedia[] }) {
+  const colors = useColors();
+  const [width, setWidth] = useState(0);
+  const [index, setIndex] = useState(0);
+  const HEIGHT = 240;
+
+  const itemStyle = { height: HEIGHT, borderRadius: Radius.sm, backgroundColor: colors.border };
+
+  const renderItem = (m: PostMedia, w: number | '100%') =>
+    m.type === 'video' ? (
+      <View style={{ width: w }}>
+        <InlineVideo uri={m.url} height={HEIGHT} />
+      </View>
+    ) : (
+      <Image
+        source={{ uri: m.url }}
+        style={[itemStyle, { width: w }]}
+        resizeMode="cover"
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
+    );
+
+  if (media.length === 1) {
+    return <View style={{ marginTop: Spacing.sm }}>{renderItem(media[0], '100%')}</View>;
+  }
+
+  return (
+    <View
+      style={{ marginTop: Spacing.sm }}
+      onLayout={(e) => setWidth(Math.floor(e.nativeEvent.layout.width))}
+      accessibilityLabel={`${media.length} attachments, swipe to see more`}
+    >
+      {width > 0 && (
+        <>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            nestedScrollEnabled
+            onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
+          >
+            {media.map((m, i) => (
+              <View key={`${m.url}-${i}`} style={{ width }}>
+                {renderItem(m, width)}
+              </View>
+            ))}
+          </ScrollView>
+          <View style={stripStyles.badge}>
+            <Text style={stripStyles.badgeText}>
+              {index + 1}/{media.length}
+            </Text>
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
+const stripStyles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.sm,
+  },
+  badgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+});
+
 export default function CommunityScreen() {
   const colors = useColors();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [newPost, setNewPost] = useState('');
-  const [pendingAssets, setPendingAssets] = useState<PendingAsset[]>([]);
+  const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isPosting, setIsPosting] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Only the newest request may update the screen, so a slow reply for "ann" can never
+  // overwrite the results for "anna".
+  const requestId = useRef(0);
+  const activeQuery = useRef('');
 
   const styles = useMemo(
     () =>
@@ -88,61 +168,27 @@ export default function CommunityScreen() {
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingHorizontal: Spacing.md,
-          paddingTop: Spacing.xl,
+          paddingTop: Spacing.md,
         },
         headerTitle: { fontSize: 24, fontWeight: '800', color: colors.text },
         headerAction: { fontSize: 13, fontWeight: '600', color: colors.primary },
-        headerActions: { flexDirection: 'row', gap: Spacing.md },
-        composer: {
+        searchWrap: {
+          flexDirection: 'row',
+          alignItems: 'center',
           backgroundColor: colors.surface,
-          margin: Spacing.md,
-          padding: Spacing.md,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          paddingHorizontal: Spacing.md,
           borderRadius: Radius.md,
           borderWidth: 1,
           borderColor: colors.border,
+          gap: Spacing.sm,
         },
-        composerInput: { fontSize: 15, color: colors.text, minHeight: 44 },
-        pendingRow: { marginTop: Spacing.sm },
-        pendingThumbWrap: { marginRight: Spacing.sm, position: 'relative' },
-        pendingThumb: {
-          width: 64,
-          height: 64,
-          borderRadius: Radius.sm,
-          backgroundColor: colors.border,
-        },
-        pendingVideoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
-        pendingVideoIcon: { fontSize: 20, color: colors.textMuted },
-        removeThumbButton: {
-          position: 'absolute',
-          top: -6,
-          right: -6,
-          backgroundColor: colors.danger,
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        removeThumbText: { color: colors.white, fontSize: 11, fontWeight: '700' },
-        composerFooter: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginTop: Spacing.sm,
-        },
-        attachButton: { paddingVertical: Spacing.xs },
-        attachButtonText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
-        postButton: {
-          backgroundColor: colors.primary,
-          borderRadius: Radius.sm,
-          paddingVertical: Spacing.sm,
-          paddingHorizontal: Spacing.lg,
-          alignItems: 'center',
-        },
-        postButtonDisabled: { opacity: 0.5 },
-        postButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        searchIcon: { fontSize: 15 },
+        searchInput: { flex: 1, fontSize: 15, color: colors.text, paddingVertical: 11 },
+        clearText: { fontSize: 16, color: colors.textMuted, paddingHorizontal: 4 },
         error: { color: colors.danger, textAlign: 'center', fontSize: 13, marginTop: Spacing.sm },
-        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl },
+        emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
         postCard: {
           backgroundColor: colors.surface,
           padding: Spacing.md,
@@ -150,140 +196,89 @@ export default function CommunityScreen() {
           borderWidth: 1,
           borderColor: colors.border,
         },
-        postAuthor: { fontSize: 13, fontWeight: '700', color: colors.primary, marginBottom: 4 },
+        authorRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
+        authorName: { fontSize: 15, fontWeight: '700', color: colors.text },
+        postTime: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
+        postTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
         postContent: { fontSize: 15, color: colors.text, lineHeight: 21 },
-        mediaWrap: { marginTop: Spacing.sm, position: 'relative' },
-        media: { width: '100%', height: 220, borderRadius: Radius.sm, backgroundColor: colors.border },
-        moreBadge: {
-          position: 'absolute',
-          bottom: Spacing.sm,
-          right: Spacing.sm,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          paddingHorizontal: Spacing.sm,
-          paddingVertical: 4,
-          borderRadius: Radius.sm,
-        },
-        moreBadgeText: { color: colors.white, fontSize: 12, fontWeight: '700' },
         postFooter: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
-        likeButton: { color: colors.textMuted, fontSize: 13 },
-        commentCount: { color: colors.textMuted, fontSize: 13 },
+        likeButton: { color: colors.textMuted, fontSize: 14 },
+        commentCount: { color: colors.textMuted, fontSize: 14 },
+        fab: {
+          position: 'absolute',
+          right: Spacing.lg,
+          bottom: Spacing.lg,
+          width: 58,
+          height: 58,
+          borderRadius: 29,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          elevation: 6,
+          shadowColor: '#000',
+          shadowOpacity: 0.25,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 3 },
+        },
+        fabIcon: { color: colors.white, fontSize: 32, lineHeight: 36, fontWeight: '400' },
       }),
     [colors]
   );
 
-  const loadFeed = async () => {
+  const loadFeed = useCallback(async (q: string) => {
+    const mine = ++requestId.current;
     try {
-      const res = await api.get('/posts/feed');
+      const res = await api.get('/posts/feed', { params: q ? { q } : undefined });
+      if (mine !== requestId.current) return;
       setPosts(res.data?.data || []);
       setError(null);
     } catch (err: any) {
+      if (mine !== requestId.current) return;
       setError(err?.response?.data?.message || 'Could not load the feed.');
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (mine === requestId.current) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+        setIsSearching(false);
+      }
     }
-  };
+  }, []);
 
+  // Reload whenever the tab regains focus (e.g. returning from comments), keeping the search.
   useFocusEffect(
     useCallback(() => {
-      loadFeed();
-    }, [])
+      loadFeed(activeQuery.current);
+    }, [loadFeed])
   );
+
+  // Debounced search. Under 2 characters means "no search": the server ignores shorter queries too.
+  const firstRun = useRef(true);
+  useEffect(() => {
+    const trimmed = query.trim();
+    activeQuery.current = trimmed.length >= 2 ? trimmed : '';
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
+    setIsSearching(true);
+    const timer = setTimeout(() => loadFeed(activeQuery.current), 350);
+    return () => clearTimeout(timer);
+  }, [query, loadFeed]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    loadFeed();
+    loadFeed(activeQuery.current);
   };
 
-  const handlePickMedia = async () => {
-    if (pendingAssets.length >= MAX_MEDIA_ITEMS) {
-      Alert.alert('Limit reached', `You can attach up to ${MAX_MEDIA_ITEMS} items per post.`);
-      return;
-    }
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission required', 'Permission to access your photos and videos is required.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsMultipleSelection: true,
-      selectionLimit: MAX_MEDIA_ITEMS - pendingAssets.length,
-      quality: 0.7,
-    });
-    if (result.canceled || !result.assets?.length) return;
-    const picked: PendingAsset[] = result.assets.map((asset) => ({
-      uri: asset.uri,
-      type: asset.type === 'video' ? 'video' : 'image',
-      fileName: asset.fileName || `upload-${Date.now()}.${asset.type === 'video' ? 'mp4' : 'jpg'}`,
-      mimeType: asset.mimeType || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
-    }));
-    setPendingAssets((prev) => [...prev, ...picked].slice(0, MAX_MEDIA_ITEMS));
-  };
-
-  const handleRemovePendingAsset = (index: number) => {
-    setPendingAssets((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handlePost = async () => {
-    if (!newPost.trim() || isPosting) return;
-    setIsPosting(true);
-    setError(null);
-    try {
-      if (pendingAssets.length === 0) {
-        await api.post('/posts/create', { content: newPost.trim() });
-      } else {
-        const token = await SecureStore.getItemAsync('unilink_token');
-        const formData = new FormData();
-        formData.append('content', newPost.trim());
-        pendingAssets.forEach((asset) => {
-          formData.append('media', {
-            uri: asset.uri,
-            name: asset.fileName,
-            type: asset.mimeType,
-          } as any);
-        });
-        await axios.post(`${api.defaults.baseURL}/posts/create`, formData, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : undefined,
-            'Content-Type': 'multipart/form-data',
-          },
-          timeout: MEDIA_UPLOAD_TIMEOUT_MS,
-        });
-      }
-      setNewPost('');
-      setPendingAssets([]);
-      loadFeed();
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 401) {
-        Alert.alert('Session expired', 'Please log in again.');
-      } else {
-        setError(err?.response?.data?.message || 'Could not create the post.');
-      }
-    } finally {
-      setIsPosting(false);
-    }
-  };
-
-  // Real toggle now, matching the backend fix: previously this always
-  // incremented regardless of whether the post was already liked,
-  // mirroring the exact bug that existed server-side (blind increment,
-  // no per-user tracking, no way to unlike). The optimistic update
-  // below flips both `liked` and the count in the direction implied by
-  // the CURRENT state before the request, then reconciles with the
-  // server's actual response — using the response as truth rather
-  // than trusting the optimistic guess is what makes this safe even
-  // if two rapid taps race each other.
+  // Real toggle with an optimistic update, reconciled with the server's answer so two rapid
+  // taps can't drift the count.
   const handleLike = async (postId: string) => {
     const post = posts.find((p) => p._id === postId);
     const wasLiked = post?.liked ?? false;
 
     setPosts((prev) =>
       prev.map((p) =>
-        p._id === postId
-          ? { ...p, liked: !wasLiked, likes: wasLiked ? Math.max(0, p.likes - 1) : p.likes + 1 }
-          : p
+        p._id === postId ? { ...p, liked: !wasLiked, likes: wasLiked ? Math.max(0, p.likes - 1) : p.likes + 1 } : p
       )
     );
 
@@ -297,44 +292,13 @@ export default function CommunityScreen() {
         );
       }
     } catch {
-      // Revert the optimistic update on failure rather than silently
-      // refetching the whole feed — this action is small enough that
-      // a targeted revert is cheap and doesn't lose scroll position
-      // the way loadFeed() would.
       setPosts((prev) =>
         prev.map((p) => (p._id === postId ? { ...p, liked: wasLiked, likes: post?.likes ?? p.likes } : p))
       );
     }
   };
 
-  const renderPostMedia = (media?: PostMedia[]) => {
-    if (!media || media.length === 0) return null;
-    const first = media[0];
-    const extraCount = media.length - 1;
-    return (
-      <View
-        style={styles.mediaWrap}
-        accessibilityLabel={
-          first.type === 'video'
-            ? 'Video attachment'
-            : extraCount > 0
-              ? `Photo, plus ${extraCount} more attachment${extraCount > 1 ? 's' : ''}`
-              : 'Photo attachment'
-        }
-      >
-        {first.type === 'video' ? (
-          <InlineVideo uri={first.url} />
-        ) : (
-          <Image source={{ uri: first.url }} style={styles.media} resizeMode="cover" accessibilityElementsHidden importantForAccessibility="no" />
-        )}
-        {extraCount > 0 && (
-          <View style={styles.moreBadge} accessibilityElementsHidden importantForAccessibility="no">
-            <Text style={styles.moreBadgeText}>+{extraCount} more</Text>
-          </View>
-        )}
-      </View>
-    );
-  };
+  const searching = activeQuery.current.length >= 2;
 
   return (
     <View style={styles.container}>
@@ -342,90 +306,37 @@ export default function CommunityScreen() {
         <Text style={styles.headerTitle} accessibilityRole="header">
           Community
         </Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={() => router.push('/community-hub' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Community Hub"
-          >
-            <Text style={styles.headerAction}>👥 Hub</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/community-hub' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Community Hub"
+        >
+          <Text style={styles.headerAction}>👥 Hub</Text>
+        </TouchableOpacity>
       </View>
 
-      <StatusBanner status="real" note="Feed and posting use the live backend, including photo and video attachments." />
-
-      <View style={styles.composer}>
+      <View style={styles.searchWrap}>
+        <Text style={styles.searchIcon} accessibilityElementsHidden importantForAccessibility="no">
+          🔍
+        </Text>
         <TextInput
-          style={styles.composerInput}
-          placeholder="Share something with your campus..."
+          style={styles.searchInput}
+          placeholder="Search posts and people"
           placeholderTextColor={colors.textMuted}
-          value={newPost}
-          onChangeText={setNewPost}
-          multiline
-          accessibilityLabel="Write a post"
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="search"
+          autoCorrect={false}
+          maxLength={50}
+          accessibilityLabel="Search posts and people"
         />
-
-        {pendingAssets.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pendingRow}>
-            {pendingAssets.map((asset, index) => (
-              <View
-                key={`${asset.uri}-${index}`}
-                style={styles.pendingThumbWrap}
-                accessibilityLabel={`Attachment ${index + 1}, ${asset.type}`}
-              >
-                {asset.type === 'video' ? (
-                  <View
-                    style={[styles.pendingThumb, styles.pendingVideoPlaceholder]}
-                    accessibilityElementsHidden
-                    importantForAccessibility="no"
-                  >
-                    <Text style={styles.pendingVideoIcon}>▶</Text>
-                  </View>
-                ) : (
-                  <Image
-                    source={{ uri: asset.uri }}
-                    style={styles.pendingThumb}
-                    accessibilityElementsHidden
-                    importantForAccessibility="no"
-                  />
-                )}
-                <TouchableOpacity
-                  style={styles.removeThumbButton}
-                  onPress={() => handleRemovePendingAsset(index)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove attachment ${index + 1}`}
-                >
-                  <Text style={styles.removeThumbText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
-        <View style={styles.composerFooter}>
-          <TouchableOpacity
-            style={styles.attachButton}
-            onPress={handlePickMedia}
-            disabled={isPosting}
-            accessibilityRole="button"
-            accessibilityLabel="Add photo or video"
-            accessibilityState={{ disabled: isPosting }}
-          >
-            <Text style={styles.attachButtonText}>📎 Add photo/video</Text>
+        {isSearching ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : query.length > 0 ? (
+          <TouchableOpacity onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear search">
+            <Text style={styles.clearText}>✕</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.postButton, (!newPost.trim() || isPosting) && styles.postButtonDisabled]}
-            onPress={handlePost}
-            disabled={!newPost.trim() || isPosting}
-            accessibilityRole="button"
-            accessibilityLabel="Post"
-            accessibilityState={{ disabled: !newPost.trim() || isPosting, busy: isPosting }}
-          >
-            {isPosting ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.postButtonText}>Post</Text>}
-          </TouchableOpacity>
-        </View>
+        ) : null}
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -436,24 +347,36 @@ export default function CommunityScreen() {
         <FlatList
           data={posts}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{ padding: Spacing.md, paddingBottom: 110, gap: Spacing.sm }}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
           ListEmptyComponent={
             <Text style={styles.emptyText} accessibilityRole="text">
-              No posts yet. Be the first to share something.
+              {searching ? `No posts match "${activeQuery.current}".` : 'No posts yet. Tap + to share something.'}
             </Text>
           }
           renderItem={({ item }) => (
             <View style={styles.postCard}>
               <TouchableOpacity
+                style={styles.authorRow}
                 onPress={() => router.push(`/user/${item.userId}` as any)}
                 accessibilityRole="button"
                 accessibilityLabel={`View ${item.authorName || 'this user'}'s profile`}
               >
-                <Text style={styles.postAuthor}>{item.authorName || 'Unknown user'}</Text>
+                <Avatar name={item.authorName} uri={item.authorAvatarUrl} size={42} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.authorName} numberOfLines={1}>
+                    {item.authorName || 'Unknown user'}
+                  </Text>
+                  <Text style={styles.postTime}>{timeAgo(item.createdAt)}</Text>
+                </View>
               </TouchableOpacity>
-              <Text style={styles.postContent}>{item.content}</Text>
-              {renderPostMedia(item.media)}
+
+              {item.title ? <Text style={styles.postTitle}>{item.title}</Text> : null}
+              {item.content ? <Text style={styles.postContent}>{item.content}</Text> : null}
+              {item.media && item.media.length > 0 ? <MediaStrip media={item.media} /> : null}
+
               <View style={styles.postFooter}>
                 <TouchableOpacity
                   onPress={() => handleLike(item._id)}
@@ -461,7 +384,9 @@ export default function CommunityScreen() {
                   accessibilityLabel={`${item.liked ? 'Unlike' : 'Like'}, ${item.likes} ${item.likes === 1 ? 'like' : 'likes'}`}
                   accessibilityState={{ selected: !!item.liked }}
                 >
-                  <Text style={styles.likeButton}>{item.liked ? '❤️' : '🤍'} {item.likes}</Text>
+                  <Text style={styles.likeButton}>
+                    {item.liked ? '❤️' : '🤍'} {item.likes}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => router.push(`/post/${item._id}` as any)}
@@ -475,6 +400,21 @@ export default function CommunityScreen() {
           )}
         />
       )}
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setSheetOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Create a post"
+      >
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
+
+      <CreatePostSheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onPosted={() => loadFeed(activeQuery.current)}
+      />
     </View>
   );
 }

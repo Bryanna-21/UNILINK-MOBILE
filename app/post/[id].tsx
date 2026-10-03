@@ -15,6 +15,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import { Avatar } from '../../src/components/Avatar';
 
 // STATUS: REAL — calls GET/POST /api/posts/:postId/comments on the
 // live backend. Previously the backend's Comment model had no
@@ -32,6 +33,7 @@ interface Comment {
   postId: string;
   userId: string;
   authorName?: string;
+  authorAvatarUrl?: string | null;
   content: string;
   createdAt: string;
 }
@@ -161,18 +163,22 @@ export default function PostCommentsScreen() {
           contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
           ListEmptyComponent={<Text style={styles.emptyText}>No comments yet.</Text>}
           renderItem={({ item }) => (
-            <View style={styles.commentCard}>
-              <TouchableOpacity
-                onPress={() => router.push(`/user/${item.userId}` as any)}
-                accessibilityRole="button"
-                accessibilityLabel={`View ${item.userId === currentUser?.id ? 'your' : (item.authorName || 'this user') + "'s"} profile`}
-              >
-                <Text style={styles.commentAuthor}>
-                  {item.userId === currentUser?.id ? 'You' : item.authorName || 'Unknown user'}
-                </Text>
-              </TouchableOpacity>
-              <Text style={styles.commentText}>{item.content}</Text>
+            <View style={[styles.commentCard, { flexDirection: 'row', gap: Spacing.sm }]}>
+              <Avatar name={item.authorName} uri={item.authorAvatarUrl} size={34} />
+              <View style={{ flex: 1 }}>
+                <TouchableOpacity
+                  onPress={() => router.push(`/user/${item.userId}` as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${item.userId === currentUser?.id ? 'your' : (item.authorName || 'this user') + "'s"} profile`}
+                >
+                  <Text style={styles.commentAuthor}>
+                    {item.userId === currentUser?.id ? 'You' : item.authorName || 'Unknown user'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.commentText}>{item.content}</Text>
+              </View>
             </View>
+
           )}
         />
       )}

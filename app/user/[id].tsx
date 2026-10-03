@@ -34,8 +34,8 @@ interface UserSummary {
 
 interface UserPost {
   _id: string;
-  title: string;
-  content: string;
+  title?: string;
+  content?: string;
   likes?: number;
   commentsCount?: number;
   createdAt: string;
@@ -289,12 +289,13 @@ export default function UserProfileScreen() {
               style={styles.postRow}
               onPress={() => router.push(`/post/${p._id}` as any)}
               accessibilityRole="button"
-              accessibilityLabel={`Open post: ${p.title}`}
+              accessibilityLabel={`Open post: ${p.title || p.content || 'photo or video post'}`}
             >
-              <Text style={styles.postTitle}>{p.title}</Text>
+              {p.title ? <Text style={styles.postTitle}>{p.title}</Text> : null}
               <Text style={styles.postSnippet} numberOfLines={2}>
-                {p.content}
+                {p.content || (p.title ? '' : 'Photo or video post')}
               </Text>
+
               <Text style={styles.postMeta}>
                 {new Date(p.createdAt).toLocaleDateString()} · {p.likes ?? 0} likes · {p.commentsCount ?? 0} comments
               </Text>
