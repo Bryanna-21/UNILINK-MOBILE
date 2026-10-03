@@ -137,7 +137,7 @@ export default function DiscussionScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <StatusBanner status="real" note="Discussion posts are saved to the real backend." />
 
       {isLoading && (

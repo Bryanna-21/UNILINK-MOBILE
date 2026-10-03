@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, ActivityIndicator, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Updates from 'expo-updates';
 import { useAuthStore } from '../src/store/authStore';
@@ -225,6 +226,9 @@ export default function RootLayout() {
 
   useSilentUpdateCheck();
 
+  // Expo Router provides the SafeAreaProvider; these are the status-bar / navigation-bar sizes.
+  const insets = useSafeAreaInsets();
+
   // Wait on auth, theme, AND i18n hydration before rendering real UI —
   // same reasoning as the existing auth/theme gate: rendering before
   // i18n resolves its saved/device language would show raw
@@ -255,9 +259,20 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          // No screen has a native header, so keep content clear of the status bar and the
+          // navigation bar here, once, for every screen.
+          contentStyle: { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom },
+        }}
+      >
         <Stack.Screen name="auth" />
-        <Stack.Screen name="(tabs)" />
+        {/* The tab bar already pads for the bottom inset itself; padding here too would double it. */}
+        <Stack.Screen
+          name="(tabs)"
+          options={{ contentStyle: { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: 0 } }}
+        />
       </Stack>
     </>
   );

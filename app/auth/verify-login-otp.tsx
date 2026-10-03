@@ -105,7 +105,7 @@ export default function VerifyLoginOtpScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <View style={styles.content}>
         <Text style={styles.title} accessibilityRole="header">
           Two-Factor Verification

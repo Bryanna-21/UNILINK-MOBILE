@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
@@ -149,7 +149,7 @@ export default function ChatDetailScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <StatusBanner
         status="real"
         note="Messages are real and saved on the backend, but this screen checks for new ones every few seconds rather than receiving them instantly — there's no live push layer yet."
@@ -224,6 +224,6 @@ export default function ChatDetailScreen() {
           {isSending ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.sendButtonText}>Send</Text>}
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

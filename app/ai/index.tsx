@@ -144,7 +144,7 @@ export default function AiAssistantScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <StatusBanner status="real" note="Connected to a real AI assistant, proxied through the backend." />
 
       {messages.length === 0 ? (
