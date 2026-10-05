@@ -49,7 +49,11 @@ export default function NewConversationScreen() {
     setIsSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await api.get('/profile/search', { params: { q: trimmedQuery } });
+        // "@name" searches by username; anything else is the original name search.
+        const byUsername = trimmedQuery.startsWith('@');
+        const res = byUsername
+          ? await api.get('/people/search', { params: { q: trimmedQuery.slice(1) } })
+          : await api.get('/profile/search', { params: { q: trimmedQuery } });
         if (!cancelled) {
           setResults(res.data?.data || []);
           setError(null);
@@ -184,6 +188,59 @@ export default function NewConversationScreen() {
     setError(null);
   };
 
+  // People you follow: the quickest way to message someone you've already added.
+  const [following, setFollowing] = useState<(Student & { username?: string })[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!currentUserId) return;
+      api
+        .get('/follow/' + currentUserId + '/following')
+        .then((res) => setFollowing(res.data?.data ?? res.data?.users ?? []))
+        .catch(() => setFollowing([]));
+    }, [currentUserId])
+  );
+
+  const followingHeader = (
+    <View style={{ gap: Spacing.sm, marginBottom: Spacing.sm }}>
+      <TouchableOpacity
+        style={styles.row}
+        onPress={() => router.push('/people' as any)}
+        accessibilityRole="button"
+        accessibilityLabel="Find people to follow"
+      >
+        <Text style={styles.rowTitle}>Find people to follow</Text>
+        <Text style={styles.rowSubtitle}>›</Text>
+      </TouchableOpacity>
+      {following.length > 0 ? (
+        <Text style={[styles.sectionLabel, { paddingHorizontal: 0 }]} accessibilityRole="header">
+          People you follow
+        </Text>
+      ) : null}
+      {following.map((p) => (
+        <TouchableOpacity
+          key={p._id}
+          style={styles.row}
+          onPress={() => handleSelectStudent(p)}
+          disabled={isStarting}
+          accessibilityRole="button"
+          accessibilityLabel={'Message ' + p.name}
+          accessibilityState={{ disabled: isStarting }}
+        >
+          <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
+            <Text style={styles.avatarText}>{(p.name || '?').charAt(0).toUpperCase()}</Text>
+          </View>
+          <Text style={styles.rowTitle}>{p.name}</Text>
+          {p.username ? <Text style={styles.rowSubtitle}>@{p.username}</Text> : null}
+        </TouchableOpacity>
+      ))}
+      {courses.length > 0 ? (
+        <Text style={[styles.sectionLabel, { paddingHorizontal: 0 }]} accessibilityRole="header">
+          Or pick a course
+        </Text>
+      ) : null}
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -208,7 +265,7 @@ export default function NewConversationScreen() {
       {step === 'course' ? (
         <TextInput
           style={styles.searchInput}
-          placeholder="Search people by name"
+          placeholder="Search by name, or @username"
           placeholderTextColor={colors.textMuted}
           value={query}
           onChangeText={setQuery}
@@ -256,6 +313,7 @@ export default function NewConversationScreen() {
       ) : step === 'course' ? (
         <FlatList
           data={courses}
+          ListHeaderComponent={followingHeader}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
           ListEmptyComponent={

@@ -28,6 +28,7 @@ interface University {
 export default function RegisterScreen() {
   const colors = useColors();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -115,6 +116,7 @@ export default function RegisterScreen() {
       password,
       confirmPassword,
       universityId,
+      ...(username.trim() ? { username: username.trim() } : {}),
     });
 
     if (!result.success) {
@@ -142,6 +144,17 @@ export default function RegisterScreen() {
             onChangeText={setName}
             editable={!isLoading}
             accessibilityLabel="Full name"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Username (optional)"
+            placeholderTextColor={colors.textMuted}
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!isLoading}
+            accessibilityLabel="Username, optional"
           />
           <TextInput
             style={styles.input}

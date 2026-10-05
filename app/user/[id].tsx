@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
@@ -25,6 +25,7 @@ import { useAuthStore } from '../../src/store/authStore';
 // only follow/unfollow and viewing the profile itself were.
 
 interface UserSummary {
+  username?: string;
   _id: string;
   name: string;
   role: string;
@@ -193,6 +194,31 @@ export default function UserProfileScreen() {
     }
   };
 
+  // Blocking: the other person can no longer follow or message you, and you stop appearing in
+  // each other's search. Any follows between you are removed.
+  const handleBlock = () => {
+    if (!id || !user) return;
+    Alert.alert(
+      'Block ' + user.name + '?',
+      "They won't be able to follow you or message you, and you won't appear in each other's search. Any follows between you are removed.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.post('/people/blocks/' + id);
+              router.back();
+            } catch (err: any) {
+              Alert.alert('Could not block', err?.response?.data?.message || 'Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -226,6 +252,7 @@ export default function UserProfileScreen() {
         <Text style={styles.name} accessibilityRole="header">
           {user.name}
         </Text>
+        {user.username ? <Text style={[styles.role, { textTransform: 'none' }]}>@{user.username}</Text> : null}
         <Text style={styles.role}>{user.role}</Text>
         {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
 
@@ -260,6 +287,17 @@ export default function UserProfileScreen() {
           </View>
         ) : null}
       </View>
+
+      {!isOwnProfile ? (
+        <TouchableOpacity
+          style={{ alignSelf: 'center', marginTop: Spacing.sm, padding: Spacing.sm }}
+          onPress={handleBlock}
+          accessibilityRole="button"
+          accessibilityLabel={'Block ' + user.name}
+        >
+          <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Block</Text>
+        </TouchableOpacity>
+      ) : null}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle} accessibilityRole="header">

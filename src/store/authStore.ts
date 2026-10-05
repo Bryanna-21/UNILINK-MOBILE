@@ -17,6 +17,7 @@ export interface UniLinkUser {
   admissionNumber?: string;
   avatarUrl?: string;
   coverUrl?: string;
+  username?: string;
 }
 
 // Result shapes returned by login/register/verifyOtp/etc. Callers
@@ -129,6 +130,7 @@ interface AuthState {
     password: string;
     confirmPassword: string;
     universityId?: string;
+    username?: string;
   }) => Promise<{ success: true; userId: string; email: string; message?: string } | { success: false; message: string }>;
   verifyOtp: (userId: string, code: string) => Promise<AuthActionResult>;
   verifyLoginOtp: (userId: string, code: string) => Promise<AuthActionResult>;

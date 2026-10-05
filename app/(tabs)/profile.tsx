@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
+import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
@@ -23,6 +24,25 @@ function DetailRow({ label, value, styles }: { label: string; value: string; sty
 export default function ProfileScreen() {
   const colors = useColors();
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+
+  // Accounts that signed in before usernames existed have none cached on this device.
+  // Fetch the current profile once and merge the username in.
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get('/auth/me')
+      .then((res) => {
+        const me = res.data?.user;
+        if (cancelled || !me || !user) return;
+        if (me.username && me.username !== user.username) setUser({ ...user, username: me.username });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const styles = useMemo(
     () =>
@@ -113,6 +133,7 @@ export default function ProfileScreen() {
           <Text style={styles.name} accessibilityRole="header">
             {user?.name || 'Unknown'}
           </Text>
+          {user?.username ? <Text style={styles.email}>@{user.username}</Text> : null}
           <Text style={styles.email}>{user?.email}</Text>
           {user?.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
         </View>
@@ -123,6 +144,42 @@ export default function ProfileScreen() {
         <DetailRow label="University ID" value={user?.universityId || 'Not set'} styles={styles} />
         <DetailRow label="Phone" value={user?.phone || 'Not set'} styles={styles} />
       </View>
+
+      <TouchableOpacity
+        style={styles.linkRow}
+        onPress={() => router.push('/profile/following' as any)}
+        accessibilityRole="link"
+        accessibilityLabel="Following and followers"
+      >
+        <Text style={styles.linkRowText}>Following & Followers</Text>
+        <Text style={styles.linkRowChevron} accessibilityElementsHidden importantForAccessibility="no">
+          ›
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkRow}
+        onPress={() => router.push('/people' as any)}
+        accessibilityRole="link"
+        accessibilityLabel="Find people"
+      >
+        <Text style={styles.linkRowText}>Find people</Text>
+        <Text style={styles.linkRowChevron} accessibilityElementsHidden importantForAccessibility="no">
+          ›
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.linkRow}
+        onPress={() => router.push('/people/username' as any)}
+        accessibilityRole="link"
+        accessibilityLabel="Change username"
+      >
+        <Text style={styles.linkRowText}>Username{user?.username ? ' (@' + user.username + ')' : ''}</Text>
+        <Text style={styles.linkRowChevron} accessibilityElementsHidden importantForAccessibility="no">
+          ›
+        </Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.linkRow}
