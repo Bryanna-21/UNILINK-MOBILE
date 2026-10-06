@@ -95,11 +95,8 @@ export default function MessagesScreen() {
         },
         tab: {
           paddingVertical: Spacing.sm,
-          borderBottomWidth: 2,
-          borderBottomColor: 'transparent',
         },
         tabActive: {
-          borderBottomColor: colors.primary,
         },
         tabText: {
           fontSize: 13,
