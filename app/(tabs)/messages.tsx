@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore, UserRole } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import UniLinkAIIcon from '../../src/components/UniLinkAIIcon';
 
 // STATUS: REAL — matches web's src/pages/Messages.js and
 // src/services/messageService.js exactly, both read directly rather
@@ -41,7 +42,7 @@ interface Conversation {
   isPinned?: boolean;
 }
 
-const TABS = ['Messages', 'Unread', 'Communities', 'Lecturers'] as const;
+const TABS = ['Messages', 'Unread', 'Communities', 'Lecturers', 'AI'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function MessagesScreen() {
@@ -75,10 +76,13 @@ export default function MessagesScreen() {
         },
         newButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
         tabRow: {
-          flexDirection: 'row',
-          paddingHorizontal: Spacing.md,
           marginTop: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+        },
+        tabContent: {
+          flexDirection: 'row',
           gap: Spacing.xs,
+          paddingRight: Spacing.md,
         },
         tab: {
           paddingHorizontal: Spacing.sm,
@@ -141,6 +145,48 @@ export default function MessagesScreen() {
           alignItems: 'center',
         },
         unreadBadgeText: { fontSize: 10, fontWeight: '800', color: colors.white },
+        aiCard: {
+          margin: Spacing.md,
+          padding: Spacing.lg,
+          borderRadius: Radius.md,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        aiCardTop: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacing.md,
+        },
+        aiCardTitle: {
+          fontSize: 18,
+          fontWeight: '800',
+          color: colors.text,
+        },
+        aiCardSubtitle: {
+          fontSize: 13,
+          color: colors.textMuted,
+          marginTop: 3,
+        },
+        aiCardDescription: {
+          fontSize: 14,
+          color: colors.textMuted,
+          lineHeight: 20,
+          marginTop: Spacing.md,
+        },
+        aiOpenButton: {
+          marginTop: Spacing.md,
+          alignSelf: 'flex-start',
+          backgroundColor: colors.primary,
+          borderRadius: Radius.sm,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+        },
+        aiOpenButtonText: {
+          color: colors.white,
+          fontWeight: '700',
+          fontSize: 13,
+        },
       }),
     [colors]
   );
@@ -300,7 +346,13 @@ export default function MessagesScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabRow} accessibilityRole="tablist">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabRow}
+        contentContainerStyle={styles.tabContent}
+        accessibilityRole="tablist"
+      >
         {TABS.map((tab) => (
           <TouchableOpacity
             key={tab}
@@ -310,19 +362,52 @@ export default function MessagesScreen() {
             accessibilityState={{ selected: activeTab === tab }}
             accessibilityLabel={tab}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
+            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              {tab}
+            </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
-      <StatusBanner
-        status="real"
-        note="Conversations use the live backend. Messages refresh when you open a chat, not instantly in the background — there's no real-time push layer yet."
-      />
+      {activeTab !== 'AI' ? (
+        <>
+          <StatusBanner
+            status="real"
+            note="Conversations use the live backend. Messages refresh when you open a chat, not instantly in the background — there's no real-time push layer yet."
+          />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+        </>
+      ) : null}
 
-      {isLoading ? (
+      {activeTab === 'AI' ? (
+        <View style={styles.aiCard}>
+          <View style={styles.aiCardTop}>
+            <UniLinkAIIcon size={52} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.aiCardTitle}>UniLink AI</Text>
+              <Text style={styles.aiCardSubtitle}>
+                Your academic AI assistant
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.aiCardDescription}>
+            Ask questions, understand difficult concepts, summarize notes,
+            create quizzes, make flashcards, plan assignments, and build
+            study timetables.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.aiOpenButton}
+            onPress={() => router.push('/messages/ai' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Open UniLink AI"
+          >
+            <Text style={styles.aiOpenButtonText}>Open UniLink AI</Text>
+          </TouchableOpacity>
+        </View>
+      ) : isLoading ? (
         <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
       ) : (
         <FlatList
