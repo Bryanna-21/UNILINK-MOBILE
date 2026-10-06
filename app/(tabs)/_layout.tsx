@@ -60,24 +60,17 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="courses"
+          name="academics"
           options={{
-            title: 'Courses',
+            title: 'Academics',
             tabBarIcon: ({ color }) => <TabIcon glyph="📚" color={color} />,
           }}
         />
         <Tabs.Screen
-          name="community"
+          name="campus"
           options={{
-            title: 'Community',
+            title: 'Campus',
             tabBarIcon: ({ color }) => <TabIcon glyph="👥" color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="explore"
-          options={{
-            title: 'Explore',
-            tabBarIcon: ({ color }) => <TabIcon glyph="🧭" color={color} />,
           }}
         />
       </Tabs.Protected>
@@ -124,9 +117,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="me"
         options={{
-          title: 'Profile',
+          title: 'Me',
           tabBarIcon: ({ color }) => <TabIcon glyph="👤" color={color} />,
         }}
       />

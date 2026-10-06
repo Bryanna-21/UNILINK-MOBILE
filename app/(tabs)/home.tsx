@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
-import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { cacheResponse, getCachedResponse, formatCacheAge } from '../../src/utils/offlineCache';
@@ -337,7 +336,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <StatusBanner status="real" note="Greeting and role come from your real account." />
 
       {isShowingOfflineData ? (
         <View style={styles.offlineBanner} accessibilityLiveRegion="polite">
@@ -353,7 +351,6 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle} accessibilityRole="header">
           Today's Classes
         </Text>
-        <StatusBanner status="real" note="Pulled live from your enrolled courses' timetables." />
         {isLoading ? (
           <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
@@ -363,11 +360,11 @@ export default function HomeScreen() {
         ) : classesToday.length === 0 ? (
           <TouchableOpacity
             style={styles.emptyCard}
-            onPress={() => router.push('/(tabs)/courses')}
+            onPress={() => router.push('/(tabs)/academics' as any)}
             accessibilityRole="button"
-            accessibilityLabel="No classes today. View Courses."
+            accessibilityLabel="No classes today. View Academics."
           >
-            <Text style={styles.emptyText}>No classes today. Tap to view Courses.</Text>
+            <Text style={styles.emptyText}>No classes today. Tap to view Academics.</Text>
           </TouchableOpacity>
         ) : (
           classesToday.map((cls) => (
@@ -387,7 +384,6 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle} accessibilityRole="header">
           Continue Learning
         </Text>
-        <StatusBanner status="real" note="Notes are pulled live from your enrolled courses." />
         {isLoading ? (
           <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
@@ -397,11 +393,11 @@ export default function HomeScreen() {
         ) : notes.length === 0 ? (
           <TouchableOpacity
             style={styles.emptyCard}
-            onPress={() => router.push('/(tabs)/courses')}
+            onPress={() => router.push('/(tabs)/academics' as any)}
             accessibilityRole="button"
-            accessibilityLabel="No recent notes yet. View Courses."
+            accessibilityLabel="No recent notes yet. View Academics."
           >
-            <Text style={styles.emptyText}>No recent notes yet. Tap to view Courses.</Text>
+            <Text style={styles.emptyText}>No recent notes yet. Tap to view Academics.</Text>
           </TouchableOpacity>
         ) : (
           notes.slice(0, 5).map((note) => (
@@ -417,7 +413,6 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle} accessibilityRole="header">
           Upcoming CAT
         </Text>
-        <StatusBanner status="real" note="CATs are pulled live from your enrolled courses." />
         {isLoading ? (
           <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
@@ -427,11 +422,11 @@ export default function HomeScreen() {
         ) : cats.length === 0 ? (
           <TouchableOpacity
             style={styles.emptyCard}
-            onPress={() => router.push('/(tabs)/courses')}
+            onPress={() => router.push('/(tabs)/academics' as any)}
             accessibilityRole="button"
-            accessibilityLabel="No CATs scheduled. View Courses."
+            accessibilityLabel="No CATs scheduled. View Academics."
           >
-            <Text style={styles.emptyText}>No CATs scheduled. Tap to view Courses.</Text>
+            <Text style={styles.emptyText}>No CATs scheduled. Tap to view Academics.</Text>
           </TouchableOpacity>
         ) : (
           cats.slice(0, 5).map((cat) => (
@@ -455,7 +450,6 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle} accessibilityRole="header">
           Attendance
         </Text>
-        <StatusBanner status="real" note="Sign in per course for today. One signature per day, enforced by the backend." />
         {isLoading ? (
           <ActivityIndicator style={styles.spinner} color={colors.primary} />
         ) : loadError ? (
@@ -511,11 +505,11 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.quickAction, { backgroundColor: colors.accent }]}
-            onPress={() => router.push('/ai' as any)}
+            onPress={() => router.push('/(tabs)/messages' as any)}
             accessibilityRole="button"
-            accessibilityLabel="Ask AI"
+            accessibilityLabel="Messages"
           >
-            <Text style={styles.quickActionText}>✨ Ask AI</Text>
+            <Text style={styles.quickActionText}>💬 Messages</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.quickAction, { backgroundColor: colors.secondary }]}
