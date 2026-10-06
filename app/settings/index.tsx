@@ -206,6 +206,20 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Community & Safety</Text>
+
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/community-standards' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Community Standards"
+        >
+          <Text style={styles.rowText}>Community Standards</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Accounts</Text>
         <TouchableOpacity
           style={styles.row}
