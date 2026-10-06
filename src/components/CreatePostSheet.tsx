@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
@@ -37,7 +38,7 @@ const UPLOAD_TIMEOUT_MS = 120000;
 
 interface PendingAsset {
   uri: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'document';
   fileName: string;
   mimeType: string;
 }
@@ -59,6 +60,7 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
 
   const hasDraft = text.trim().length > 0 || assets.length > 0;
   const hasVideo = assets.some((a) => a.type === 'video');
+  const hasDocument = assets.some((a) => a.type === 'document');
   const canPost = hasDraft && !isPosting;
 
   // Opening the sheet: an unsent draft goes straight back to composing.
@@ -126,6 +128,9 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
         videoThumb: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
         videoGlyph: { fontSize: 26, color: colors.textMuted },
         videoLabel: { fontSize: 10, color: colors.textMuted, marginTop: 2 },
+        documentThumb: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: Spacing.xs },
+        documentGlyph: { fontSize: 26, color: colors.textMuted },
+        documentLabel: { fontSize: 10, color: colors.textMuted, marginTop: 2, textAlign: 'center' },
         removeButton: {
           position: 'absolute',
           top: -6,
@@ -170,36 +175,41 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
     onClose();
   };
 
-  const pickMedia = async (kind: 'image' | 'video') => {
+  const pickMedia = async () => {
     setError(null);
+    if (hasDocument) {
+      setError('A document cannot be combined with photos or videos.');
+      return;
+    }
     const remaining = MAX_MEDIA_ITEMS - assets.length;
     if (remaining <= 0) {
       setError(`You can attach up to ${MAX_MEDIA_ITEMS} items per post.`);
-      return;
-    }
-    if (kind === 'video' && hasVideo) {
-      setError('You can attach one video per post.');
       return;
     }
     try {
       // The system picker needs no storage permission, so there is no permission prompt
       // to get denied and dead-end the user.
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: kind === 'video' ? ['videos'] : ['images'],
-        allowsMultipleSelection: kind === 'image',
-        selectionLimit: kind === 'image' ? remaining : 1,
+        mediaTypes: ['images', 'videos'],
+        allowsMultipleSelection: true,
+        selectionLimit: remaining,
         quality: 0.7,
       });
       if (result.canceled || !result.assets?.length) return;
 
       const accepted: PendingAsset[] = [];
       let skippedLarge = false;
+      let skippedVideo = false;
       for (const asset of result.assets) {
         if (asset.fileSize && asset.fileSize > MAX_FILE_BYTES) {
           skippedLarge = true;
           continue;
         }
         const isVideo = asset.type === 'video';
+        if (isVideo && (hasVideo || accepted.some((item) => item.type === 'video'))) {
+          skippedVideo = true;
+          continue;
+        }
         accepted.push({
           uri: asset.uri,
           type: isVideo ? 'video' : 'image',
@@ -208,12 +218,51 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
         });
       }
       if (skippedLarge) setError('A file larger than 50 MB was skipped. Pick a smaller one.');
+      else if (skippedVideo) setError('Only one video can be attached per post.');
       if (accepted.length > 0) {
         setAssets((prev) => [...prev, ...accepted].slice(0, MAX_MEDIA_ITEMS));
         setStep('compose');
       }
     } catch {
       setError('Could not open your gallery. Please try again.');
+    }
+  };
+
+  const pickDocument = async () => {
+    setError(null);
+    if (assets.length > 0) {
+      setError('A document cannot be combined with photos or videos.');
+      return;
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+        multiple: false,
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.length) return;
+
+      const document = result.assets[0];
+      if (document.size && document.size > MAX_FILE_BYTES) {
+        setError('That document is larger than 50 MB. Pick a smaller file.');
+        return;
+      }
+
+      setAssets([
+        {
+          uri: document.uri,
+          type: 'document',
+          fileName: document.name,
+          mimeType: document.mimeType || 'application/octet-stream',
+        },
+      ]);
+      setStep('compose');
+    } catch {
+      setError('Could not open your documents. Please try again.');
     }
   };
 
@@ -230,7 +279,7 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
     if (isPosting) return;
     const content = text.trim();
     if (!content && assets.length === 0) {
-      setError('Add some text, a photo or a video first.');
+      setError('Add some text, a photo, a video or a document first.');
       return;
     }
     setIsPosting(true);
@@ -294,20 +343,20 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
               </View>
 
               <View style={styles.optionsRow}>
-                <TouchableOpacity style={styles.option} onPress={() => setStep('compose')} accessibilityRole="button" accessibilityLabel="Write a text post">
+                <TouchableOpacity style={styles.option} onPress={() => setStep('compose')} accessibilityRole="button" accessibilityLabel="Write something">
                   <Text style={styles.optionIcon}>✏️</Text>
-                  <Text style={styles.optionLabel}>Text</Text>
+                  <Text style={styles.optionLabel}>Write something</Text>
                   <Text style={styles.optionHint}>Share a thought</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.option} onPress={() => pickMedia('image')} accessibilityRole="button" accessibilityLabel="Add photos">
+                <TouchableOpacity style={styles.option} onPress={() => pickMedia()} accessibilityRole="button" accessibilityLabel="Photo or video">
                   <Text style={styles.optionIcon}>🖼️</Text>
-                  <Text style={styles.optionLabel}>Photo</Text>
-                  <Text style={styles.optionHint}>Up to {MAX_MEDIA_ITEMS}</Text>
+                  <Text style={styles.optionLabel}>Photo or video</Text>
+                  <Text style={styles.optionHint}>Up to {MAX_MEDIA_ITEMS} items</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.option} onPress={() => pickMedia('video')} accessibilityRole="button" accessibilityLabel="Add a video">
-                  <Text style={styles.optionIcon}>🎬</Text>
-                  <Text style={styles.optionLabel}>Video</Text>
-                  <Text style={styles.optionHint}>One, up to 50 MB</Text>
+                <TouchableOpacity style={styles.option} onPress={pickDocument} accessibilityRole="button" accessibilityLabel="Document">
+                  <Text style={styles.optionIcon}>📄</Text>
+                  <Text style={styles.optionLabel}>Document</Text>
+                  <Text style={styles.optionHint}>PDF, DOC or DOCX</Text>
                 </TouchableOpacity>
               </View>
               {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -323,7 +372,7 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
 
               <TextInput
                 style={styles.input}
-                placeholder="What's happening on campus?"
+                placeholder={hasDocument ? "Add a caption (optional)" : "What's happening on campus?"}
                 placeholderTextColor={colors.textMuted}
                 value={text}
                 onChangeText={setText}
@@ -344,6 +393,11 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
                           <Text style={styles.videoGlyph}>▶</Text>
                           <Text style={styles.videoLabel}>Video</Text>
                         </View>
+                      ) : asset.type === 'document' ? (
+                        <View style={[styles.thumb, styles.documentThumb]}>
+                          <Text style={styles.documentGlyph}>📄</Text>
+                          <Text style={styles.documentLabel} numberOfLines={3}>{asset.fileName}</Text>
+                        </View>
                       ) : (
                         <Image source={{ uri: asset.uri }} style={styles.thumb} />
                       )}
@@ -363,22 +417,22 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
 
               <View style={styles.addRow}>
                 <TouchableOpacity
-                  style={[styles.addButton, (isPosting || assets.length >= MAX_MEDIA_ITEMS) && styles.disabled]}
-                  onPress={() => pickMedia('image')}
-                  disabled={isPosting || assets.length >= MAX_MEDIA_ITEMS}
+                  style={[styles.addButton, (isPosting || hasDocument || assets.length >= MAX_MEDIA_ITEMS) && styles.disabled]}
+                  onPress={() => pickMedia()}
+                  disabled={isPosting || hasDocument || assets.length >= MAX_MEDIA_ITEMS}
                   accessibilityRole="button"
-                  accessibilityLabel="Add photos"
+                  accessibilityLabel="Add photo or video"
                 >
-                  <Text style={styles.addButtonText}>🖼️ Photo</Text>
+                  <Text style={styles.addButtonText}>🖼️ Photo or video</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.addButton, (isPosting || hasVideo || assets.length >= MAX_MEDIA_ITEMS) && styles.disabled]}
-                  onPress={() => pickMedia('video')}
-                  disabled={isPosting || hasVideo || assets.length >= MAX_MEDIA_ITEMS}
+                  style={[styles.addButton, (isPosting || assets.length > 0) && styles.disabled]}
+                  onPress={pickDocument}
+                  disabled={isPosting || assets.length > 0}
                   accessibilityRole="button"
-                  accessibilityLabel="Add a video"
+                  accessibilityLabel="Add document"
                 >
-                  <Text style={styles.addButtonText}>🎬 Video</Text>
+                  <Text style={styles.addButtonText}>📄 Document</Text>
                 </TouchableOpacity>
               </View>
 
@@ -395,7 +449,7 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
                 {isPosting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.postButtonText}>Post</Text>}
               </TouchableOpacity>
               {isPosting && assets.length > 0 ? (
-                <Text style={styles.uploadingNote}>Uploading. Photos and videos can take a minute on a slow connection.</Text>
+                <Text style={styles.uploadingNote}>Uploading. Attachments can take a minute on a slow connection.</Text>
               ) : null}
 
               {hasDraft && !isPosting ? (
