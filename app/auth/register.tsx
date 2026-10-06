@@ -20,6 +20,12 @@ interface University {
   name: string;
 }
 
+interface Campus {
+  _id: string;
+  name: string;
+  code?: string | null;
+}
+
 // STATUS: REAL — calls POST /api/auth/register on the live backend.
 // This never returns a token - the account exists but is unverified
 // until verify-otp succeeds. Routes there with the returned userId
@@ -34,7 +40,10 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [universities, setUniversities] = useState<University[]>([]);
   const [universityId, setUniversityId] = useState('');
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [campusId, setCampusId] = useState('');
   const [loadingUniversities, setLoadingUniversities] = useState(true);
+  const [loadingCampuses, setLoadingCampuses] = useState(false);
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
@@ -47,6 +56,23 @@ export default function RegisterScreen() {
       .catch(() => setUniversities([]))
       .finally(() => setLoadingUniversities(false));
   }, []);
+
+  useEffect(() => {
+    setCampusId('');
+    setCampuses([]);
+
+    if (!universityId) {
+      return;
+    }
+
+    setLoadingCampuses(true);
+
+    api
+      .get(`/auth/universities/${universityId}/campuses`)
+      .then((res) => setCampuses(res.data?.data ?? []))
+      .catch(() => setCampuses([]))
+      .finally(() => setLoadingCampuses(false));
+  }, [universityId]);
 
   const styles = useMemo(
     () =>
@@ -81,6 +107,20 @@ export default function RegisterScreen() {
         universityChipActive: { borderColor: colors.primary, backgroundColor: colors.primary },
         universityChipText: { fontSize: 13, color: colors.text },
         universityChipTextActive: { color: colors.white, fontWeight: '700' },
+        campusRow: { marginBottom: Spacing.sm },
+        campusChip: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          marginRight: Spacing.sm,
+        },
+        campusChipActive: { borderColor: colors.primary, backgroundColor: colors.primary },
+        campusChipText: { fontSize: 13, color: colors.text },
+        campusChipTextActive: { color: colors.white, fontWeight: '700' },
+        helperText: { fontSize: 13, color: colors.textMuted },
         input: {
           backgroundColor: colors.surface,
           borderWidth: 1,
@@ -109,13 +149,14 @@ export default function RegisterScreen() {
   );
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password || !confirmPassword || !universityId) return;
+    if (!name.trim() || !email.trim() || !password || !confirmPassword || !universityId || !campusId) return;
     const result = await register({
       name: name.trim(),
       email: email.trim(),
       password,
       confirmPassword,
       universityId,
+      campusId,
       ...(username.trim() ? { username: username.trim() } : {}),
     });
 
@@ -210,6 +251,49 @@ export default function RegisterScreen() {
             </ScrollView>
           )}
 
+          <Text style={styles.label}>Campus</Text>
+
+          {!universityId ? (
+            <Text style={styles.helperText}>
+              Select your university first.
+            </Text>
+          ) : loadingCampuses ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : campuses.length === 0 ? (
+            <Text style={styles.helperText}>
+              No active campuses are available for this university yet.
+            </Text>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.campusRow}
+            >
+              {campuses.map((campus) => (
+                <TouchableOpacity
+                  key={campus._id}
+                  style={[
+                    styles.campusChip,
+                    campusId === campus._id && styles.campusChipActive,
+                  ]}
+                  onPress={() => setCampusId(campus._id)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: campusId === campus._id }}
+                  accessibilityLabel={campus.name}
+                >
+                  <Text
+                    style={[
+                      styles.campusChipText,
+                      campusId === campus._id && styles.campusChipTextActive,
+                    ]}
+                  >
+                    {campus.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
           {error ? (
             <Text style={styles.error} accessibilityLiveRegion="polite">
               {error}
@@ -217,9 +301,9 @@ export default function RegisterScreen() {
           ) : null}
 
           <TouchableOpacity
-            style={[styles.button, (isLoading || !universityId) && styles.buttonDisabled]}
+            style={[styles.button, (isLoading || !universityId || !campusId) && styles.buttonDisabled]}
             onPress={handleRegister}
-            disabled={isLoading || !universityId}
+            disabled={isLoading || !universityId || !campusId}
             accessibilityRole="button"
             accessibilityLabel="Sign up"
             accessibilityState={{ disabled: isLoading, busy: isLoading }}

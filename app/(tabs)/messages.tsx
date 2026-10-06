@@ -66,35 +66,52 @@ export default function MessagesScreen() {
           alignItems: 'center',
           paddingHorizontal: Spacing.md,
           paddingTop: Spacing.xl,
+          paddingBottom: Spacing.sm,
         },
-        title: { fontSize: 24, fontWeight: '800', color: colors.text },
+        title: {
+          fontSize: 24,
+          fontWeight: '800',
+          color: colors.text,
+        },
         newButton: {
           backgroundColor: colors.primary,
           borderRadius: Radius.sm,
           paddingHorizontal: Spacing.md,
-          paddingVertical: Spacing.xs,
+          paddingVertical: Spacing.sm,
         },
-        newButtonText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        newButtonText: {
+          color: colors.white,
+          fontWeight: '700',
+          fontSize: 13,
+        },
         tabRow: {
-          marginTop: Spacing.sm,
+          marginTop: Spacing.xs,
           paddingHorizontal: Spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
         },
         tabContent: {
           flexDirection: 'row',
-          gap: Spacing.xs,
+          gap: Spacing.lg,
           paddingRight: Spacing.md,
         },
         tab: {
-          paddingHorizontal: Spacing.sm,
-          paddingVertical: 6,
-          borderRadius: Radius.full,
-          borderWidth: 1,
-          borderColor: colors.border,
-          backgroundColor: colors.surface,
+          paddingVertical: Spacing.sm,
+          borderBottomWidth: 2,
+          borderBottomColor: 'transparent',
         },
-        tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-        tabText: { fontSize: 12, fontWeight: '700', color: colors.text },
-        tabTextActive: { color: colors.white },
+        tabActive: {
+          borderBottomColor: colors.primary,
+        },
+        tabText: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: colors.textMuted,
+        },
+        tabTextActive: {
+          color: colors.primary,
+          fontWeight: '800',
+        },
         error: { color: colors.danger, textAlign: 'center', fontSize: 13, marginTop: Spacing.sm },
         emptyText: {
           textAlign: 'center',
@@ -105,36 +122,61 @@ export default function MessagesScreen() {
         chatRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: colors.surface,
-          padding: Spacing.md,
-          borderRadius: Radius.md,
-          borderWidth: 1,
-          borderColor: colors.border,
+          minHeight: 68,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
           gap: Spacing.sm,
         },
         avatar: {
-          width: 44,
-          height: 44,
+          width: 46,
+          height: 46,
           borderRadius: Radius.full,
           backgroundColor: colors.primary,
           justifyContent: 'center',
           alignItems: 'center',
         },
-        avatarText: { color: colors.white, fontWeight: '700' },
-        chatName: { fontSize: 15, fontWeight: '700', color: colors.text },
-        chatPreview: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
-        pinIcon: { fontSize: 12, marginRight: -4 },
-        chatTime: { fontSize: 12, color: colors.textMuted },
-        rightCol: { alignItems: 'flex-end', gap: 4 },
+        avatarText: {
+          color: colors.white,
+          fontWeight: '800',
+          fontSize: 16,
+        },
+        chatName: {
+          fontSize: 15,
+          fontWeight: '700',
+          color: colors.text,
+        },
+        chatPreview: {
+          fontSize: 13,
+          color: colors.textMuted,
+          marginTop: 3,
+        },
+        pinIcon: {
+          fontSize: 11,
+          marginRight: -4,
+        },
+        chatTime: {
+          fontSize: 11,
+          color: colors.textMuted,
+        },
+        rightCol: {
+          alignItems: 'flex-end',
+          gap: 5,
+          minWidth: 48,
+        },
         typeBadge: {
           paddingHorizontal: 6,
           paddingVertical: 2,
           borderRadius: Radius.sm,
           backgroundColor: colors.background,
-          borderWidth: 1,
-          borderColor: colors.border,
         },
-        typeBadgeText: { fontSize: 10, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase' },
+        typeBadgeText: {
+          fontSize: 9,
+          fontWeight: '700',
+          color: colors.textMuted,
+          textTransform: 'uppercase',
+        },
         unreadBadge: {
           minWidth: 18,
           height: 18,
@@ -371,11 +413,6 @@ export default function MessagesScreen() {
 
       {activeTab !== 'AI' ? (
         <>
-          <StatusBanner
-            status="real"
-            note="Conversations use the live backend. Messages refresh when you open a chat, not instantly in the background — there's no real-time push layer yet."
-          />
-
           {error ? <Text style={styles.error}>{error}</Text> : null}
         </>
       ) : null}
@@ -413,7 +450,7 @@ export default function MessagesScreen() {
         <FlatList
           data={filteredConversations}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
+          contentContainerStyle={{ paddingBottom: Spacing.xl }}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
           ListEmptyComponent={
             <Text style={styles.emptyText} accessibilityRole="text">

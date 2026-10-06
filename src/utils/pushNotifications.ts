@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from '../api/client';
@@ -37,21 +36,50 @@ import { isCategoryMuted } from './notificationPrefs';
 // does NOT do (it only ever suppresses the foreground alert; it
 // cannot stop the server from sending, and has no effect on
 // background/closed-app OS notifications).
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    const type = notification.request.content.data?.type as string | undefined;
-    const muted = await isCategoryMuted(type);
-    return {
-      shouldShowBanner: !muted,
-      shouldShowList: !muted,
-      shouldPlaySound: !muted,
-      shouldSetBadge: false,
-    };
-  },
-});
+async function getNotificationsModule(): Promise<typeof import('expo-notifications') | null> {
+  if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
+    return null;
+  }
+
+  try {
+    const Notifications = await import('expo-notifications');
+    return Notifications;
+  } catch (err) {
+    console.log('[push] Notifications module unavailable in this runtime:', err);
+    return null;
+  }
+}
+
+let handlerConfigured = false;
+
+async function configureNotificationHandler(): Promise<typeof import('expo-notifications') | null> {
+  const Notifications = await getNotificationsModule();
+  if (!Notifications) return null;
+
+  if (!handlerConfigured) {
+    Notifications.setNotificationHandler({
+      handleNotification: async (notification) => {
+        const type = notification.request.content.data?.type as string | undefined;
+        const muted = await isCategoryMuted(type);
+        return {
+          shouldShowBanner: !muted,
+          shouldShowList: !muted,
+          shouldPlaySound: !muted,
+          shouldSetBadge: false,
+        };
+      },
+    });
+    handlerConfigured = true;
+  }
+
+  return Notifications;
+}
 
 export async function registerForPushNotifications(): Promise<void> {
   try {
+    const Notifications = await configureNotificationHandler();
+    if (!Notifications) return;
+
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 

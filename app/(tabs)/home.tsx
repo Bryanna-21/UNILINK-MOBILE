@@ -46,6 +46,17 @@ interface AttendanceStatus {
   signedToday: boolean;
 }
 
+interface Announcement {
+  _id: string;
+  title: string;
+  body: string;
+  courseId?: string | null;
+  campusId?: string | null;
+  universityId?: string;
+  postedBy?: string;
+  createdAt: string;
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const user = useAuthStore((s) => s.user);
@@ -55,7 +66,9 @@ export default function HomeScreen() {
   const [cats, setCats] = useState<UpcomingCat[]>([]);
   const [classesToday, setClassesToday] = useState<ClassToday[]>([]);
   const [attendance, setAttendance] = useState<AttendanceStatus[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [signingCourseId, setSigningCourseId] = useState<string | null>(null);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
@@ -132,9 +145,38 @@ export default function HomeScreen() {
         },
         signButtonText: { color: colors.white, fontSize: 12, fontWeight: '700' },
         signedTag: { color: colors.secondary, fontSize: 13, fontWeight: '700' },
-        quickActions: { flexDirection: 'row', paddingHorizontal: Spacing.md, gap: Spacing.sm },
-        quickAction: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.lg, borderRadius: Radius.md },
-        quickActionText: { color: colors.white, fontWeight: '700' },
+        announcementCard: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        announcementTitle: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '700',
+        },
+        announcementBody: {
+          color: colors.textMuted,
+          fontSize: 13,
+          lineHeight: 18,
+          marginTop: 5,
+        },
+        announcementMeta: {
+          color: colors.textMuted,
+          fontSize: 11,
+          marginTop: 7,
+        },
+        viewAllText: {
+          color: colors.primary,
+          fontSize: 13,
+          fontWeight: '700',
+          paddingHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+        },
       }),
     [colors]
   );
@@ -261,6 +303,47 @@ export default function HomeScreen() {
     loadDashboard();
   }, [loadDashboard]);
 
+  // Announcements are loaded independently from the academic
+  // dashboard so students can see campus information even
+  // without course enrollment.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let active = true;
+
+    const loadAnnouncements = async () => {
+      setIsLoadingAnnouncements(true);
+
+      try {
+        const res = await api.get('/community/announcements');
+        const data: Announcement[] = res.data?.data ?? [];
+
+        if (!active) return;
+
+        setAnnouncements(data);
+        await cacheResponse(`home_announcements_${user.id}`, data);
+      } catch {
+        const cached = await getCachedResponse<Announcement[]>(
+          `home_announcements_${user.id}`
+        );
+
+        if (active && cached) {
+          setAnnouncements(cached.data);
+        }
+      } finally {
+        if (active) {
+          setIsLoadingAnnouncements(false);
+        }
+      }
+    };
+
+    loadAnnouncements();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
   // Deliberately separate from loadDashboard above: this is a
   // nice-to-have badge count, not core dashboard data. Folding it into
   // loadDashboard's try/catch would mean a slow or failing
@@ -381,6 +464,64 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.section}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.sectionTitle} accessibilityRole="header">
+            Campus Announcements
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/announcements' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="View all campus announcements"
+          >
+            <Text style={styles.viewAllText}>View all</Text>
+          </TouchableOpacity>
+        </View>
+
+        {isLoadingAnnouncements ? (
+          <ActivityIndicator style={styles.spinner} color={colors.primary} />
+        ) : announcements.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              No campus announcements right now.
+            </Text>
+          </View>
+        ) : (
+          announcements.slice(0, 3).map((announcement) => (
+            <TouchableOpacity
+              key={announcement._id}
+              style={styles.announcementCard}
+              onPress={() => router.push('/announcements' as any)}
+              accessibilityRole="button"
+              accessibilityLabel={`Announcement: ${announcement.title}`}
+            >
+              <Text style={styles.announcementTitle}>
+                {announcement.title}
+              </Text>
+
+              <Text
+                style={styles.announcementBody}
+                numberOfLines={3}
+              >
+                {announcement.body}
+              </Text>
+
+              <Text style={styles.announcementMeta}>
+                {announcement.courseId
+                  ? 'Course announcement'
+                  : announcement.campusId
+                    ? 'Campus announcement'
+                    : 'University announcement'}
+                {announcement.createdAt
+                  ? ` · ${new Date(announcement.createdAt).toLocaleDateString()}`
+                  : ''}
+              </Text>
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle} accessibilityRole="header">
           Continue Learning
         </Text>
@@ -490,37 +631,6 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle} accessibilityRole="header">
-          Quick Actions
-        </Text>
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: colors.danger }]}
-            onPress={() => router.push('/(tabs)/emergency' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Emergency"
-          >
-            <Text style={styles.quickActionText}>🆘 Emergency</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: colors.accent }]}
-            onPress={() => router.push('/(tabs)/messages' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Messages"
-          >
-            <Text style={styles.quickActionText}>💬 Messages</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: colors.secondary }]}
-            onPress={() => router.push('/lost-and-found' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Lost and Found"
-          >
-            <Text style={styles.quickActionText}>🔎 Lost & Found</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </ScrollView>
   );
 }

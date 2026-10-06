@@ -12,6 +12,7 @@ export interface UniLinkUser {
   email: string;
   role: UserRole;
   universityId?: string;
+  campusId?: string | null;
   bio?: string;
   phone?: string;
   admissionNumber?: string;
@@ -129,7 +130,8 @@ interface AuthState {
     email: string;
     password: string;
     confirmPassword: string;
-    universityId?: string;
+    universityId: string;
+    campusId: string;
     username?: string;
   }) => Promise<{ success: true; userId: string; email: string; message?: string } | { success: false; message: string }>;
   verifyOtp: (userId: string, code: string) => Promise<AuthActionResult>;

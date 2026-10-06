@@ -267,7 +267,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom },
         }}
       >
-        <Stack.Screen name="auth" />
+        {/* Auth screens live under app/auth/* and are discovered directly by Expo Router. */}
         {/* The tab bar already pads for the bottom inset itself; padding here too would double it. */}
         <Stack.Screen
           name="(tabs)"
