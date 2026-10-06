@@ -42,7 +42,7 @@ interface Conversation {
   isPinned?: boolean;
 }
 
-const TABS = ['Messages', 'Unread', 'Communities', 'Lecturers', 'AI'] as const;
+const TABS = ['Messages', 'Unread', 'Communities', 'Lecturers'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function MessagesScreen() {
@@ -180,47 +180,31 @@ export default function MessagesScreen() {
           alignItems: 'center',
         },
         unreadBadgeText: { fontSize: 10, fontWeight: '800', color: colors.white },
-        aiCard: {
-          margin: Spacing.md,
-          padding: Spacing.lg,
-          borderRadius: Radius.md,
+        aiFloatingButton: {
+          position: 'absolute',
+          right: Spacing.md,
+          bottom: Spacing.lg,
+          width: 58,
+          height: 58,
+          borderRadius: 29,
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,
-        },
-        aiCardTop: {
-          flexDirection: 'row',
+          justifyContent: 'center',
           alignItems: 'center',
-          gap: Spacing.md,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.18,
+          shadowRadius: 6,
+          elevation: 6,
         },
-        aiCardTitle: {
-          fontSize: 18,
-          fontWeight: '800',
-          color: colors.text,
-        },
-        aiCardSubtitle: {
-          fontSize: 13,
-          color: colors.textMuted,
-          marginTop: 3,
-        },
-        aiCardDescription: {
-          fontSize: 14,
-          color: colors.textMuted,
-          lineHeight: 20,
-          marginTop: Spacing.md,
-        },
-        aiOpenButton: {
-          marginTop: Spacing.md,
-          alignSelf: 'flex-start',
-          backgroundColor: colors.primary,
-          borderRadius: Radius.sm,
-          paddingHorizontal: Spacing.md,
-          paddingVertical: Spacing.sm,
-        },
-        aiOpenButtonText: {
-          color: colors.white,
-          fontWeight: '700',
-          fontSize: 13,
+        aiFloatingIcon: {
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          justifyContent: 'center',
+          alignItems: 'center',
+          overflow: 'hidden',
         },
       }),
     [colors]
@@ -404,40 +388,9 @@ export default function MessagesScreen() {
         ))}
       </ScrollView>
 
-      {activeTab !== 'AI' ? (
-        <>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-        </>
-      ) : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      {activeTab === 'AI' ? (
-        <View style={styles.aiCard}>
-          <View style={styles.aiCardTop}>
-            <UniLinkAIIcon size={52} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.aiCardTitle}>UniLink AI</Text>
-              <Text style={styles.aiCardSubtitle}>
-                Your academic AI assistant
-              </Text>
-            </View>
-          </View>
-
-          <Text style={styles.aiCardDescription}>
-            Ask questions, understand difficult concepts, summarize notes,
-            create quizzes, make flashcards, plan assignments, and build
-            study timetables.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.aiOpenButton}
-            onPress={() => router.push('/messages/ai' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Open UniLink AI"
-          >
-            <Text style={styles.aiOpenButtonText}>Open UniLink AI</Text>
-          </TouchableOpacity>
-        </View>
-      ) : isLoading ? (
+      {isLoading ? (
         <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
       ) : (
         <FlatList
@@ -501,6 +454,18 @@ export default function MessagesScreen() {
           }}
         />
       )}
+
+      <TouchableOpacity
+        style={styles.aiFloatingButton}
+        onPress={() => router.push('/messages/ai' as any)}
+        accessibilityRole="button"
+        accessibilityLabel="Open UniLink AI"
+        accessibilityHint="Opens your UniLink AI assistant"
+      >
+        <View style={styles.aiFloatingIcon}>
+          <UniLinkAIIcon size={48} />
+        </View>
+      </TouchableOpacity>
     </View>
   );
 }

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Image,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -25,7 +26,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 interface PostMedia {
   url: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'document';
   publicId: string;
 }
 
@@ -80,12 +81,59 @@ function MediaStrip({ media }: { media: PostMedia[] }) {
 
   const itemStyle = { height: HEIGHT, borderRadius: Radius.sm, backgroundColor: colors.border };
 
-  const renderItem = (m: PostMedia, w: number | '100%') =>
-    m.type === 'video' ? (
-      <View style={{ width: w }}>
-        <InlineVideo uri={m.url} height={HEIGHT} />
-      </View>
-    ) : (
+  const renderItem = (m: PostMedia, w: number | '100%') => {
+    if (m.type === 'video') {
+      return (
+        <View style={{ width: w }}>
+          <InlineVideo uri={m.url} height={HEIGHT} />
+        </View>
+      );
+    }
+
+    if (m.type === 'document') {
+      return (
+        <TouchableOpacity
+          style={[
+            itemStyle,
+            {
+              width: w,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: Spacing.lg,
+              borderWidth: 1,
+              borderColor: colors.border,
+            },
+          ]}
+          onPress={() => Linking.openURL(m.url)}
+          accessibilityRole="button"
+          accessibilityLabel="Open document"
+        >
+          <Text style={{ fontSize: 46 }}>📄</Text>
+          <Text
+            style={{
+              marginTop: Spacing.sm,
+              fontSize: 16,
+              fontWeight: '800',
+              color: colors.text,
+            }}
+          >
+            Document
+          </Text>
+          <Text
+            style={{
+              marginTop: 4,
+              fontSize: 13,
+              color: colors.textMuted,
+              textAlign: 'center',
+            }}
+          >
+            Tap to open
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
       <Image
         source={{ uri: m.url }}
         style={[itemStyle, { width: w }]}
@@ -94,6 +142,7 @@ function MediaStrip({ media }: { media: PostMedia[] }) {
         importantForAccessibility="no"
       />
     );
+  };
 
   if (media.length === 1) {
     return <View style={{ marginTop: Spacing.sm }}>{renderItem(media[0], '100%')}</View>;
