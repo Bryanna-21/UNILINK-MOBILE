@@ -431,39 +431,6 @@ export default function HomeScreen() {
       ) : null}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle} accessibilityRole="header">
-          Today's Classes
-        </Text>
-        {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={colors.primary} />
-        ) : loadError ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>{loadError}</Text>
-          </View>
-        ) : classesToday.length === 0 ? (
-          <TouchableOpacity
-            style={styles.emptyCard}
-            onPress={() => router.push('/(tabs)/academics' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="No classes today. View Academics."
-          >
-            <Text style={styles.emptyText}>No classes today. Tap to view Academics.</Text>
-          </TouchableOpacity>
-        ) : (
-          classesToday.map((cls) => (
-            <View key={cls._id} style={styles.emptyCard}>
-              <Text style={styles.noteTitle}>
-                {cls.startTime} – {cls.endTime} · {cls.courseTitle}
-              </Text>
-              <Text style={styles.noteCourse}>
-                {cls.location || 'Location not set'}{cls.isOverridden ? ' · your schedule' : ''}
-              </Text>
-            </View>
-          ))
-        )}
-      </View>
-
-      <View style={styles.section}>
         <View style={styles.rowBetween}>
           <Text style={styles.sectionTitle} accessibilityRole="header">
             Campus Announcements
@@ -517,6 +484,39 @@ export default function HomeScreen() {
                   : ''}
               </Text>
             </TouchableOpacity>
+          ))
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle} accessibilityRole="header">
+          Today's Classes
+        </Text>
+        {isLoading ? (
+          <ActivityIndicator style={styles.spinner} color={colors.primary} />
+        ) : loadError ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>{loadError}</Text>
+          </View>
+        ) : classesToday.length === 0 ? (
+          <TouchableOpacity
+            style={styles.emptyCard}
+            onPress={() => router.push('/(tabs)/academics' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="No classes today. View Academics."
+          >
+            <Text style={styles.emptyText}>No classes today. Tap to view Academics.</Text>
+          </TouchableOpacity>
+        ) : (
+          classesToday.map((cls) => (
+            <View key={cls._id} style={styles.emptyCard}>
+              <Text style={styles.noteTitle}>
+                {cls.startTime} – {cls.endTime} · {cls.courseTitle}
+              </Text>
+              <Text style={styles.noteCourse}>
+                {cls.location || 'Location not set'}{cls.isOverridden ? ' · your schedule' : ''}
+              </Text>
+            </View>
           ))
         )}
       </View>

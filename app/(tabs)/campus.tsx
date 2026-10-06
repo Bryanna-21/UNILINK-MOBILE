@@ -306,13 +306,6 @@ export default function CampusScreen() {
         <Text style={styles.headerTitle} accessibilityRole="header">
           Campus
         </Text>
-        <TouchableOpacity
-          onPress={() => router.push('/community-hub' as any)}
-          accessibilityRole="button"
-          accessibilityLabel="Campus Hub"
-        >
-          <Text style={styles.headerAction}>👥 Campus Hub</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.searchWrap}>

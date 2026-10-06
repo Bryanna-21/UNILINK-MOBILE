@@ -55,6 +55,12 @@ export default function AcademicsScreen() {
           color: colors.textMuted,
           marginTop: 4,
         },
+        headerAction: {
+          color: colors.primary,
+          fontSize: 13,
+          fontWeight: '700',
+          marginTop: Spacing.sm,
+        },
         sectionTitle: {
           fontSize: 17,
           fontWeight: '800',
@@ -244,6 +250,14 @@ export default function AcademicsScreen() {
           <Text style={styles.subtitle}>
             Your courses and everything you need for your studies.
           </Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/community-hub' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Campus Hub"
+          >
+            <Text style={styles.headerAction}>👥 Campus Hub</Text>
+          </TouchableOpacity>
         </View>
 
         {!isOnline && courses.length > 0 ? (
