@@ -87,8 +87,6 @@ export default function MessagesScreen() {
         tabRow: {
           marginTop: Spacing.xs,
           paddingHorizontal: Spacing.md,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
         },
         tabContent: {
           flexDirection: 'row',
@@ -125,8 +123,6 @@ export default function MessagesScreen() {
           minHeight: 68,
           paddingHorizontal: Spacing.md,
           paddingVertical: Spacing.sm,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
           gap: Spacing.sm,
         },
         avatar: {
