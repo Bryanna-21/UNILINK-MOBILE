@@ -40,6 +40,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [universities, setUniversities] = useState<University[]>([]);
   const [universityId, setUniversityId] = useState('');
+  const [universityQuery, setUniversityQuery] = useState('');
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [campusId, setCampusId] = useState('');
   const [loadingUniversities, setLoadingUniversities] = useState(true);
@@ -47,6 +48,20 @@ export default function RegisterScreen() {
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
+
+  const filteredUniversities = useMemo(() => {
+    const query = universityQuery.trim().toLowerCase();
+
+    if (!query || universityId) {
+      return [];
+    }
+
+    return universities
+      .filter((university) =>
+        university.name.toLowerCase().includes(query)
+      )
+      .slice(0, 8);
+  }, [universities, universityQuery, universityId]);
 
   // Public endpoint, no auth needed — a new user has no token yet.
   useEffect(() => {
@@ -94,6 +109,49 @@ export default function RegisterScreen() {
         },
         form: { gap: Spacing.md },
         label: { fontSize: 13, fontWeight: '700', color: colors.text },
+        universitySuggestions: {
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          overflow: 'hidden',
+          marginTop: -Spacing.sm,
+          marginBottom: Spacing.sm,
+        },
+        universitySuggestion: {
+          paddingHorizontal: Spacing.md,
+          paddingVertical: 13,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        universitySuggestionText: {
+          fontSize: 14,
+          color: colors.text,
+        },
+        universitySelected: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.primary,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: 14,
+          marginBottom: Spacing.sm,
+        },
+        universitySelectedText: {
+          flex: 1,
+          fontSize: 15,
+          fontWeight: '600',
+          color: colors.text,
+        },
+        universityChangeText: {
+          color: colors.primary,
+          fontSize: 13,
+          fontWeight: '700',
+          marginLeft: Spacing.sm,
+        },
         universityRow: { marginBottom: Spacing.sm },
         universityChip: {
           borderWidth: 1,
@@ -232,23 +290,62 @@ export default function RegisterScreen() {
           <Text style={styles.label}>University</Text>
           {loadingUniversities ? (
             <ActivityIndicator color={colors.primary} />
+          ) : universityId ? (
+            <TouchableOpacity
+              style={styles.universitySelected}
+              onPress={() => {
+                setUniversityId('');
+                setUniversityQuery('');
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Change university"
+            >
+              <Text style={styles.universitySelectedText}>
+                {universities.find((u) => u._id === universityId)?.name || universityQuery}
+              </Text>
+              <Text style={styles.universityChangeText}>Change</Text>
+            </TouchableOpacity>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.universityRow}>
-              {universities.map((u) => (
-                <TouchableOpacity
-                  key={u._id}
-                  style={[styles.universityChip, universityId === u._id && styles.universityChipActive]}
-                  onPress={() => setUniversityId(u._id)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: universityId === u._id }}
-                  accessibilityLabel={u.name}
-                >
-                  <Text style={[styles.universityChipText, universityId === u._id && styles.universityChipTextActive]}>
-                    {u.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Type your university name"
+                placeholderTextColor={colors.textMuted}
+                value={universityQuery}
+                onChangeText={setUniversityQuery}
+                autoCapitalize="words"
+                autoCorrect={false}
+                editable={!isLoading}
+                accessibilityLabel="Search for university"
+              />
+
+              {filteredUniversities.length > 0 && (
+                <View style={styles.universitySuggestions}>
+                  {filteredUniversities.map((university) => (
+                    <TouchableOpacity
+                      key={university._id}
+                      style={styles.universitySuggestion}
+                      onPress={() => {
+                        setUniversityId(university._id);
+                        setUniversityQuery(university.name);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Select ${university.name}`}
+                    >
+                      <Text style={styles.universitySuggestionText}>
+                        {university.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {universityQuery.trim() && filteredUniversities.length === 0 && (
+                <Text style={styles.helperText}>
+                  No matching universities found.
+                </Text>
+              )}
+            </>
           )}
 
           <Text style={styles.label}>Campus</Text>
