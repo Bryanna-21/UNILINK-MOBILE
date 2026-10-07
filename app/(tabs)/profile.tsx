@@ -43,7 +43,13 @@ export default function ProfileScreen() {
     container: { flex: 1, backgroundColor: colors.background },
     header: { height: 54, paddingHorizontal: Spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
     menuButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-    menuGlyph: { fontSize: 27, color: colors.text, lineHeight: 30 },
+    menuLine: {
+      width: 22,
+      height: 2,
+      borderRadius: 1,
+      backgroundColor: colors.text,
+      marginVertical: 2.5,
+    },
     cover: { width: '100%', height: 145, backgroundColor: colors.surface },
     coverImage: { width: '100%', height: '100%' },
     profile: { alignItems: 'center', marginTop: -42, paddingHorizontal: Spacing.lg },
@@ -148,7 +154,11 @@ export default function ProfileScreen() {
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} contentContainerStyle={{ paddingBottom: Spacing.xl }}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.menuButton} onPress={() => setMenuOpen(true)} accessibilityRole="button" accessibilityLabel="Open profile menu">
-            <Text style={styles.menuGlyph}>☰</Text>
+            <View accessible accessibilityRole="image" accessibilityLabel="Profile menu">
+              <View style={styles.menuLine} />
+              <View style={styles.menuLine} />
+              <View style={styles.menuLine} />
+            </View>
           </TouchableOpacity>
         </View>
         <View style={styles.cover}>{user?.coverUrl ? <Image source={{ uri: user.coverUrl }} style={styles.coverImage} resizeMode="cover" /> : null}</View>
