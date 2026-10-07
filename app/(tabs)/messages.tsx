@@ -96,8 +96,7 @@ export default function MessagesScreen() {
         tab: {
           paddingVertical: Spacing.sm,
         },
-        tabActive: {
-        },
+        tabActive: {},
         tabText: {
           fontSize: 13,
           fontWeight: '600',

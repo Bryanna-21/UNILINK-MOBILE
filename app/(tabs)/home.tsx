@@ -17,19 +17,6 @@ const todayDateString = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-interface CourseNote {
-  _id: string;
-  title: string;
-  courseTitle: string;
-}
-
-interface UpcomingCat {
-  _id: string;
-  title: string;
-  courseTitle: string;
-  date?: string;
-}
-
 interface ClassToday {
   _id: string;
   courseId: string;
@@ -60,10 +47,7 @@ interface Announcement {
 export default function HomeScreen() {
   const colors = useColors();
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
 
-  const [notes, setNotes] = useState<CourseNote[]>([]);
-  const [cats, setCats] = useState<UpcomingCat[]>([]);
   const [classesToday, setClassesToday] = useState<ClassToday[]>([]);
   const [attendance, setAttendance] = useState<AttendanceStatus[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -74,71 +58,7 @@ export default function HomeScreen() {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [isShowingOfflineData, setIsShowingOfflineData] = useState(false);
   const [offlineCacheAge, setOfflineCacheAge] = useState<string | null>(null);
-  const [universityName, setUniversityName] = useState<string | null>(null);
-  const [campusName, setCampusName] = useState<string | null>(null);
   const { isOffline } = useNetworkStatus();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadUniversityContext = async () => {
-      if (!user?.universityId) {
-        setUniversityName(null);
-        setCampusName(null);
-        return;
-      }
-
-      try {
-        const universitiesRes = await api.get('/auth/universities');
-        const universities = Array.isArray(universitiesRes.data?.data)
-          ? universitiesRes.data.data
-          : [];
-
-        const university = universities.find(
-          (item: any) => String(item?._id) === String(user.universityId)
-        );
-
-        if (cancelled) return;
-
-        setUniversityName(university?.name || null);
-
-        if (!user.campusId) {
-          setCampusName(null);
-          return;
-        }
-
-        try {
-          const campusesRes = await api.get(
-            `/auth/universities/${user.universityId}/campuses`
-          );
-          const campuses = Array.isArray(campusesRes.data?.data)
-            ? campusesRes.data.data
-            : [];
-
-          const campus = campuses.find(
-            (item: any) => String(item?._id) === String(user.campusId)
-          );
-
-          if (!cancelled) {
-            setCampusName(campus?.name || null);
-          }
-        } catch {
-          if (!cancelled) setCampusName(null);
-        }
-      } catch {
-        if (!cancelled) {
-          setUniversityName(null);
-          setCampusName(null);
-        }
-      }
-    };
-
-    loadUniversityContext();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.universityId, user?.campusId]);
 
   const styles = useMemo(
     () =>
@@ -153,7 +73,6 @@ export default function HomeScreen() {
         },
         greeting: { fontSize: 22, fontWeight: '800', color: colors.text },
         role: { fontSize: 13, color: colors.textMuted, textTransform: 'capitalize', marginTop: 2 },
-        logout: { color: colors.danger, fontWeight: '600', fontSize: 13 },
         bellButton: { position: 'relative', padding: 4 },
         bellIcon: { fontSize: 20 },
         bellBadge: {
@@ -257,8 +176,6 @@ export default function HomeScreen() {
       );
 
       if (myCourses.length === 0) {
-        setNotes([]);
-        setCats([]);
         setClassesToday([]);
         setAttendance([]);
         return;
@@ -269,9 +186,7 @@ export default function HomeScreen() {
 
       const perCourseResults = await Promise.all(
         myCourses.map(async (course: any) => {
-          const [notesRes, catsRes, scheduleRes, myAttendanceRes] = await Promise.all([
-            api.get(`/courses/${course._id}/notes`).catch(() => ({ data: { data: [] } })),
-            api.get(`/courses/${course._id}/cats`).catch(() => ({ data: { data: [] } })),
+          const [scheduleRes, myAttendanceRes] = await Promise.all([
             api.get(`/courses/${course._id}/timetable/mine`).catch(() => ({ data: { data: [] } })),
             api.get(`/courses/${course._id}/attendance/mine`).catch(() => ({ data: { data: [] } })),
           ]);
@@ -285,17 +200,6 @@ export default function HomeScreen() {
 
           return {
             courseTitle: course.title,
-            notes: (notesRes.data?.data ?? []).map((n: any) => ({
-              _id: n._id,
-              title: n.title,
-              courseTitle: course.title,
-            })),
-            cats: (catsRes.data?.data ?? []).map((c: any) => ({
-              _id: c._id,
-              title: c.title,
-              courseTitle: course.title,
-              date: c.date,
-            })),
             classesToday: todaysEntries.map((entry: any) => ({
               _id: entry._id,
               courseId: course._id,
@@ -314,15 +218,11 @@ export default function HomeScreen() {
         })
       );
 
-      const finalNotes = perCourseResults.flatMap((r) => r.notes);
-      const finalCats = perCourseResults.flatMap((r) => r.cats);
       const finalClassesToday = perCourseResults
         .flatMap((r) => r.classesToday)
         .sort((a, b) => a.startTime.localeCompare(b.startTime));
       const finalAttendance = perCourseResults.map((r) => r.attendance);
 
-      setNotes(finalNotes);
-      setCats(finalCats);
       setClassesToday(finalClassesToday);
       setAttendance(finalAttendance);
       setIsShowingOfflineData(false);
@@ -332,8 +232,6 @@ export default function HomeScreen() {
       // genuinely offline, not just a slow server) has real data to
       // fall back to instead of an empty error screen.
       cacheResponse(`home_dashboard_${user.id}`, {
-        notes: finalNotes,
-        cats: finalCats,
         classesToday: finalClassesToday,
         attendance: finalAttendance,
       });
@@ -342,15 +240,11 @@ export default function HomeScreen() {
       // dashboard exists for this user, show it with an honest "showing
       // offline data from X ago" note rather than just an error banner.
       const cached = await getCachedResponse<{
-        notes: CourseNote[];
-        cats: UpcomingCat[];
         classesToday: ClassToday[];
         attendance: AttendanceStatus[];
       }>(`home_dashboard_${user.id}`);
 
       if (cached) {
-        setNotes(cached.data.notes);
-        setCats(cached.data.cats);
         setClassesToday(cached.data.classesToday);
         setAttendance(cached.data.attendance);
         setIsShowingOfflineData(true);
@@ -445,43 +339,32 @@ export default function HomeScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/auth/login');
-  };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flex: 1, paddingRight: Spacing.md }}>
-          <Text style={styles.greeting} numberOfLines={2}>
-            Hi, {user?.name?.split(' ')[0] || 'there'}{universityName ? ` (${universityName}${campusName ? ` - ${campusName}` : ''})` : ''} 👋
+        <Text style={styles.greeting} numberOfLines={1}>
+          Hi, {user?.name?.split(' ')[0] || 'there'} 👋
+        </Text>
+
+        <TouchableOpacity
+          onPress={() => router.push('/notifications' as any)}
+          style={styles.bellButton}
+          accessibilityRole="button"
+          accessibilityLabel={
+            unreadNotifCount > 0
+              ? `Notifications, ${unreadNotifCount} unread`
+              : 'Notifications'
+          }
+        >
+          <Text style={styles.bellIcon} accessibilityElementsHidden importantForAccessibility="no">
+            🔔
           </Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-          <TouchableOpacity
-            onPress={() => router.push('/notifications' as any)}
-            style={styles.bellButton}
-            accessibilityRole="button"
-            accessibilityLabel={
-              unreadNotifCount > 0
-                ? `Notifications, ${unreadNotifCount} unread`
-                : 'Notifications'
-            }
-          >
-            <Text style={styles.bellIcon} accessibilityElementsHidden importantForAccessibility="no">
-              🔔
-            </Text>
-            {unreadNotifCount > 0 ? (
-              <View style={styles.bellBadge} accessibilityElementsHidden importantForAccessibility="no">
-                <Text style={styles.bellBadgeText}>{unreadNotifCount > 9 ? '9+' : unreadNotifCount}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleLogout} accessibilityRole="button" accessibilityLabel="Log out">
-            <Text style={styles.logout}>Log out</Text>
-          </TouchableOpacity>
-        </View>
+          {unreadNotifCount > 0 ? (
+            <View style={styles.bellBadge} accessibilityElementsHidden importantForAccessibility="no">
+              <Text style={styles.bellBadgeText}>{unreadNotifCount > 9 ? '9+' : unreadNotifCount}</Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
       </View>
 
 
@@ -582,72 +465,6 @@ export default function HomeScreen() {
                 {cls.location || 'Location not set'}{cls.isOverridden ? ' · your schedule' : ''}
               </Text>
             </View>
-          ))
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle} accessibilityRole="header">
-          Continue Learning
-        </Text>
-        {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={colors.primary} />
-        ) : loadError ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>{loadError}</Text>
-          </View>
-        ) : notes.length === 0 ? (
-          <TouchableOpacity
-            style={styles.emptyCard}
-            onPress={() => router.push('/(tabs)/academics' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="No recent notes yet. View Academics."
-          >
-            <Text style={styles.emptyText}>No recent notes yet. Tap to view Academics.</Text>
-          </TouchableOpacity>
-        ) : (
-          notes.slice(0, 5).map((note) => (
-            <View key={note._id} style={styles.emptyCard}>
-              <Text style={styles.noteTitle}>{note.title}</Text>
-              <Text style={styles.noteCourse}>{note.courseTitle}</Text>
-            </View>
-          ))
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle} accessibilityRole="header">
-          Upcoming CAT
-        </Text>
-        {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={colors.primary} />
-        ) : loadError ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>{loadError}</Text>
-          </View>
-        ) : cats.length === 0 ? (
-          <TouchableOpacity
-            style={styles.emptyCard}
-            onPress={() => router.push('/(tabs)/academics' as any)}
-            accessibilityRole="button"
-            accessibilityLabel="No CATs scheduled. View Academics."
-          >
-            <Text style={styles.emptyText}>No CATs scheduled. Tap to view Academics.</Text>
-          </TouchableOpacity>
-        ) : (
-          cats.slice(0, 5).map((cat) => (
-            <TouchableOpacity
-              key={cat._id}
-              style={styles.emptyCard}
-              onPress={() => router.push(`/cat/${cat._id}` as any)}
-              accessibilityRole="button"
-              accessibilityLabel={`${cat.title}, ${cat.courseTitle}${cat.date ? `, ${cat.date}` : ''}`}
-            >
-              <Text style={styles.noteTitle}>{cat.title}</Text>
-              <Text style={styles.noteCourse}>
-                {cat.courseTitle}{cat.date ? ` · ${cat.date}` : ''}
-              </Text>
-            </TouchableOpacity>
           ))
         )}
       </View>
