@@ -74,7 +74,71 @@ export default function HomeScreen() {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [isShowingOfflineData, setIsShowingOfflineData] = useState(false);
   const [offlineCacheAge, setOfflineCacheAge] = useState<string | null>(null);
+  const [universityName, setUniversityName] = useState<string | null>(null);
+  const [campusName, setCampusName] = useState<string | null>(null);
   const { isOffline } = useNetworkStatus();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadUniversityContext = async () => {
+      if (!user?.universityId) {
+        setUniversityName(null);
+        setCampusName(null);
+        return;
+      }
+
+      try {
+        const universitiesRes = await api.get('/auth/universities');
+        const universities = Array.isArray(universitiesRes.data?.data)
+          ? universitiesRes.data.data
+          : [];
+
+        const university = universities.find(
+          (item: any) => String(item?._id) === String(user.universityId)
+        );
+
+        if (cancelled) return;
+
+        setUniversityName(university?.name || null);
+
+        if (!user.campusId) {
+          setCampusName(null);
+          return;
+        }
+
+        try {
+          const campusesRes = await api.get(
+            `/auth/universities/${user.universityId}/campuses`
+          );
+          const campuses = Array.isArray(campusesRes.data?.data)
+            ? campusesRes.data.data
+            : [];
+
+          const campus = campuses.find(
+            (item: any) => String(item?._id) === String(user.campusId)
+          );
+
+          if (!cancelled) {
+            setCampusName(campus?.name || null);
+          }
+        } catch {
+          if (!cancelled) setCampusName(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setUniversityName(null);
+          setCampusName(null);
+        }
+      }
+    };
+
+    loadUniversityContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.universityId, user?.campusId]);
 
   const styles = useMemo(
     () =>
@@ -389,9 +453,10 @@ export default function HomeScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hi, {user?.name?.split(' ')[0] || 'there'} 👋</Text>
-          <Text style={styles.role}>{user?.role} {user?.universityId ? `· ${user.universityId}` : ''}</Text>
+        <View style={{ flex: 1, paddingRight: Spacing.md }}>
+          <Text style={styles.greeting} numberOfLines={2}>
+            Hi, {user?.name?.split(' ')[0] || 'there'}{universityName ? ` (${universityName}${campusName ? ` - ${campusName}` : ''})` : ''} 👋
+          </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
           <TouchableOpacity
