@@ -96,6 +96,43 @@ export default function AcademicsScreen() {
           paddingHorizontal: Spacing.md,
           marginBottom: Spacing.xs,
         },
+        navSection: {
+          marginTop: Spacing.sm,
+        },
+        navSectionTitle: {
+          fontSize: 16,
+          fontWeight: '800',
+          color: colors.text,
+          paddingHorizontal: Spacing.md,
+          marginBottom: Spacing.xs,
+        },
+        navGrid: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+        },
+        navCard: {
+          width: '48%',
+          minHeight: 72,
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: Spacing.sm,
+          justifyContent: 'center',
+        },
+        navCardTitle: {
+          fontSize: 14,
+          fontWeight: '800',
+          color: colors.text,
+        },
+        navCardText: {
+          fontSize: 11,
+          color: colors.textMuted,
+          marginTop: 3,
+          lineHeight: 15,
+        },
         courseCard: {
           backgroundColor: colors.surface,
           marginHorizontal: Spacing.md,
@@ -333,6 +370,122 @@ export default function AcademicsScreen() {
             Showing your saved courses. Pull down to refresh when you're online.
           </Text>
         ) : null}
+
+        <View style={styles.navSection}>
+          <Text style={styles.navSectionTitle}>My Studies</Text>
+          <View style={styles.navGrid}>
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/courses' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="My Courses"
+            >
+              <Text style={styles.navCardTitle}>My Courses</Text>
+              <Text style={styles.navCardText}>
+                Choose a course to continue
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/courses' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Units and Timetable"
+            >
+              <Text style={styles.navCardTitle}>Units & Timetable</Text>
+              <Text style={styles.navCardText}>
+                Choose a course to view units and timetable
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.navSection}>
+          <Text style={styles.navSectionTitle}>Coursework</Text>
+          <View style={styles.navGrid}>
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/courses' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Assignments"
+            >
+              <Text style={styles.navCardTitle}>Assignments</Text>
+              <Text style={styles.navCardText}>Choose a course to view assignments</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/courses' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="CATs"
+            >
+              <Text style={styles.navCardTitle}>CATs</Text>
+              <Text style={styles.navCardText}>Choose a course to view CATs</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/courses' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Notes"
+            >
+              <Text style={styles.navCardTitle}>Notes</Text>
+              <Text style={styles.navCardText}>Choose a course to view notes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/courses' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Past Papers"
+            >
+              <Text style={styles.navCardTitle}>Past Papers</Text>
+              <Text style={styles.navCardText}>Choose a course to view past papers</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.navSection}>
+          <Text style={styles.navSectionTitle}>Academic Records</Text>
+          <View style={styles.navGrid}>
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/exams/results' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Results"
+            >
+              <Text style={styles.navCardTitle}>Results</Text>
+              <Text style={styles.navCardText}>View your examination results</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/exams' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Exam Card and Exams"
+            >
+              <Text style={styles.navCardTitle}>Exam Card</Text>
+              <Text style={styles.navCardText}>View and access your exams</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.navSection}>
+          <Text style={styles.navSectionTitle}>Library</Text>
+          <View style={styles.navGrid}>
+            <TouchableOpacity
+              style={styles.navCard}
+              onPress={() => router.push('/library' as any)}
+              accessibilityRole="button"
+              accessibilityLabel="Library"
+            >
+              <Text style={styles.navCardTitle}>Books & Resources</Text>
+              <Text style={styles.navCardText}>
+                Books, digital resources and study materials
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <Text style={styles.sectionTitle}>
           My Courses
