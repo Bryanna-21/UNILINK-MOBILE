@@ -105,6 +105,42 @@ export default function AcademicSetupScreen() {
           paddingHorizontal: Spacing.md,
           paddingVertical: 14,
         },
+        universityInput: {
+          backgroundColor: colors.surface,
+          borderWidth: 1.5,
+          borderColor: colors.primary,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: 14,
+          color: colors.text,
+          fontSize: 15,
+          fontWeight: '600',
+        },
+        universitySelected: {
+          borderColor: colors.primary,
+          backgroundColor: colors.surface,
+          minHeight: 64,
+          justifyContent: 'center',
+        },
+        universityDropdown: {
+          marginTop: Spacing.xs,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          overflow: 'hidden',
+        },
+        universityOption: {
+          paddingHorizontal: Spacing.md,
+          paddingVertical: 14,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        universityOptionText: {
+          color: colors.text,
+          fontSize: 15,
+          fontWeight: '600',
+        },
         valueText: {
           color: colors.text,
           fontSize: 15,
@@ -332,7 +368,8 @@ export default function AcademicSetupScreen() {
       !selectedCourse ||
       !selectedYear ||
       !selectedSemester ||
-      !user
+      !universityId ||
+      !campusId
     ) {
       return;
     }
@@ -413,7 +450,7 @@ export default function AcademicSetupScreen() {
             <ActivityIndicator color={colors.primary} />
           ) : universityId ? (
             <TouchableOpacity
-              style={styles.valueBox}
+              style={[styles.valueBox, styles.universitySelected]}
               onPress={() => {
                 setUniversityId('');
                 setUniversityQuery('');
@@ -435,8 +472,8 @@ export default function AcademicSetupScreen() {
           ) : (
             <>
               <TextInput
-                style={styles.valueBox}
-                placeholder="Type your university name"
+                style={styles.universityInput}
+                placeholder="Search for your university"
                 placeholderTextColor={colors.textMuted}
                 value={universityQuery}
                 onChangeText={setUniversityQuery}
@@ -446,25 +483,32 @@ export default function AcademicSetupScreen() {
               />
 
               {filteredUniversities.length > 0 ? (
-                <View style={styles.courseList}>
-                  {filteredUniversities.map((university) => {
+                <View style={styles.universityDropdown}>
+                  {filteredUniversities.map((university, index) => {
                     const id = String(university._id ?? university.id ?? '');
                     if (!id) return null;
 
                     return (
                       <TouchableOpacity
                         key={id}
-                        style={styles.course}
+                        style={[
+                          styles.universityOption,
+                        ]}
                         onPress={() => {
                           setUniversityId(id);
                           setUniversityQuery(university.name);
                           setCampusId('');
                           setCampuses([]);
                         }}
+                        activeOpacity={0.75}
                         accessibilityRole="button"
                         accessibilityLabel={`Select ${university.name}`}
                       >
-                        <Text style={styles.courseTitle}>
+                        <Text
+                          style={[
+                            styles.universityOptionText,
+                          ]}
+                        >
                           {university.name}
                         </Text>
                       </TouchableOpacity>
