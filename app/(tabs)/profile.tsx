@@ -79,10 +79,61 @@ export default function ProfileScreen() {
     center: { alignItems: 'center', padding: Spacing.xl },
     muted: { color: colors.textMuted, textAlign: 'center' },
     error: { color: colors.danger, textAlign: 'center', padding: Spacing.md },
-    menuBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)' },
-    menu: { position: 'absolute', top: 58, right: Spacing.md, width: 230, backgroundColor: colors.surface, borderRadius: Radius.md, borderWidth: 1, borderColor: colors.border, paddingVertical: Spacing.xs },
-    menuItem: { paddingHorizontal: Spacing.md, paddingVertical: 14 },
-    menuItemText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+    menuPage: {
+      flex: 1,
+    },
+    menuPageHeader: {
+      height: 56,
+      paddingHorizontal: Spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    menuBackButton: {
+      width: 40,
+      height: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    menuBackText: {
+      color: colors.text,
+      fontSize: 34,
+      fontWeight: '300',
+      lineHeight: 38,
+    },
+    menuPageTitle: {
+      color: colors.text,
+      fontSize: 17,
+      fontWeight: '800',
+    },
+    menuHeaderSpacer: {
+      width: 40,
+    },
+    menuPageContent: {
+      paddingBottom: Spacing.xl,
+    },
+    menuPageItem: {
+      minHeight: 58,
+      paddingHorizontal: Spacing.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    menuPageItemText: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    menuPageChevron: {
+      color: colors.textMuted,
+      fontSize: 25,
+      fontWeight: '300',
+    },
   }), [colors]);
 
   const loadBasic = useCallback(async (silent = false) => {
@@ -189,13 +240,48 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
-      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
-          <View style={styles.menu}>
-            {menuItems.map((item) => <TouchableOpacity key={item.label} style={styles.menuItem} onPress={() => { setMenuOpen(false); router.push(item.route as any); }}><Text style={styles.menuItemText}>{item.label}</Text></TouchableOpacity>)}
-          </View>
-        </Pressable>
-      </Modal>
+      <Modal
+  visible={menuOpen}
+  animationType="slide"
+  onRequestClose={() => setMenuOpen(false)}
+>
+  <View style={[styles.menuPage, { backgroundColor: colors.background }]}>
+    <View style={styles.menuPageHeader}>
+      <TouchableOpacity
+        style={styles.menuBackButton}
+        onPress={() => setMenuOpen(false)}
+        accessibilityRole="button"
+        accessibilityLabel="Close profile menu"
+      >
+        <Text style={styles.menuBackText}>‹</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.menuPageTitle}>Profile</Text>
+
+      <View style={styles.menuHeaderSpacer} />
+    </View>
+
+    <ScrollView
+      contentContainerStyle={styles.menuPageContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {menuItems.map((item) =>
+        <TouchableOpacity
+          key={item.label}
+          style={styles.menuPageItem}
+          onPress={() => {
+            setMenuOpen(false);
+            router.push(item.route as any);
+          }}
+          accessibilityRole="button"
+        >
+          <Text style={styles.menuPageItemText}>{item.label}</Text>
+          <Text style={styles.menuPageChevron}>›</Text>
+        </TouchableOpacity>
+      )}
+    </ScrollView>
+  </View>
+</Modal>
     </View>
   );
 }
