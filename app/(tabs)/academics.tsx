@@ -14,7 +14,6 @@ import { api } from '../../src/api/client';
 import { cacheResponse, getCachedResponse } from '../../src/utils/offlineCache';
 import { useNetworkStatus } from '../../src/utils/useNetworkStatus';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
-import CampusHubContent from '../../src/components/CampusHubContent';
 
 interface Course {
   _id: string;
@@ -26,7 +25,6 @@ interface Course {
 
 export default function AcademicsScreen() {
   const colors = useColors();
-  const [activeSection, setActiveSection] = useState<'academics' | 'campusHub'>('academics');
   const user = useAuthStore((s) => s.user);
   const isOnline = useNetworkStatus();
 
@@ -56,38 +54,6 @@ export default function AcademicsScreen() {
           fontSize: 14,
           color: colors.textMuted,
           marginTop: 4,
-        },
-        segmentedControl: {
-          flexDirection: 'row',
-          backgroundColor: colors.surface,
-          borderRadius: Radius.md,
-          padding: 3,
-          marginHorizontal: Spacing.md,
-          marginBottom: Spacing.md,
-          borderWidth: 1,
-          borderColor: colors.border,
-        },
-        segment: {
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingVertical: Spacing.sm,
-          borderRadius: Radius.sm,
-        },
-        segmentActive: {
-          backgroundColor: colors.primary,
-        },
-        segmentText: {
-          fontSize: 14,
-          fontWeight: '600',
-          color: colors.textMuted,
-        },
-        segmentTextActive: {
-          color: colors.background,
-          fontWeight: '700',
-        },
-        campusHubWrap: {
-          paddingHorizontal: Spacing.md,
         },
         sectionTitle: {
           fontSize: 17,
@@ -279,55 +245,8 @@ export default function AcademicsScreen() {
             Your courses and everything you need for your studies.
           </Text>
 
-          <View style={styles.segmentedControl}>
-            <TouchableOpacity
-              style={[
-                styles.segment,
-                activeSection === 'academics' && styles.segmentActive,
-              ]}
-              onPress={() => setActiveSection('academics')}
-              accessibilityRole="button"
-              accessibilityState={{ selected: activeSection === 'academics' }}
-              accessibilityLabel="Academics"
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  activeSection === 'academics' && styles.segmentTextActive,
-                ]}
-              >
-                Academics
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.segment,
-                activeSection === 'campusHub' && styles.segmentActive,
-              ]}
-              onPress={() => setActiveSection('campusHub')}
-              accessibilityRole="button"
-              accessibilityState={{ selected: activeSection === 'campusHub' }}
-              accessibilityLabel="Campus Hub"
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  activeSection === 'campusHub' && styles.segmentTextActive,
-                ]}
-              >
-                Campus Hub
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
-        {activeSection === 'campusHub' ? (
-          <View style={styles.campusHubWrap}>
-            <CampusHubContent />
-          </View>
-        ) : (
-          <>
         {!isOnline && courses.length > 0 ? (
           <Text style={styles.offlineText}>
             Showing your saved courses. Pull down to refresh when you're online.
@@ -412,8 +331,6 @@ export default function AcademicsScreen() {
         )}
 
         <View style={styles.bottomSpace} />
-          </>
-        )}
       </ScrollView>
     </View>
   );
