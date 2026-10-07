@@ -11,6 +11,8 @@ export default function Index() {
   const academicSetupComplete =
     user.role !== 'student' ||
     Boolean(
+      user.universityId &&
+      user.campusId &&
       user.programme?.trim() &&
       user.yearOfStudy &&
       user.semester

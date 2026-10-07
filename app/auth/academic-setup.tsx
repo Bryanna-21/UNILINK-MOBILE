@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   TextInput,
   Platform,
@@ -14,6 +13,7 @@ import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import LoadingSkeleton from '../../src/components/LoadingSkeleton';
 
 interface Course {
   _id: string;
@@ -53,8 +53,12 @@ export default function AcademicSetupScreen() {
   const [loadingCampuses, setLoadingCampuses] = useState(false);
 
   const [selectedCourseId, setSelectedCourseId] = useState('');
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(
+    user?.yearOfStudy ?? null
+  );
+  const [selectedSemester, setSelectedSemester] = useState<number | null>(
+    user?.semester ?? null
+  );
 
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -204,15 +208,25 @@ export default function AcademicSetupScreen() {
           fontSize: 13,
           marginBottom: Spacing.md,
         },
+        loadingField: {
+          width: '100%',
+        },
+        loadingChips: {
+          flexDirection: 'row',
+          gap: 10,
+        },
+        loadingCourses: {
+          width: '100%',
+        },
+        loadingCourseGap: {
+          marginTop: 10,
+        },
         button: {
           backgroundColor: colors.primary,
           borderRadius: Radius.md,
           paddingVertical: 16,
           alignItems: 'center',
           marginTop: Spacing.sm,
-        },
-        buttonDisabled: {
-          opacity: 0.55,
         },
         buttonText: {
           color: colors.white,
@@ -423,9 +437,37 @@ export default function AcademicSetupScreen() {
     !!selectedSemester &&
     !!universityId &&
     !!campusId &&
-    !saving &&
-    !loadingUniversities &&
-    !loadingCampuses;
+    !saving;
+
+  const handleContinuePress = () => {
+    if (!universityId) {
+      setError('Please select your university.');
+      return;
+    }
+
+    if (!campusId) {
+      setError('Please select your campus.');
+      return;
+    }
+
+    if (!selectedCourse) {
+      setError('Please select your course.');
+      return;
+    }
+
+    if (!selectedYear) {
+      setError('Please select your year of study.');
+      return;
+    }
+
+    if (!selectedSemester) {
+      setError('Please select your semester.');
+      return;
+    }
+
+    setError('');
+    handleContinue();
+  };
 
   return (
     <KeyboardAvoidingView
@@ -447,7 +489,9 @@ export default function AcademicSetupScreen() {
           <Text style={styles.label}>University</Text>
 
           {loadingUniversities ? (
-            <ActivityIndicator color={colors.primary} />
+            <View style={styles.loadingField}>
+              <LoadingSkeleton width="100%" height={56} radius={Radius.md} />
+            </View>
           ) : universityId ? (
             <TouchableOpacity
               style={[styles.valueBox, styles.universitySelected]}
@@ -532,7 +576,11 @@ export default function AcademicSetupScreen() {
               Select your university first.
             </Text>
           ) : loadingCampuses ? (
-            <ActivityIndicator color={colors.primary} />
+            <View style={styles.loadingChips}>
+              <LoadingSkeleton width={110} height={42} radius={21} />
+              <LoadingSkeleton width={130} height={42} radius={21} />
+              <LoadingSkeleton width={95} height={42} radius={21} />
+            </View>
           ) : campuses.length === 0 ? (
             <Text style={styles.helper}>
               No active campuses are available for this university yet.
@@ -577,7 +625,16 @@ export default function AcademicSetupScreen() {
           <Text style={styles.label}>Course</Text>
 
           {loadingCourses ? (
-            <ActivityIndicator color={colors.primary} />
+            <View style={styles.loadingCourses}>
+              <LoadingSkeleton width="100%" height={64} radius={Radius.md} />
+              <LoadingSkeleton
+                width="100%"
+                height={64}
+                radius={Radius.md}
+                style={styles.loadingCourseGap}
+              />
+              <LoadingSkeleton width="82%" height={64} radius={Radius.md} />
+            </View>
           ) : courses.length === 0 ? (
             <Text style={styles.helper}>
               No courses are available for your university yet.
@@ -680,9 +737,9 @@ export default function AcademicSetupScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <TouchableOpacity
-          style={[styles.button, !canContinue && styles.buttonDisabled]}
-          onPress={handleContinue}
-          disabled={!canContinue}
+          style={styles.button}
+          onPress={handleContinuePress}
+          disabled={saving}
           accessibilityRole="button"
           accessibilityLabel="Continue to UniLink"
           accessibilityState={{
@@ -690,11 +747,9 @@ export default function AcademicSetupScreen() {
             busy: saving,
           }}
         >
-          {saving ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.buttonText}>Continue to UniLink</Text>
-          )}
+          <Text style={styles.buttonText}>
+            {saving ? 'Saving your setup…' : 'Continue to UniLink'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
