@@ -101,7 +101,7 @@ export default function VerifyLoginOtpScreen() {
       return;
     }
 
-    router.replace('/(tabs)/home');
+    router.replace('/');
   };
 
   return (

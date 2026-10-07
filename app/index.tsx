@@ -8,5 +8,17 @@ export default function Index() {
     return <Redirect href="/auth/login" />;
   }
 
+  const academicSetupComplete =
+    user.role !== 'student' ||
+    Boolean(
+      user.programme?.trim() &&
+      user.yearOfStudy &&
+      user.semester
+    );
+
+  if (!academicSetupComplete) {
+    return <Redirect href="/auth/academic-setup" />;
+  }
+
   return <Redirect href="/(tabs)/home" />;
 }

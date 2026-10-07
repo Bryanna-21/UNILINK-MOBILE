@@ -19,6 +19,10 @@ export interface UniLinkUser {
   avatarUrl?: string;
   coverUrl?: string;
   username?: string;
+  programme?: string;
+  yearOfStudy?: number | null;
+  semester?: number | null;
+  onboardingCompletedAt?: string | null;
 }
 
 // Result shapes returned by login/register/verifyOtp/etc. Callers

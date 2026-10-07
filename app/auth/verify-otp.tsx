@@ -110,7 +110,7 @@ export default function VerifyOtpScreen() {
       return;
     }
 
-    router.replace('/(tabs)/home');
+    router.replace('/');
   };
 
   const handleResend = async () => {
