@@ -350,6 +350,15 @@ export default function AcademicSetupScreen() {
   useEffect(() => {
     let cancelled = false;
 
+    if (!universityId) {
+      setCourses([]);
+      setSelectedCourseId('');
+      setLoadingCourses(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const loadCourses = async () => {
       setLoadingCourses(true);
       setError('');
@@ -362,9 +371,22 @@ export default function AcademicSetupScreen() {
 
         if (!cancelled) {
           setCourses(data);
+
+          // Never keep a course selected if it is no longer part of
+          // the currently selected university.
+          setSelectedCourseId((current) =>
+            data.some(
+              (course: Course) =>
+                String(course._id) === String(current)
+            )
+              ? current
+              : ''
+          );
         }
       } catch (err: any) {
         if (!cancelled) {
+          setCourses([]);
+          setSelectedCourseId('');
           setError(
             err?.response?.data?.message ||
               'Could not load your courses. Please try again.'
@@ -382,7 +404,7 @@ export default function AcademicSetupScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [universityId]);
 
   const campusRequired = campuses.length > 0;
 
@@ -509,6 +531,9 @@ export default function AcademicSetupScreen() {
                 setUniversityQuery('');
                 setCampusId('');
                 setCampuses([]);
+                setCourses([]);
+                setSelectedCourseId('');
+                setError('');
               }}
               accessibilityRole="button"
               accessibilityLabel="Change university"
@@ -547,11 +572,34 @@ export default function AcademicSetupScreen() {
                         style={[
                           styles.universityOption,
                         ]}
-                        onPress={() => {
+                        onPress={async () => {
+                          const previousUniversityId = universityId;
+                          const previousUniversityQuery = universityQuery;
+
                           setUniversityId(id);
                           setUniversityQuery(university.name);
                           setCampusId('');
                           setCampuses([]);
+                          setSelectedCourseId('');
+                          setCourses([]);
+                          setError('');
+
+                          try {
+                            await api.put('/profile/me', {
+                              universityId: id,
+                            });
+                          } catch (err: any) {
+                            setUniversityId(previousUniversityId);
+                            setUniversityQuery(previousUniversityQuery);
+                            setCampusId('');
+                            setCampuses([]);
+                            setCourses([]);
+                            setSelectedCourseId('');
+                            setError(
+                              err?.response?.data?.message ||
+                                'Could not save your university. Please try again.'
+                            );
+                          }
                         }}
                         activeOpacity={0.75}
                         accessibilityRole="button"
