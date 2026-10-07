@@ -74,8 +74,21 @@ export default function ScanCheckinScreen() {
   );
 
   const handleScan = useCallback(async (result: BarcodeScanningResult) => {
-    const token = result.data;
-    if (!token || token === lastScannedRef.current || inFlightRef.current) return;
+    const rawValue = result.data?.trim();
+    if (!rawValue || inFlightRef.current) return;
+
+    let token = rawValue;
+
+    try {
+      if (rawValue.startsWith('unilink://')) {
+        const url = new URL(rawValue);
+        token = url.searchParams.get('token') || '';
+      }
+    } catch {
+      token = '';
+    }
+
+    if (!token || token === lastScannedRef.current) return;
 
     inFlightRef.current = true;
     lastScannedRef.current = token;

@@ -179,7 +179,10 @@ export default function EventDetailScreen() {
 
         {rsvp && (
           <View style={styles.qrBox}>
-            <QRCode value={rsvp.qrToken} size={180} />
+            <QRCode
+              value={`unilink://event/check-in?token=${encodeURIComponent(rsvp.qrToken)}`}
+              size={180}
+            />
             {rsvp.checkedIn ? (
               <Text style={styles.checkedInBadge}>✓ Checked in</Text>
             ) : (
