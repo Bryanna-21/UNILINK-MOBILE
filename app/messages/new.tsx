@@ -31,39 +31,71 @@ export default function NewConversationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Student[]>([]);
+  const [suggestions, setSuggestions] = useState<(Student & { username?: string; avatarUrl?: string })[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
 
   const trimmedQuery = query.trim();
   const isSearchMode = step === 'course' && trimmedQuery.length >= 2;
 
-  // Debounced name search (GET /profile/search). The `cancelled` flag
-  // drops out-of-order responses: typing "ann" then "anna" must never
-  // let the slower "ann" reply overwrite the "anna" results.
+  // Load real people suggestions before the user starts searching.
+  useEffect(() => {
+    let cancelled = false;
+
+    api
+      .get('/people/suggestions')
+      .then((res) => {
+        if (!cancelled) {
+          setSuggestions(res.data?.data ?? []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingSuggestions(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Debounced people search. Names use /profile/search; @username uses /people/search.
   useEffect(() => {
     if (trimmedQuery.length < 2) {
       setResults([]);
       setIsSearching(false);
       return;
     }
+
     let cancelled = false;
     setIsSearching(true);
+
     const timer = setTimeout(async () => {
       try {
-        // "@name" searches by username; anything else is the original name search.
         const byUsername = trimmedQuery.startsWith('@');
+        const searchTerm = byUsername
+          ? trimmedQuery.slice(1)
+          : trimmedQuery;
+
         const res = byUsername
-          ? await api.get('/people/search', { params: { q: trimmedQuery.slice(1) } })
-          : await api.get('/profile/search', { params: { q: trimmedQuery } });
+          ? await api.get('/people/search', { params: { q: searchTerm } })
+          : await api.get('/profile/search', { params: { q: searchTerm } });
+
         if (!cancelled) {
           setResults(res.data?.data || []);
           setError(null);
         }
       } catch (err: any) {
-        if (!cancelled) setError(err?.response?.data?.message || 'Search failed.');
+        if (!cancelled) {
+          setError(err?.response?.data?.message || 'Search failed.');
+        }
       } finally {
         if (!cancelled) setIsSearching(false);
       }
     }, 350);
+
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -124,6 +156,12 @@ export default function NewConversationScreen() {
           alignItems: 'center',
         },
         avatarText: { color: colors.white, fontWeight: '700', fontSize: 13 },
+        suggestionLabel: {
+          fontSize: 13,
+          fontWeight: '800',
+          color: colors.textMuted,
+          marginBottom: Spacing.xs,
+        },
       }),
     [colors]
   );
@@ -263,17 +301,73 @@ export default function NewConversationScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {step === 'course' ? (
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by name, or @username"
-          placeholderTextColor={colors.textMuted}
-          value={query}
-          onChangeText={setQuery}
-          autoCorrect={false}
-          autoCapitalize="words"
-          returnKeyType="search"
-          accessibilityLabel="Search people by name"
-        />
+        <>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search anyone by name or @username"
+            placeholderTextColor={colors.textMuted}
+            value={query}
+            onChangeText={setQuery}
+            autoCorrect={false}
+            autoCapitalize="words"
+            returnKeyType="search"
+            accessibilityLabel="Search anyone by name or username"
+          />
+
+          {!trimmedQuery && (
+            <View style={{ paddingHorizontal: Spacing.md, marginTop: Spacing.md }}>
+              <Text style={styles.suggestionLabel} accessibilityRole="header">
+                People you may know
+              </Text>
+
+              {isLoadingSuggestions ? (
+                <ActivityIndicator
+                  style={{ marginVertical: Spacing.md }}
+                  color={colors.primary}
+                />
+              ) : suggestions.length > 0 ? (
+                suggestions.slice(0, 8).map((person) => (
+                  <TouchableOpacity
+                    key={person._id}
+                    style={[styles.row, { marginBottom: Spacing.sm }]}
+                    onPress={() => handleSelectStudent(person)}
+                    disabled={isStarting}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Message ${person.name}`}
+                    accessibilityState={{ disabled: isStarting }}
+                  >
+                    <View
+                      style={styles.avatar}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                    >
+                      <Text style={styles.avatarText}>
+                        {(person.name || '?').charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.rowTitle} numberOfLines={1}>
+                        {person.name}
+                      </Text>
+
+                      {person.username ? (
+                        <Text style={styles.rowSubtitle}>
+                          @{person.username}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>
+                  Start typing to find anyone at your university.
+                </Text>
+              )}
+            </View>
+          )}
+        </>
       ) : null}
 
       {isSearchMode ? (

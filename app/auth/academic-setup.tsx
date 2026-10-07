@@ -53,6 +53,7 @@ export default function AcademicSetupScreen() {
   const [loadingCampuses, setLoadingCampuses] = useState(false);
 
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [courseQuery, setCourseQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState<number | null>(
     user?.yearOfStudy ?? null
   );
@@ -250,6 +251,22 @@ export default function AcademicSetupScreen() {
       )
       .slice(0, 8);
   }, [universities, universityQuery, universityId]);
+
+  const filteredCourses = useMemo(() => {
+    const query = courseQuery.trim().toLowerCase();
+
+    if (!query || selectedCourseId) {
+      return [];
+    }
+
+    return courses
+      .filter((course) =>
+        `${course.code || ''} ${course.title}`
+          .toLowerCase()
+          .includes(query)
+      )
+      .slice(0, 10);
+  }, [courses, courseQuery, selectedCourseId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -705,31 +722,79 @@ export default function AcademicSetupScreen() {
             <Text style={styles.helper}>
               No courses are available for your university yet.
             </Text>
+          ) : selectedCourse ? (
+            <View>
+              <TouchableOpacity
+                style={[styles.course, styles.courseActive]}
+                onPress={() => {
+                  setSelectedCourseId('');
+                  setCourseQuery('');
+                }}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={`Change course from ${selectedCourse.title}`}
+              >
+                <Text style={styles.courseTitle}>
+                  {selectedCourse.title}
+                </Text>
+
+                {selectedCourse.code ? (
+                  <Text style={styles.courseCode}>
+                    {selectedCourse.code}
+                  </Text>
+                ) : null}
+
+                <Text style={styles.helper}>Tap to change course</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
-            <View style={styles.courseList}>
-              {courses.map((course) => {
-                const active = course._id === selectedCourseId;
+            <View>
+              <TextInput
+                style={styles.universityInput}
+                placeholder="Search for your course"
+                placeholderTextColor={colors.textMuted}
+                value={courseQuery}
+                onChangeText={setCourseQuery}
+                autoCapitalize="words"
+                autoCorrect={false}
+                accessibilityLabel="Search for course"
+              />
 
-                return (
-                  <TouchableOpacity
-                    key={course._id}
-                    style={[styles.course, active && styles.courseActive]}
-                    onPress={() => setSelectedCourseId(course._id)}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: active }}
-                  >
-                    <Text style={styles.courseTitle}>
-                      {course.title}
-                    </Text>
+              {filteredCourses.length > 0 ? (
+                <View style={styles.universityDropdown}>
+                  {filteredCourses.map((course) => (
+                    <TouchableOpacity
+                      key={course._id}
+                      style={styles.universityOption}
+                      onPress={() => {
+                        setSelectedCourseId(course._id);
+                        setCourseQuery('');
+                      }}
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Select ${course.title}`}
+                    >
+                      {course.code ? (
+                        <Text style={styles.courseCode}>
+                          {course.code}
+                        </Text>
+                      ) : null}
 
-                    {course.code ? (
-                      <Text style={styles.courseCode}>
-                        {course.code}
+                      <Text style={styles.universityOptionText}>
+                        {course.title}
                       </Text>
-                    ) : null}
-                  </TouchableOpacity>
-                );
-              })}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : courseQuery.trim() ? (
+                <Text style={styles.helper}>
+                  No matching courses found.
+                </Text>
+              ) : (
+                <Text style={styles.helper}>
+                  Search by course name or code.
+                </Text>
+              )}
             </View>
           )}
         </View>
