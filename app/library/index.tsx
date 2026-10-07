@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: LIVE — books and digital resources are fetched from
 // GET /api/library/books and GET /api/library/digital on the real
@@ -121,7 +122,7 @@ export default function LibraryScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator color={colors.primary} />
+        <LoadingSkeletonList rows={5} />
       </View>
     );
   }

@@ -12,6 +12,7 @@ import {
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: REAL — GET/POST /api/community/projects. No join/leave route exists
 // for Projects (unlike Clubs/Study Groups) — contributorIds is set
@@ -200,7 +201,7 @@ export default function ProjectsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={colors.primary} />
+          <LoadingSkeletonList rows={4} />
         </View>
       )}
 

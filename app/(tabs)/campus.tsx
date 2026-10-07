@@ -20,6 +20,7 @@ import { api } from '../../src/api/client';
 import { Avatar } from '../../src/components/Avatar';
 import { CreatePostSheet } from '../../src/components/CreatePostSheet';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: REAL — the campus feed. Search box on top, "+" button (bottom right) to create a
 // text / photo / video post, and every post shows its author's profile picture and name.
@@ -505,7 +506,7 @@ export default function CampusScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
+        <LoadingSkeletonList rows={4} />
       ) : (
         <FlatList
           data={posts}

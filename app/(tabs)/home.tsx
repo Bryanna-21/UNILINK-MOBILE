@@ -1,11 +1,13 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { cacheResponse, getCachedResponse, formatCacheAge } from '../../src/utils/offlineCache';
 import { useNetworkStatus } from '../../src/utils/useNetworkStatus';
+import LoadingSkeleton from '../../src/components/LoadingSkeleton';
+import Svg, { Path } from 'react-native-svg';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -68,13 +70,22 @@ export default function HomeScreen() {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: Spacing.md,
-          paddingTop: Spacing.xl,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.md,
+          borderRadius: Radius.lg,
+          backgroundColor: colors.primarySoft,
+          borderWidth: 1,
+          borderColor: colors.primary + '22',
         },
         greeting: { fontSize: 22, fontWeight: '800', color: colors.text },
         role: { fontSize: 13, color: colors.textMuted, textTransform: 'capitalize', marginTop: 2 },
         bellButton: { position: 'relative', padding: 4 },
-        bellIcon: { fontSize: 20 },
+        bellIcon: {
+          width: 22,
+          height: 22,
+        },
         bellBadge: {
           position: 'absolute',
           top: -2,
@@ -101,9 +112,16 @@ export default function HomeScreen() {
         section: { marginTop: Spacing.lg },
         sectionTitle: {
           fontSize: 17,
-          fontWeight: '700',
+          fontWeight: '800',
           color: colors.text,
           paddingHorizontal: Spacing.md,
+          marginBottom: Spacing.xs,
+        },
+        sectionSubtitle: {
+          fontSize: 12,
+          color: colors.textMuted,
+          paddingHorizontal: Spacing.md,
+          marginTop: -2,
           marginBottom: Spacing.xs,
         },
         emptyCard: {
@@ -115,8 +133,41 @@ export default function HomeScreen() {
           borderWidth: 1,
           borderColor: colors.border,
         },
+        timetableCard: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderLeftWidth: 4,
+          borderLeftColor: colors.primary,
+        },
+        timetableTime: {
+          color: colors.primary,
+          fontSize: 13,
+          fontWeight: '800',
+        },
+        timetableCourse: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '700',
+          marginTop: 3,
+        },
+        timetableLocation: {
+          color: colors.textMuted,
+          fontSize: 12,
+          marginTop: 4,
+        },
+        timetableLink: {
+          color: colors.primary,
+          fontSize: 13,
+          fontWeight: '800',
+          paddingHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+        },
         emptyText: { color: colors.textMuted, fontSize: 13, textAlign: 'center' },
-        spinner: { marginTop: Spacing.sm },
         noteTitle: { color: colors.text, fontSize: 14, fontWeight: '600' },
         noteCourse: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
         rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -127,7 +178,15 @@ export default function HomeScreen() {
           borderRadius: Radius.sm,
         },
         signButtonText: { color: colors.white, fontSize: 12, fontWeight: '700' },
-        signedTag: { color: colors.secondary, fontSize: 13, fontWeight: '700' },
+        signedTag: {
+          color: colors.secondary,
+          backgroundColor: colors.secondarySoft,
+          paddingHorizontal: Spacing.sm,
+          paddingVertical: 5,
+          borderRadius: Radius.full,
+          fontSize: 12,
+          fontWeight: '800',
+        },
         announcementCard: {
           backgroundColor: colors.surface,
           marginHorizontal: Spacing.md,
@@ -136,6 +195,8 @@ export default function HomeScreen() {
           borderRadius: Radius.md,
           borderWidth: 1,
           borderColor: colors.border,
+          borderLeftWidth: 4,
+          borderLeftColor: colors.accent,
         },
         announcementTitle: {
           color: colors.text,
@@ -356,9 +417,22 @@ export default function HomeScreen() {
               : 'Notifications'
           }
         >
-          <Text style={styles.bellIcon} accessibilityElementsHidden importantForAccessibility="no">
-            🔔
-          </Text>
+          <Svg
+            width={22}
+            height={22}
+            viewBox="0 0 24 24"
+            fill="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          >
+            <Path
+              d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"
+              stroke={colors.text}
+              strokeWidth={1.9}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
           {unreadNotifCount > 0 ? (
             <View style={styles.bellBadge} accessibilityElementsHidden importantForAccessibility="no">
               <Text style={styles.bellBadgeText}>{unreadNotifCount > 9 ? '9+' : unreadNotifCount}</Text>
@@ -394,7 +468,18 @@ export default function HomeScreen() {
         </View>
 
         {isLoadingAnnouncements ? (
-          <ActivityIndicator style={styles.spinner} color={colors.primary} />
+          <>
+            <View style={styles.emptyCard}>
+              <LoadingSkeleton width="62%" height={16} />
+              <LoadingSkeleton width="92%" height={12} style={{ marginTop: 10 }} />
+              <LoadingSkeleton width="76%" height={12} style={{ marginTop: 7 }} />
+            </View>
+            <View style={styles.emptyCard}>
+              <LoadingSkeleton width="48%" height={16} />
+              <LoadingSkeleton width="88%" height={12} style={{ marginTop: 10 }} />
+              <LoadingSkeleton width="68%" height={12} style={{ marginTop: 7 }} />
+            </View>
+          </>
         ) : announcements.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>
@@ -438,10 +523,21 @@ export default function HomeScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle} accessibilityRole="header">
-          Today's Classes
+          Today's Timetable
         </Text>
         {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={colors.primary} />
+          <>
+            <View style={styles.timetableCard}>
+              <LoadingSkeleton width="32%" height={13} />
+              <LoadingSkeleton width="72%" height={15} style={{ marginTop: 8 }} />
+              <LoadingSkeleton width="45%" height={11} style={{ marginTop: 7 }} />
+            </View>
+            <View style={styles.timetableCard}>
+              <LoadingSkeleton width="28%" height={13} />
+              <LoadingSkeleton width="66%" height={15} style={{ marginTop: 8 }} />
+              <LoadingSkeleton width="40%" height={11} style={{ marginTop: 7 }} />
+            </View>
+          </>
         ) : loadError ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>{loadError}</Text>
@@ -457,16 +553,27 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ) : (
           classesToday.map((cls) => (
-            <View key={cls._id} style={styles.emptyCard}>
-              <Text style={styles.noteTitle}>
-                {cls.startTime} – {cls.endTime} · {cls.courseTitle}
+            <View key={cls._id} style={styles.timetableCard}>
+              <Text style={styles.timetableTime}>
+                {cls.startTime} – {cls.endTime}
               </Text>
-              <Text style={styles.noteCourse}>
-                {cls.location || 'Location not set'}{cls.isOverridden ? ' · your schedule' : ''}
+              <Text style={styles.timetableCourse}>
+                {cls.courseTitle}
+              </Text>
+              <Text style={styles.timetableLocation}>
+                {cls.location || 'Location not set'}
+                {cls.isOverridden ? ' · your schedule' : ''}
               </Text>
             </View>
           ))
         )}
+        <TouchableOpacity
+          onPress={() => router.push('/courses' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="View full timetable"
+        >
+          <Text style={styles.timetableLink}>View full timetable →</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -474,7 +581,16 @@ export default function HomeScreen() {
           Attendance
         </Text>
         {isLoading ? (
-          <ActivityIndicator style={styles.spinner} color={colors.primary} />
+          <>
+            <View style={styles.emptyCard}>
+              <LoadingSkeleton width="55%" height={15} />
+              <LoadingSkeleton width="82%" height={12} style={{ marginTop: 10 }} />
+            </View>
+            <View style={styles.emptyCard}>
+              <LoadingSkeleton width="48%" height={15} />
+              <LoadingSkeleton width="76%" height={12} style={{ marginTop: 10 }} />
+            </View>
+          </>
         ) : loadError ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>{loadError}</Text>

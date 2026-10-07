@@ -21,6 +21,7 @@ import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: REAL — GET/POST /api/lost-and-found and PATCH
 // /api/lost-and-found/:id/resolve all call the live backend. Image
@@ -251,7 +252,7 @@ export default function LostAndFoundScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={colors.primary} />
+        <LoadingSkeletonList rows={5} />
       </View>
     );
   }

@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ScrollView } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore, UserRole } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import UniLinkAIIcon from '../../src/components/UniLinkAIIcon';
+import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: REAL — matches web's src/pages/Messages.js and
 // src/services/messageService.js exactly, both read directly rather
@@ -390,7 +391,7 @@ export default function MessagesScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {isLoading ? (
-        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
+        <LoadingSkeletonList rows={4} />
       ) : (
         <FlatList
           data={filteredConversations}

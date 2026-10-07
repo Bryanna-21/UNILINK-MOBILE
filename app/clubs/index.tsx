@@ -13,6 +13,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 interface Club {
   _id: string;
@@ -178,7 +179,7 @@ export default function ClubsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={colors.primary} />
+          <LoadingSkeletonList rows={4} />
         </View>
       )}
 

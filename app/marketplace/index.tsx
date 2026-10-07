@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: LIVE — listings and job listings are fetched from
 // GET /api/marketplace/listings and GET /api/marketplace/jobs
@@ -100,7 +101,7 @@ export default function MarketplaceScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator color={colors.primary} />
+        <LoadingSkeletonList rows={5} />
       </View>
     );
   }

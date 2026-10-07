@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: LIVE — GET /exams matches web's examService.js getStudentExams
 // exactly (same endpoint, same backend, both return { data: Exam[] }).
@@ -174,7 +175,7 @@ export default function ExamsScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={styles.spinner} color={colors.primary} />
+        <LoadingSkeletonList rows={4} />
       ) : error ? (
         <View style={styles.card}>
           <Text style={styles.emptyText}>{error}</Text>

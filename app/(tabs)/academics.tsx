@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,7 @@ import { cacheResponse, getCachedResponse } from '../../src/utils/offlineCache';
 import { useNetworkStatus } from '../../src/utils/useNetworkStatus';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import CampusHubContent from '../../src/components/CampusHubContent';
+import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 interface Course {
   _id: string;
@@ -492,10 +492,7 @@ export default function AcademicsScreen() {
         </Text>
 
         {isLoading ? (
-          <ActivityIndicator
-            style={styles.loading}
-            color={colors.primary}
-          />
+          <LoadingSkeletonList rows={3} />
         ) : error && courses.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>Couldn’t load your courses</Text>

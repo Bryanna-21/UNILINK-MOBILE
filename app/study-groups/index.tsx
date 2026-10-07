@@ -13,6 +13,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: REAL — GET/POST /api/community/study-groups, POST /api/community/study-groups/:id/join.
 // Note: there is no /leave route for study groups on the backend
@@ -192,7 +193,7 @@ export default function StudyGroupsScreen() {
 
       {isLoading && (
         <View style={styles.centerFill}>
-          <ActivityIndicator color={colors.primary} />
+          <LoadingSkeletonList rows={4} />
         </View>
       )}
 

@@ -1,48 +1,34 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
-
-/**
- * UniLink boot / loading animation.
- *
- * Pure React Native `Animated` API: no new dependencies. Three
- * independent pieces:
- *
- *   1. Logo mark: a soft breathing pulse (scale + opacity loop) with
- *      an expanding ring around it.
- *   2. Wordmark: one fade + rise-in on mount ("Uni" navy, "Link" teal,
- *      matching the logo's own wordmark).
- *   3. Loading dots: three dots pulsing in sequence, looped, shading
- *      from the logo's blue to its teal.
- *
- * HAND-OFF FROM THE NATIVE SPLASH: the OS draws a native splash before any
- * JavaScript runs, and it cannot animate. For the swap to look seamless,
- * this screen uses the same white background and the same logo image at
- * the same size and screen position. Keep LOGO_SIZE equal to
- * `imageWidth` for expo-splash-screen in app.json. The logo is kept at
- * the exact screen centre; the wordmark and dots hang below it.
- *
- * The minimum on-screen time (so a fast start doesn't flash it) is
- * handled by RootLayout in app/_layout.tsx, not here.
- */
+import { Animated, Easing, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 const BG = '#FFFFFF';
 const BLUE = '#1560C8';
 const TEAL = '#0FAFB3';
 const NAVY = '#152356';
-const WORDMARK_TEAL = '#11A39D';
-const DOT_COLORS = ['#0E439C', '#1387B0', '#0FAFB3'];
+const GREEN = '#16A34A';
 
-const LOGO_SIZE = 360; // MUST equal imageWidth in app.json's expo-splash-screen plugin
-const RING_SIZE = 250;
+const BASE_SCREEN_SIZE = 390;
+const BASE_LOGO_SIZE = 260;
 
 export function LoadingSplash() {
+  const { width, height } = useWindowDimensions();
+  const screenSize = Math.min(width, height);
+  const scale = Math.min(Math.max(screenSize / BASE_SCREEN_SIZE, 0.82), 1.15);
+
+  const logoSize = BASE_LOGO_SIZE * scale;
+  const dotOffset = 142 * scale;
   const pulse = useRef(new Animated.Value(0)).current;
-  const wordmarkOpacity = useRef(new Animated.Value(0)).current;
-  const wordmarkRise = useRef(new Animated.Value(8)).current;
-  const dotAnims = useRef([new Animated.Value(0.3), new Animated.Value(0.3), new Animated.Value(0.3)]).current;
+  const exileOpacity = useRef(new Animated.Value(0)).current;
+  const exileRise = useRef(new Animated.Value(8)).current;
+
+  const dotAnims = useRef([
+    new Animated.Value(0.3),
+    new Animated.Value(0.3),
+    new Animated.Value(0.3),
+  ]).current;
 
   useEffect(() => {
-    // 1. Logo breathing pulse: loops until unmounted.
+    // Gentle Facebook-style logo breathing animation.
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
@@ -59,19 +45,17 @@ export function LoadingSplash() {
         }),
       ])
     );
-    pulseLoop.start();
 
-    // 2. Wordmark fades + rises in once, slightly after the logo starts
-    //    pulsing so everything doesn't pop in at the same instant.
-    const wordmarkIn = Animated.parallel([
-      Animated.timing(wordmarkOpacity, {
+    // X by EXILE appears subtly at the bottom.
+    const exileIn = Animated.parallel([
+      Animated.timing(exileOpacity, {
         toValue: 1,
         duration: 420,
         delay: 180,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-      Animated.timing(wordmarkRise, {
+      Animated.timing(exileRise, {
         toValue: 0,
         duration: 420,
         delay: 180,
@@ -79,21 +63,20 @@ export function LoadingSplash() {
         useNativeDriver: true,
       }),
     ]);
-    wordmarkIn.start();
 
-    // 3. Three dots pulsing in a staggered loop.
+    // Three simple loading dots.
     const dotLoop = Animated.loop(
       Animated.stagger(
         160,
-        dotAnims.map((v) =>
+        dotAnims.map((value) =>
           Animated.sequence([
-            Animated.timing(v, {
+            Animated.timing(value, {
               toValue: 1,
               duration: 380,
               easing: Easing.inOut(Easing.ease),
               useNativeDriver: true,
             }),
-            Animated.timing(v, {
+            Animated.timing(value, {
               toValue: 0.3,
               duration: 380,
               easing: Easing.inOut(Easing.ease),
@@ -103,60 +86,104 @@ export function LoadingSplash() {
         )
       )
     );
+
+    pulseLoop.start();
+    exileIn.start();
     dotLoop.start();
 
     return () => {
       pulseLoop.stop();
-      wordmarkIn.stop();
+      exileIn.stop();
       dotLoop.stop();
     };
-  }, [pulse, wordmarkOpacity, wordmarkRise, dotAnims]);
+  }, [pulse, exileOpacity, exileRise, dotAnims]);
 
-  const logoScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] });
-  const logoOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] });
-  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.22] });
-  const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] });
+  const logoScale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.035],
+  });
+
+  const logoOpacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.94, 1],
+  });
 
   return (
-    <View style={styles.root} accessibilityLabel="Loading UniLink" accessibilityRole="progressbar">
-      {/* Ring + logo share the exact screen centre, where the native splash drew the logo. */}
-      <Animated.View style={[styles.ring, { opacity: ringOpacity, transform: [{ scale: ringScale }] }]} />
+    <View
+      style={styles.root}
+      accessibilityLabel="Loading UniLink"
+      accessibilityRole="progressbar"
+    >
+      {/* Centered UniLink app logo */}
       <Animated.Image
         source={require('../../assets/splash-icon.png')}
-        style={[styles.logo, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
+        style={[
+          styles.logo,
+          {
+            width: logoSize,
+            height: logoSize,
+            opacity: logoOpacity,
+            transform: [{ scale: logoScale }],
+          },
+        ]}
         resizeMode="contain"
       />
 
-      <Animated.Text
+      {/* Three loading dots */}
+      <View
         style={[
-          styles.wordmark,
-          { opacity: wordmarkOpacity, transform: [{ translateY: wordmarkRise }] },
+          styles.dotsRow,
+          {
+            marginTop: dotOffset,
+          },
         ]}
+        accessibilityElementsHidden
       >
-        <Text style={{ color: NAVY }}>Uni</Text>
-        <Text style={{ color: WORDMARK_TEAL }}>Link</Text>
-      </Animated.Text>
-
-      <View style={styles.dotsRow}>
-        {dotAnims.map((v, i) => (
+        {dotAnims.map((value, index) => (
           <Animated.View
-            key={i}
+            key={index}
             style={[
               styles.dot,
               {
-                backgroundColor: DOT_COLORS[i],
-                opacity: v,
-                transform: [{ scale: v.interpolate({ inputRange: [0.3, 1], outputRange: [0.85, 1] }) }],
+                backgroundColor:
+                  index === 0 ? BLUE : index === 1 ? NAVY : TEAL,
+                opacity: value,
+                transform: [
+                  {
+                    scale: value.interpolate({
+                      inputRange: [0.3, 1],
+                      outputRange: [0.85, 1],
+                    }),
+                  },
+                ],
               },
             ]}
           />
         ))}
       </View>
+
+      {/* Exile Organization branding — fixed at the bottom */}
+      <Animated.View
+        style={[
+          styles.exileBrand,
+          {
+            opacity: exileOpacity,
+            transform: [{ translateY: exileRise }],
+          },
+        ]}
+      >
+        <View style={styles.exileX}>
+          <View style={styles.xBarOne} />
+          <View style={styles.xBarTwo} />
+        </View>
+
+        <Text style={styles.byText}>by</Text>
+        <Text style={styles.exileText}>EXILE</Text>
+      </Animated.View>
     </View>
   );
 }
 
-// Same component under the name used in the original NexChat design.
 export const BootSplash = LoadingSplash;
 
 const styles = StyleSheet.create({
@@ -166,39 +193,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ring: {
-    position: 'absolute',
-    width: RING_SIZE,
-    height: RING_SIZE,
-    borderRadius: RING_SIZE / 2,
-    borderWidth: 1.5,
-    borderColor: BLUE,
-  },
+
   logo: {
-    position: 'absolute',
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
+    width: BASE_LOGO_SIZE,
+    height: BASE_LOGO_SIZE,
   },
-  // Wordmark and dots are positioned relative to screen centre so the logo
-  // never moves; the ring's largest radius (~152) stays clear of both.
-  wordmark: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: 162,
-    fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
+
   dotsRow: {
     position: 'absolute',
     top: '50%',
-    marginTop: 214,
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
+
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+
+  exileBrand: {
+    position: 'absolute',
+    bottom: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  exileX: {
+    width: 20,
+    height: 20,
+    marginRight: 7,
+    position: 'relative',
+  },
+
+  xBarOne: {
+    position: 'absolute',
+    width: 24,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: BLUE,
+    top: 8,
+    left: -2,
+    transform: [{ rotate: '45deg' }],
+  },
+
+  xBarTwo: {
+    position: 'absolute',
+    width: 24,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: GREEN,
+    top: 8,
+    left: -2,
+    transform: [{ rotate: '-45deg' }],
+  },
+
+  byText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+    marginRight: 4,
+  },
+
+  exileText: {
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: NAVY,
   },
 });

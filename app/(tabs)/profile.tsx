@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import { LoadingSkeletonGrid } from '../../src/components/LoadingSkeleton';
 
 type PostMedia = { url: string; type: 'image' | 'video'; publicId?: string };
 type ProfilePost = {
@@ -474,7 +475,7 @@ export default function ProfileScreen() {
             );
           })}
         </View>
-        {loading || tabLoading ? <View style={styles.center}><ActivityIndicator color={colors.primary} /></View> : tabError ? <Text style={styles.error}>{tabError}</Text> : items.length === 0 ? <View style={styles.center}><Text style={styles.muted}>{activeTab === 'posts' ? 'No posts yet.' : activeTab === 'reshared' ? 'No reshares yet.' : 'No liked posts yet.'}</Text></View> : (
+        {loading || tabLoading ? <LoadingSkeletonGrid rows={3} columns={3} /> : tabError ? <Text style={styles.error}>{tabError}</Text> : items.length === 0 ? <View style={styles.center}><Text style={styles.muted}>{activeTab === 'posts' ? 'No posts yet.' : activeTab === 'reshared' ? 'No reshares yet.' : 'No liked posts yet.'}</Text></View> : (
           <View style={styles.grid}>
             {items.map((post) => {
               const image = post.media?.find((m) => m.type === 'image')?.url;

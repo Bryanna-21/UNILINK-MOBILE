@@ -6,16 +6,19 @@ import { useThemeStore } from '../store/themeStore';
 // components; it's the only one that actually reacts to the toggle.
 export const Colors = {
   primary: '#0B6BFF',
-  secondary: '#22C55E',
-  accent: '#00C2FF',
-  background: '#F8FAFC',
-  backgroundDark: '#0A0A0A',
+  primarySoft: '#EAF2FF',
+  secondary: '#16A34A',
+  secondarySoft: '#EAF8EF',
+  accent: '#00B8E6',
+  accentSoft: '#E8F9FD',
+  background: '#F6F9FC',
+  backgroundDark: '#081525',
   text: '#0F172A',
   textDark: '#F8FAFC',
   textMuted: '#64748B',
-  textMutedDark: '#94A3B8',
+  textMutedDark: '#A9BCD2',
   border: '#E2E8F0',
-  borderDark: '#1E293B',
+  borderDark: '#243044',
   danger: '#EF4444',
   white: '#FFFFFF',
   black: '#000000',
@@ -25,17 +28,22 @@ export const Colors = {
 // Colors.white for cards against a near-white background; dark mode
 // needs a surface distinct from the near-black background, or every
 // card in the app would be invisible against it.
-const SURFACE_DARK = '#151515';
+const SURFACE_DARK = '#0D1B2A';
 
 export interface ThemeColors {
   primary: string;
+  primarySoft: string;
   secondary: string;
+  secondarySoft: string;
   accent: string;
+  accentSoft: string;
   background: string;
   surface: string; // card/composer backgrounds — was Colors.white before
   text: string;
   textMuted: string;
   border: string;
+  skeletonBase: string;
+  skeletonHighlight: string;
   danger: string;
   white: string;
   black: string;
@@ -43,13 +51,18 @@ export interface ThemeColors {
 
 const lightColors: ThemeColors = {
   primary: Colors.primary,
+  primarySoft: Colors.primarySoft,
   secondary: Colors.secondary,
+  secondarySoft: Colors.secondarySoft,
   accent: Colors.accent,
+  accentSoft: Colors.accentSoft,
   background: Colors.background,
   surface: Colors.white,
   text: Colors.text,
   textMuted: Colors.textMuted,
   border: Colors.border,
+  skeletonBase: '#E5ECF4',
+  skeletonHighlight: '#FFFFFF',
   danger: Colors.danger,
   white: Colors.white,
   black: Colors.black,
@@ -57,13 +70,18 @@ const lightColors: ThemeColors = {
 
 const darkColors: ThemeColors = {
   primary: Colors.primary,
+  primarySoft: '#102B52',
   secondary: Colors.secondary,
+  secondarySoft: '#103326',
   accent: Colors.accent,
+  accentSoft: '#0D3040',
   background: Colors.backgroundDark,
   surface: SURFACE_DARK,
   text: Colors.textDark,
   textMuted: Colors.textMutedDark,
   border: Colors.borderDark,
+  skeletonBase: '#17304A',
+  skeletonHighlight: '#315C87',
   danger: Colors.danger,
   white: Colors.white,
   black: Colors.black,
@@ -92,4 +110,11 @@ export const Spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+} as const;
+
+export const Motion = {
+  fast: 120,
+  normal: 180,
+  enter: 240,
+  exit: 160,
 } as const;

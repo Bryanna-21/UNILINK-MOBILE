@@ -12,6 +12,7 @@ import {
 import { Stack, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: REAL, NEW. Find people by username (GET /people/search) and see suggestions
 // (GET /people/suggestions). "Follow" uses the existing POST/DELETE /follow/:userId.
@@ -234,7 +235,7 @@ export default function FindPeopleScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {showSpinner ? (
-        <ActivityIndicator style={{ marginTop: Spacing.xl }} color={colors.primary} />
+        <LoadingSkeletonList rows={5} />
       ) : (
         <FlatList
           data={data}

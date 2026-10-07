@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
@@ -7,6 +7,7 @@ import { api } from '../../src/api/client';
 import { cacheResponse, getCachedResponse, formatCacheAge } from '../../src/utils/offlineCache';
 import { useNetworkStatus } from '../../src/utils/useNetworkStatus';
 import { useAuthStore } from '../../src/store/authStore';
+import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: LIVE — courses are fetched from GET /api/courses on the real
 // backend (see src/api/client.ts for the base URL and auth wiring).
@@ -146,7 +147,7 @@ export default function CoursesScreen() {
       ) : null}
 
       {isLoading ? (
-        <ActivityIndicator style={styles.spinner} color={colors.primary} />
+        <LoadingSkeletonList rows={3} />
       ) : error ? (
         <View style={styles.card}>
           <Text style={styles.errorText}>{error}</Text>

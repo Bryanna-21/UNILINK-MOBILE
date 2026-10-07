@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
 // STATUS: LIVE — events are fetched from GET /api/events on the real
 // backend. RSVP and QR check-in are now BOTH wired into the UI: RSVP
@@ -110,7 +111,7 @@ export default function EventsScreen() {
       )}
 
       {isLoading ? (
-        <ActivityIndicator style={styles.spinner} color={colors.primary} />
+        <LoadingSkeletonList rows={5} />
       ) : error ? (
         <View style={styles.card}>
           <Text style={styles.cardMuted}>{error}</Text>
