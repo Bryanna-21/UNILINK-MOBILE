@@ -12,10 +12,13 @@ export default function Index() {
     user.role !== 'student' ||
     Boolean(
       user.universityId &&
-      user.campusId &&
       user.programme?.trim() &&
       user.yearOfStudy &&
-      user.semester
+      user.semester &&
+      (
+        user.campusId ||
+        user.onboardingCompletedAt
+      )
     );
 
   if (!academicSetupComplete) {

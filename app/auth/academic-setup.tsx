@@ -302,7 +302,10 @@ export default function AcademicSetupScreen() {
 
           setCampuses(data);
 
-          if (user?.campusId) {
+          if (data.length === 0) {
+            // This university has no separate campus records.
+            setCampusId('');
+          } else if (user?.campusId) {
             const exists = data.some(
               (campus: Campus) =>
                 String(campus._id ?? campus.id) ===
@@ -311,7 +314,11 @@ export default function AcademicSetupScreen() {
 
             if (exists) {
               setCampusId(user.campusId);
+            } else {
+              setCampusId('');
             }
+          } else {
+            setCampusId('');
           }
         }
       })
@@ -377,13 +384,15 @@ export default function AcademicSetupScreen() {
     };
   }, []);
 
+  const campusRequired = campuses.length > 0;
+
   const handleContinue = async () => {
     if (
       !selectedCourse ||
       !selectedYear ||
       !selectedSemester ||
       !universityId ||
-      !campusId
+      (campusRequired && !campusId)
     ) {
       return;
     }
@@ -398,7 +407,7 @@ export default function AcademicSetupScreen() {
       // Then persist the student's academic profile.
       const profileResponse = await api.put('/profile/me', {
         universityId,
-        campusId,
+        campusId: campusRequired ? campusId : null,
         programme: selectedCourse.title,
         yearOfStudy: selectedYear,
         semester: selectedSemester,
@@ -411,7 +420,7 @@ export default function AcademicSetupScreen() {
         ...user,
         ...(savedUser || {}),
         universityId,
-        campusId,
+        campusId: campusRequired ? campusId : null,
         programme: selectedCourse.title,
         yearOfStudy: selectedYear,
         semester: selectedSemester,
@@ -436,7 +445,7 @@ export default function AcademicSetupScreen() {
     !!selectedYear &&
     !!selectedSemester &&
     !!universityId &&
-    !!campusId &&
+    (!campusRequired || !!campusId) &&
     !saving;
 
   const handleContinuePress = () => {
@@ -445,7 +454,7 @@ export default function AcademicSetupScreen() {
       return;
     }
 
-    if (!campusId) {
+    if (campusRequired && !campusId) {
       setError('Please select your campus.');
       return;
     }
