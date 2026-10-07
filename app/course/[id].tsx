@@ -13,6 +13,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import LoadingSkeleton from '../../src/components/LoadingSkeleton';
 
 const DAYS = [
   'Monday',
@@ -62,7 +63,14 @@ export default function CourseDetailScreen() {
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        container: {
+        loadingTimetable: {
+    marginTop: Spacing.sm,
+  },
+  loadingTimetableGap: {
+    marginTop: Spacing.sm,
+  },
+
+  container: {
           flex: 1,
           backgroundColor: colors.background,
         },
@@ -393,10 +401,19 @@ export default function CourseDetailScreen() {
       </Text>
 
       {isLoading ? (
-        <ActivityIndicator
-          style={{ marginTop: Spacing.sm }}
-          color={colors.primary}
-        />
+        <View style={styles.loadingTimetable}>
+          <LoadingSkeleton
+            width="100%"
+            height={64}
+            radius={Radius.md}
+          />
+          <LoadingSkeleton
+            width="88%"
+            height={64}
+            radius={Radius.md}
+            style={styles.loadingTimetableGap}
+          />
+        </View>
       ) : timetable.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyText}>

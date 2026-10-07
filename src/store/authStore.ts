@@ -13,6 +13,7 @@ export interface UniLinkUser {
   role: UserRole;
   universityId?: string;
   campusId?: string | null;
+  courseId?: string | null;
   bio?: string;
   phone?: string;
   admissionNumber?: string;

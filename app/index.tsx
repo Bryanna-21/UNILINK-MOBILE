@@ -12,7 +12,7 @@ export default function Index() {
     user.role !== 'student' ||
     Boolean(
       user.universityId &&
-      user.programme?.trim() &&
+      user.courseId &&
       user.yearOfStudy &&
       user.semester &&
       (

@@ -430,6 +430,7 @@ export default function AcademicSetupScreen() {
       const profileResponse = await api.put('/profile/me', {
         universityId,
         campusId: campusRequired ? campusId : null,
+        courseId: selectedCourse._id,
         programme: selectedCourse.title,
         yearOfStudy: selectedYear,
         semester: selectedSemester,
@@ -443,6 +444,7 @@ export default function AcademicSetupScreen() {
         ...(savedUser || {}),
         universityId,
         campusId: campusRequired ? campusId : null,
+        courseId: selectedCourse._id,
         programme: selectedCourse.title,
         yearOfStudy: selectedYear,
         semester: selectedSemester,
@@ -573,28 +575,35 @@ export default function AcademicSetupScreen() {
                           styles.universityOption,
                         ]}
                         onPress={async () => {
+                          const selectedId = String(
+                            university._id ?? university.id ?? ''
+                          );
+
+                          if (!selectedId) return;
+
                           const previousUniversityId = universityId;
                           const previousUniversityQuery = universityQuery;
 
-                          setUniversityId(id);
-                          setUniversityQuery(university.name);
+                          setError('');
                           setCampusId('');
                           setCampuses([]);
-                          setSelectedCourseId('');
                           setCourses([]);
-                          setError('');
+                          setSelectedCourseId('');
 
                           try {
+                            // Persist the university first. This guarantees
+                            // /courses/available is scoped to the new university.
                             await api.put('/profile/me', {
-                              universityId: id,
+                              universityId: selectedId,
+                              courseId: null,
                             });
+
+                            setUniversityId(selectedId);
+                            setUniversityQuery(university.name);
                           } catch (err: any) {
                             setUniversityId(previousUniversityId);
                             setUniversityQuery(previousUniversityQuery);
-                            setCampusId('');
-                            setCampuses([]);
-                            setCourses([]);
-                            setSelectedCourseId('');
+
                             setError(
                               err?.response?.data?.message ||
                                 'Could not save your university. Please try again.'
