@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  TextInput,
   Platform,
   ScrollView,
   StyleSheet,
@@ -43,15 +44,19 @@ export default function AcademicSetupScreen() {
   const setUser = useAuthStore((s) => s.setUser);
 
   const [courses, setCourses] = useState<Course[]>([]);
-  const [universityName, setUniversityName] = useState('');
-  const [campusName, setCampusName] = useState('');
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [universityId, setUniversityId] = useState(user?.universityId || '');
+  const [universityQuery, setUniversityQuery] = useState('');
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [campusId, setCampusId] = useState(user?.campusId || '');
+  const [loadingUniversities, setLoadingUniversities] = useState(true);
+  const [loadingCampuses, setLoadingCampuses] = useState(false);
 
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedSemester, setSelectedSemester] = useState<number | null>(null);
 
   const [loadingCourses, setLoadingCourses] = useState(true);
-  const [loadingContext, setLoadingContext] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -182,76 +187,108 @@ export default function AcademicSetupScreen() {
     [colors]
   );
 
+  const filteredUniversities = useMemo(() => {
+    const query = universityQuery.trim().toLowerCase();
+
+    if (!query || universityId) {
+      return [];
+    }
+
+    return universities
+      .filter((university) =>
+        university.name.toLowerCase().includes(query)
+      )
+      .slice(0, 8);
+  }, [universities, universityQuery, universityId]);
+
   useEffect(() => {
     let cancelled = false;
 
-    const loadContext = async () => {
-      if (!user?.universityId) {
+    api
+      .get('/auth/universities')
+      .then((response) => {
         if (!cancelled) {
-          setUniversityName('');
-          setCampusName('');
-          setLoadingContext(false);
-        }
-        return;
-      }
-
-      setLoadingContext(true);
-
-      try {
-        const universityResponse = await api.get('/auth/universities');
-        const universities: University[] = Array.isArray(
-          universityResponse.data?.data
-        )
-          ? universityResponse.data.data
-          : [];
-
-        const university = universities.find(
-          (item) =>
-            String(item._id ?? item.id) === String(user.universityId)
-        );
-
-        if (!cancelled) {
-          setUniversityName(university?.name || 'University');
-        }
-
-        if (user.campusId) {
-          const campusResponse = await api.get(
-            `/auth/universities/${user.universityId}/campuses`
+          setUniversities(
+            Array.isArray(response.data?.data)
+              ? response.data.data
+              : []
           );
-
-          const campuses: Campus[] = Array.isArray(
-            campusResponse.data?.data
-          )
-            ? campusResponse.data.data
-            : [];
-
-          const campus = campuses.find(
-            (item) =>
-              String(item._id ?? item.id) === String(user.campusId)
-          );
-
-          if (!cancelled) {
-            setCampusName(campus?.name || 'Campus');
-          }
         }
-      } catch {
-        if (!cancelled) {
-          setUniversityName('University');
-          setCampusName(user.campusId ? 'Campus' : '');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingContext(false);
-        }
-      }
-    };
-
-    loadContext();
+      })
+      .catch(() => {
+        if (!cancelled) setUniversities([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingUniversities(false);
+      });
 
     return () => {
       cancelled = true;
     };
-  }, [user?.universityId, user?.campusId]);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!universityId) {
+      setCampuses([]);
+      setCampusId('');
+      setLoadingCampuses(false);
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLoadingCampuses(true);
+
+    api
+      .get(`/auth/universities/${universityId}/campuses`)
+      .then((response) => {
+        if (!cancelled) {
+          const data = Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
+
+          setCampuses(data);
+
+          if (user?.campusId) {
+            const exists = data.some(
+              (campus: Campus) =>
+                String(campus._id ?? campus.id) ===
+                String(user.campusId)
+            );
+
+            if (exists) {
+              setCampusId(user.campusId);
+            }
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCampuses([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCampuses(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [universityId]);
+
+  useEffect(() => {
+    if (!universityId || universities.length === 0) return;
+
+    const university = universities.find(
+      (item) =>
+        String(item._id ?? item.id) === String(universityId)
+    );
+
+    if (university) {
+      setUniversityQuery(university.name);
+    }
+  }, [universities, universityId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -309,6 +346,8 @@ export default function AcademicSetupScreen() {
 
       // Then persist the student's academic profile.
       const profileResponse = await api.put('/profile/me', {
+        universityId,
+        campusId,
         programme: selectedCourse.title,
         yearOfStudy: selectedYear,
         semester: selectedSemester,
@@ -320,6 +359,8 @@ export default function AcademicSetupScreen() {
       setUser({
         ...user,
         ...(savedUser || {}),
+        universityId,
+        campusId,
         programme: selectedCourse.title,
         yearOfStudy: selectedYear,
         semester: selectedSemester,
@@ -343,8 +384,11 @@ export default function AcademicSetupScreen() {
     !!selectedCourse &&
     !!selectedYear &&
     !!selectedSemester &&
+    !!universityId &&
+    !!campusId &&
     !saving &&
-    !loadingContext;
+    !loadingUniversities &&
+    !loadingCampuses;
 
   return (
     <KeyboardAvoidingView
@@ -364,28 +408,125 @@ export default function AcademicSetupScreen() {
 
         <View style={styles.section}>
           <Text style={styles.label}>University</Text>
-          <View style={styles.valueBox}>
-            {loadingContext ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
+
+          {loadingUniversities ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : universityId ? (
+            <TouchableOpacity
+              style={styles.valueBox}
+              onPress={() => {
+                setUniversityId('');
+                setUniversityQuery('');
+                setCampusId('');
+                setCampuses([]);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Change university"
+            >
               <Text style={styles.valueText}>
-                {universityName || 'Not set'}
+                {universities.find(
+                  (item) =>
+                    String(item._id ?? item.id) ===
+                    String(universityId)
+                )?.name || universityQuery || 'University'}
               </Text>
-            )}
-          </View>
+              <Text style={styles.helper}>Tap to change</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TextInput
+                style={styles.valueBox}
+                placeholder="Type your university name"
+                placeholderTextColor={colors.textMuted}
+                value={universityQuery}
+                onChangeText={setUniversityQuery}
+                autoCapitalize="words"
+                autoCorrect={false}
+                accessibilityLabel="Search for university"
+              />
+
+              {filteredUniversities.length > 0 ? (
+                <View style={styles.courseList}>
+                  {filteredUniversities.map((university) => {
+                    const id = String(university._id ?? university.id ?? '');
+                    if (!id) return null;
+
+                    return (
+                      <TouchableOpacity
+                        key={id}
+                        style={styles.course}
+                        onPress={() => {
+                          setUniversityId(id);
+                          setUniversityQuery(university.name);
+                          setCampusId('');
+                          setCampuses([]);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select ${university.name}`}
+                      >
+                        <Text style={styles.courseTitle}>
+                          {university.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : universityQuery.trim() ? (
+                <Text style={styles.helper}>
+                  No matching universities found.
+                </Text>
+              ) : null}
+            </>
+          )}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.label}>Campus</Text>
-          <View style={styles.valueBox}>
-            {loadingContext ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <Text style={styles.valueText}>
-                {campusName || 'Not set'}
-              </Text>
-            )}
-          </View>
+
+          {!universityId ? (
+            <Text style={styles.helper}>
+              Select your university first.
+            </Text>
+          ) : loadingCampuses ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : campuses.length === 0 ? (
+            <Text style={styles.helper}>
+              No active campuses are available for this university yet.
+            </Text>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontal}
+            >
+              {campuses.map((campus) => {
+                const id = String(campus._id ?? campus.id);
+                const active = String(campusId) === id;
+
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    style={[
+                      styles.chip,
+                      active && styles.chipActive,
+                    ]}
+                    onPress={() => setCampusId(id)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: active }}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        active && styles.chipTextActive,
+                      ]}
+                    >
+                      {campus.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
         </View>
 
         <View style={styles.section}>
