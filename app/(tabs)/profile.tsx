@@ -141,7 +141,6 @@ export default function ProfileScreen() {
     { label: 'Following & Followers', route: '/profile/following' },
     { label: 'Find People', route: '/people' },
     { label: `Username${user?.username ? ` (@${user.username})` : ''}`, route: '/people/username' },
-    { label: 'Edit Profile', route: '/profile/edit' },
     { label: 'Achievements & Portfolio', route: '/profile/achievements' },
     { label: 'Hidden Posts', route: '/profile/hidden' },
     { label: 'Settings', route: '/settings' },
