@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
+  Alert,
   FlatList,
   TextInput,
   TouchableOpacity,
@@ -13,6 +14,7 @@ import {
   Linking,
 } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { api } from '../../src/api/client';
 import { Avatar } from '../../src/components/Avatar';
@@ -23,6 +25,83 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 // text / photo / video post, and every post shows its author's profile picture and name.
 // Posting itself lives in CreatePostSheet. Search is server-side (GET /posts/feed?q=) and
 // matches post text, title and the author's name.
+
+function FeedActionIcon({
+  type,
+  color,
+  size = 20,
+}: {
+  type: 'reshare' | 'hide';
+  color: string;
+  size?: number;
+}) {
+  if (type === 'reshare') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M17 3l4 4-4 4"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M3 11V9a2 2 0 0 1 2-2h16"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M7 21l-4-4 4-4"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M21 13v2a2 2 0 0 1-2 2H3"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  }
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 3l18 18"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <Path
+        d="M10.6 5.4A9.8 9.8 0 0 1 12 5.3c5 0 8.7 3.5 10 6.7a10.7 10.7 0 0 1-3.2 4.5"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M6.2 6.2C3.8 7.8 2.5 10 2 12c1.3 3.2 5 6.7 10 6.7 1.2 0 2.4-.2 3.4-.5"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle
+        cx="12"
+        cy="12"
+        r="3"
+        stroke={color}
+        strokeWidth="2"
+      />
+    </Svg>
+  );
+}
 
 interface PostMedia {
   url: string;
@@ -250,9 +329,25 @@ export default function CampusScreen() {
         postTime: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
         postTitle: { fontSize: 16, fontWeight: '800', color: colors.text, marginBottom: 4 },
         postContent: { fontSize: 15, color: colors.text, lineHeight: 21 },
-        postFooter: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
+        postFooter: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacing.md,
+          marginTop: Spacing.sm,
+        },
+        postAction: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 5,
+          minHeight: 32,
+        },
         likeButton: { color: colors.textMuted, fontSize: 14 },
         commentCount: { color: colors.textMuted, fontSize: 14 },
+        actionLabel: {
+          color: colors.textMuted,
+          fontSize: 13,
+          fontWeight: '600',
+        },
         fab: {
           position: 'absolute',
           right: Spacing.lg,
@@ -347,6 +442,32 @@ export default function CampusScreen() {
     }
   };
 
+  const handleReshare = async (postId: string) => {
+    try {
+      const res = await api.post(`/posts/reshare/${postId}`);
+      const message = res.data?.message || 'Post reshared successfully.';
+      Alert.alert('Reshared', message);
+      await loadFeed(activeQuery.current);
+    } catch (err: any) {
+      Alert.alert(
+        'Could not reshare',
+        err?.response?.data?.message || 'This post could not be reshared.'
+      );
+    }
+  };
+
+  const handleHide = async (postId: string) => {
+    try {
+      await api.post(`/posts/hidden/${postId}`);
+      setPosts((prev) => prev.filter((p) => p._id !== postId));
+    } catch (err: any) {
+      Alert.alert(
+        'Could not hide post',
+        err?.response?.data?.message || 'This post could not be hidden.'
+      );
+    }
+  };
+
   const searching = activeQuery.current.length >= 2;
 
   return (
@@ -421,6 +542,7 @@ export default function CampusScreen() {
 
               <View style={styles.postFooter}>
                 <TouchableOpacity
+                  style={styles.postAction}
                   onPress={() => handleLike(item._id)}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.liked ? 'Unlike' : 'Like'}, ${item.likes} ${item.likes === 1 ? 'like' : 'likes'}`}
@@ -430,12 +552,43 @@ export default function CampusScreen() {
                     {item.liked ? '❤️' : '🤍'} {item.likes}
                   </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
+                  style={styles.postAction}
                   onPress={() => router.push(`/post/${item._id}` as any)}
                   accessibilityRole="button"
                   accessibilityLabel={`${item.commentsCount} ${item.commentsCount === 1 ? 'comment' : 'comments'}, view post`}
                 >
                   <Text style={styles.commentCount}>💬 {item.commentsCount}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.postAction}
+                  onPress={() => handleReshare(item._id)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reshare post"
+                >
+                  <FeedActionIcon type="reshare" color={colors.textMuted} />
+                  <Text style={styles.actionLabel}>Reshare</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.postAction}
+                  onPress={() =>
+                    Alert.alert(
+                      'Hide post?',
+                      'This post will be removed from your feed.',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Hide', style: 'destructive', onPress: () => handleHide(item._id) },
+                      ]
+                    )
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel="Hide post"
+                >
+                  <FeedActionIcon type="hide" color={colors.textMuted} />
+                  <Text style={styles.actionLabel}>Hide</Text>
                 </TouchableOpacity>
               </View>
             </View>
