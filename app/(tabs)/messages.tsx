@@ -61,7 +61,10 @@ export default function MessagesScreen() {
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        container: { flex: 1, backgroundColor: colors.background },
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
         header: {
           flexDirection: 'row',
           justifyContent: 'space-between',
@@ -482,9 +485,7 @@ export default function MessagesScreen() {
             keyExtractor={(item) => item._id}
             style={{ flex: 1 }}
             contentContainerStyle={{
-              paddingTop: 0,
               paddingBottom: Spacing.xl,
-              flexGrow: 0,
             }}
             ListHeaderComponent={
               activeTab === 'Messages' ? (
