@@ -252,9 +252,14 @@ export default function ChatDetailScreen() {
           keyExtractor={(item) => item._id}
           style={{ flex: 1 }}
           contentContainerStyle={[
-            { padding: Spacing.md, gap: Spacing.sm },
-            messages.length === 0 && {
+            {
+              padding: Spacing.md,
+              paddingBottom: Spacing.xl,
+              gap: Spacing.sm,
               flexGrow: 1,
+              justifyContent: 'flex-start',
+            },
+            messages.length === 0 && {
               justifyContent: 'center',
             },
           ]}

@@ -477,53 +477,50 @@ export default function MessagesScreen() {
         <LoadingSkeletonList rows={4} />
       ) : (
         <>
-          {activeTab === 'Messages' ? (
-            <TouchableOpacity
-              style={styles.savedMessagesRow}
-              onPress={handleOpenSavedMessages}
-              disabled={isOpeningSavedMessages}
-              accessibilityRole="button"
-              accessibilityLabel="Saved Messages"
-              accessibilityHint="Open your private Saved Messages conversation"
-              accessibilityState={{ disabled: isOpeningSavedMessages }}
-            >
-              <View
-                style={styles.savedMessagesAvatar}
-                accessibilityElementsHidden
-                importantForAccessibility="no"
-              >
-                <Text style={styles.savedMessagesAvatarText}>S</Text>
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={styles.savedMessagesName}>Saved Messages</Text>
-                <Text style={styles.savedMessagesSubtitle}>
-                  {isOpeningSavedMessages
-                    ? 'Opening…'
-                    : 'Message yourself'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ) : null}
-
           <FlatList
-          data={filteredConversations}
-          keyExtractor={(item) => item._id}
-          style={{ flex: 1 }}
-          contentContainerStyle={[
-            { paddingBottom: Spacing.xl },
-            filteredConversations.length === 0 && {
-              flexGrow: 1,
-              justifyContent: 'center',
-            },
-          ]}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
-          ListEmptyComponent={
+            data={filteredConversations}
+            keyExtractor={(item) => item._id}
+            style={{ flex: 1 }}
+            contentContainerStyle={{
+              paddingBottom: Spacing.xl,
+            }}
+            ListHeaderComponent={
+              activeTab === 'Messages' ? (
+                <TouchableOpacity
+                  style={styles.savedMessagesRow}
+                  onPress={handleOpenSavedMessages}
+                  disabled={isOpeningSavedMessages}
+                  accessibilityRole="button"
+                  accessibilityLabel="Saved Messages"
+                  accessibilityHint="Open your private Saved Messages conversation"
+                  accessibilityState={{ disabled: isOpeningSavedMessages }}
+                >
+                  <View
+                    style={styles.savedMessagesAvatar}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  >
+                    <Text style={styles.savedMessagesAvatarText}>S</Text>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.savedMessagesName}>Saved Messages</Text>
+                    <Text style={styles.savedMessagesSubtitle}>
+                      {isOpeningSavedMessages
+                        ? 'Opening…'
+                        : 'Message yourself'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null
+            }
+            refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+            ListEmptyComponent={
             <Text style={styles.emptyText} accessibilityRole="text">
               {activeTab === 'Unread' ? 'Nothing unread.' : 'No conversations here yet.'}
             </Text>
-          }
-          renderItem={({ item }) => {
+            }
+            renderItem={({ item }) => {
             const displayTitle = getDisplayTitle(item);
             const unread = item.unreadCount || 0;
             return (
@@ -573,7 +570,7 @@ export default function MessagesScreen() {
                 </View>
               </TouchableOpacity>
             );
-          }}
+            }}
           />
         </>
       )}
