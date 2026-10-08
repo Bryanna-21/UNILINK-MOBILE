@@ -250,12 +250,29 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
         return;
       }
 
+      const extension = document.name.split('.').pop()?.toLowerCase();
+
+      const mimeType =
+        document.mimeType ||
+        (extension === 'pdf'
+          ? 'application/pdf'
+          : extension === 'doc'
+            ? 'application/msword'
+            : extension === 'docx'
+              ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+              : 'application/octet-stream');
+
+      if (mimeType === 'application/octet-stream') {
+        setError('Unsupported document type. Please choose a PDF, DOC or DOCX file.');
+        return;
+      }
+
       setAssets([
         {
           uri: document.uri,
           type: 'document',
           fileName: document.name,
-          mimeType: document.mimeType || 'application/octet-stream',
+          mimeType,
         },
       ]);
       setStep('compose');
