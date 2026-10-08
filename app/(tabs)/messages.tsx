@@ -482,7 +482,9 @@ export default function MessagesScreen() {
             keyExtractor={(item) => item._id}
             style={{ flex: 1 }}
             contentContainerStyle={{
+              paddingTop: 0,
               paddingBottom: Spacing.xl,
+              flexGrow: 0,
             }}
             ListHeaderComponent={
               activeTab === 'Messages' ? (
