@@ -329,6 +329,12 @@ export default function CampusScreen() {
     [posts]
   );
 
+  useEffect(() => {
+    if (feedMode === 'reels' && reels.length > 0) {
+      setActiveReelId((current) => current ?? reels[0]._id);
+    }
+  }, [feedMode, reels]);
+
   const reelViewabilityConfig = useRef({
     itemVisiblePercentThreshold: 80,
   }).current;
@@ -430,7 +436,8 @@ export default function CampusScreen() {
         reelOverlay: {
           ...StyleSheet.absoluteFill,
           justifyContent: 'flex-end',
-          padding: Spacing.md,
+          paddingHorizontal: Spacing.md,
+          paddingBottom: 38,
         },
         reelAuthor: {
           flexDirection: 'row',
@@ -453,20 +460,24 @@ export default function CampusScreen() {
         reelActions: {
           position: 'absolute',
           right: Spacing.md,
-          bottom: Spacing.xl,
+          bottom: 110,
           alignItems: 'center',
-          gap: Spacing.md,
+          gap: 22,
         },
         reelAction: {
           alignItems: 'center',
           justifyContent: 'center',
-          minWidth: 48,
+          width: 52,
+          minHeight: 58,
         },
         reelActionText: {
           color: colors.white,
           fontSize: 12,
-          fontWeight: '700',
-          marginTop: 3,
+          fontWeight: '800',
+          marginTop: 4,
+          textShadowColor: 'rgba(0,0,0,0.65)',
+          textShadowOffset: { width: 0, height: 1 },
+          textShadowRadius: 3,
         },
         reelEmpty: {
           flex: 1,
