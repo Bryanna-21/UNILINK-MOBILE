@@ -12,6 +12,7 @@ import {
   Image,
   ScrollView,
   Linking,
+  Dimensions,
 } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -21,6 +22,8 @@ import { Avatar } from '../../src/components/Avatar';
 import { CreatePostSheet } from '../../src/components/CreatePostSheet';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
+
+const { height: WINDOW_HEIGHT } = Dimensions.get('window');
 
 // STATUS: REAL — the campus feed. Search box on top, "+" button (bottom right) to create a
 // text / photo / video post, and every post shows its author's profile picture and name.
@@ -153,6 +156,39 @@ function InlineVideo({ uri, height }: { uri: string; height: number }) {
 
 // One attachment shows as before; several become a swipeable strip with a "2/4" counter,
 // so every photo and video in a post can actually be seen (the old feed showed only the first).
+
+function ReelPlayer({
+  uri,
+  active,
+  style,
+}: {
+  uri: string;
+  active: boolean;
+  style: any;
+}) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = false;
+  });
+
+  useEffect(() => {
+    if (active) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [active, player]);
+
+  return (
+    <VideoView
+      player={player}
+      style={style}
+      contentFit="cover"
+      nativeControls={false}
+    />
+  );
+}
+
 function MediaStrip({ media }: { media: PostMedia[] }) {
   const colors = useColors();
   const [width, setWidth] = useState(0);
@@ -282,6 +318,38 @@ export default function CampusScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [feedMode, setFeedMode] = useState<'reels' | 'chronicles'>('chronicles');
+  const [activeReelId, setActiveReelId] = useState<string | null>(null);
+
+  const reels = useMemo(
+    () =>
+      posts.filter((post) =>
+        post.media?.some((media) => media.type === 'video')
+      ),
+    [posts]
+  );
+
+  const reelViewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 80,
+  }).current;
+
+  const onReelViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<{ item?: Post }> }) => {
+      const active = viewableItems[0]?.item;
+      setActiveReelId(active?._id ?? null);
+    }
+  ).current;
+
+  const chronicles = useMemo(
+    () =>
+      posts.filter((post) => {
+        const media = post.media ?? [];
+        return !media.some(
+          (item) => item.type === 'video' || item.type === 'document'
+        );
+      }),
+    [posts]
+  );
 
   // Only the newest request may update the screen, so a slow reply for "ann" can never
   // overwrite the results for "anna".
@@ -318,6 +386,101 @@ export default function CampusScreen() {
         clearText: { fontSize: 16, color: colors.textMuted, paddingHorizontal: 4 },
         error: { color: colors.danger, textAlign: 'center', fontSize: 13, marginTop: Spacing.sm },
         emptyText: { textAlign: 'center', color: colors.textMuted, marginTop: Spacing.xl, paddingHorizontal: Spacing.lg },
+        modeBar: {
+          flexDirection: 'row',
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          backgroundColor: colors.surface,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: 3,
+        },
+        modeButton: {
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 10,
+          borderRadius: Radius.sm,
+        },
+        modeButtonActive: {
+          backgroundColor: colors.primary,
+        },
+        modeButtonText: {
+          color: colors.textMuted,
+          fontSize: 14,
+          fontWeight: '700',
+        },
+        modeButtonTextActive: {
+          color: colors.white,
+        },
+        reelsList: {
+          flex: 1,
+          backgroundColor: '#000',
+        },
+        reelPage: {
+          height: WINDOW_HEIGHT,
+          backgroundColor: '#000',
+          position: 'relative',
+        },
+        reelVideo: {
+          ...StyleSheet.absoluteFill,
+          backgroundColor: '#000',
+        },
+        reelOverlay: {
+          ...StyleSheet.absoluteFill,
+          justifyContent: 'flex-end',
+          padding: Spacing.md,
+        },
+        reelAuthor: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: Spacing.sm,
+        },
+        reelAuthorText: {
+          color: colors.white,
+          fontSize: 15,
+          fontWeight: '800',
+          marginLeft: Spacing.sm,
+        },
+        reelCaption: {
+          color: colors.white,
+          fontSize: 15,
+          lineHeight: 21,
+          marginBottom: Spacing.md,
+          maxWidth: '82%',
+        },
+        reelActions: {
+          position: 'absolute',
+          right: Spacing.md,
+          bottom: Spacing.xl,
+          alignItems: 'center',
+          gap: Spacing.md,
+        },
+        reelAction: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: 48,
+        },
+        reelActionText: {
+          color: colors.white,
+          fontSize: 12,
+          fontWeight: '700',
+          marginTop: 3,
+        },
+        reelEmpty: {
+          flex: 1,
+          backgroundColor: '#000',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: Spacing.xl,
+        },
+        reelEmptyText: {
+          color: colors.white,
+          textAlign: 'center',
+          fontSize: 15,
+          lineHeight: 22,
+        },
         postCard: {
           backgroundColor: colors.surface,
           padding: Spacing.md,
@@ -485,121 +648,262 @@ export default function CampusScreen() {
         </Text>
       </View>
 
-      <View style={styles.searchWrap}>
-        <Text style={styles.searchIcon} accessibilityElementsHidden importantForAccessibility="no">
-          🔍
-        </Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search posts and people"
-          placeholderTextColor={colors.textMuted}
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-          autoCorrect={false}
-          maxLength={50}
-          accessibilityLabel="Search posts and people"
-        />
-        {isSearching ? (
-          <ActivityIndicator size="small" color={colors.primary} />
-        ) : query.length > 0 ? (
-          <TouchableOpacity onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear search">
-            <Text style={styles.clearText}>✕</Text>
-          </TouchableOpacity>
-        ) : null}
+      <View style={styles.modeBar}>
+        <TouchableOpacity
+          style={[styles.modeButton, feedMode === 'reels' && styles.modeButtonActive]}
+          onPress={() => setFeedMode('reels')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: feedMode === 'reels' }}
+        >
+          <Text style={[styles.modeButtonText, feedMode === 'reels' && styles.modeButtonTextActive]}>
+            Reels
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.modeButton, feedMode === 'chronicles' && styles.modeButtonActive]}
+          onPress={() => setFeedMode('chronicles')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: feedMode === 'chronicles' }}
+        >
+          <Text style={[styles.modeButtonText, feedMode === 'chronicles' && styles.modeButtonTextActive]}>
+            Chronicles
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {feedMode === 'chronicles' ? (
+        <>
+          <View style={styles.searchWrap}>
+            <Text style={styles.searchIcon} accessibilityElementsHidden importantForAccessibility="no">
+              🔍
+            </Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search chronicles and people"
+              placeholderTextColor={colors.textMuted}
+              value={query}
+              onChangeText={setQuery}
+              returnKeyType="search"
+              autoCorrect={false}
+              maxLength={50}
+              accessibilityLabel="Search chronicles and people"
+            />
+            {isSearching ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : query.length > 0 ? (
+              <TouchableOpacity onPress={() => setQuery('')} accessibilityRole="button" accessibilityLabel="Clear search">
+                <Text style={styles.clearText}>✕</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
 
-      {isLoading ? (
-        <LoadingSkeletonList rows={4} />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {isLoading ? (
+            <LoadingSkeletonList rows={4} />
+          ) : (
+            <FlatList
+              data={chronicles}
+              keyExtractor={(item) => item._id}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              contentContainerStyle={{ padding: Spacing.md, paddingBottom: 110, gap: Spacing.sm }}
+              refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+              ListEmptyComponent={
+                <Text style={styles.emptyText} accessibilityRole="text">
+                  {searching ? `No chronicles match "${activeQuery.current}".` : 'No chronicles yet. Tap + to share something.'}
+                </Text>
+              }
+              renderItem={({ item }) => (
+                <View style={styles.postCard}>
+                  <TouchableOpacity
+                    style={styles.authorRow}
+                    onPress={() => router.push(`/user/${item.userId}` as any)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${item.authorName || 'this user'}'s profile`}
+                  >
+                    <Avatar name={item.authorName} uri={item.authorAvatarUrl} size={42} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.authorName} numberOfLines={1}>
+                        {item.authorName || 'Unknown user'}
+                      </Text>
+                      <Text style={styles.postTime}>{timeAgo(item.createdAt)}</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {item.title ? <Text style={styles.postTitle}>{item.title}</Text> : null}
+                  {item.content ? <Text style={styles.postContent}>{item.content}</Text> : null}
+                  {item.media && item.media.length > 0 ? <MediaStrip media={item.media} /> : null}
+
+                  <View style={styles.postFooter}>
+                    <TouchableOpacity
+                      style={styles.postAction}
+                      onPress={() => handleLike(item._id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.liked ? 'Unlike' : 'Like'}, ${item.likes} ${item.likes === 1 ? 'like' : 'likes'}`}
+                      accessibilityState={{ selected: !!item.liked }}
+                    >
+                      <Text style={styles.likeButton}>
+                        {item.liked ? '❤️' : '🤍'} {item.likes}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.postAction}
+                      onPress={() => router.push(`/post/${item._id}` as any)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.commentsCount} ${item.commentsCount === 1 ? 'comment' : 'comments'}, view post`}
+                    >
+                      <Text style={styles.commentCount}>💬 {item.commentsCount}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.postAction}
+                      onPress={() => handleReshare(item._id)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Reshare post"
+                    >
+                      <FeedActionIcon type="reshare" color={colors.textMuted} />
+                      <Text style={styles.actionLabel}>Reshare</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.postAction}
+                      onPress={() =>
+                        Alert.alert(
+                          'Hide post?',
+                          'This post will be removed from your feed.',
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Hide', style: 'destructive', onPress: () => handleHide(item._id) },
+                          ]
+                        )
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel="Hide post"
+                    >
+                      <FeedActionIcon type="hide" color={colors.textMuted} />
+                      <Text style={styles.actionLabel}>Hide</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            />
+          )}
+        </>
+      ) : isLoading ? (
+        <View style={styles.reelEmpty}>
+          <ActivityIndicator size="large" color={colors.white} />
+        </View>
+      ) : reels.length === 0 ? (
+        <View style={styles.reelEmpty}>
+          <Text style={styles.reelEmptyText}>
+            No Reels yet. Tap + to share a video with campus.
+          </Text>
+        </View>
       ) : (
         <FlatList
-          data={posts}
+          style={styles.reelsList}
+          data={reels}
           keyExtractor={(item) => item._id}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{ padding: Spacing.md, paddingBottom: 110, gap: Spacing.sm }}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
-          ListEmptyComponent={
-            <Text style={styles.emptyText} accessibilityRole="text">
-              {searching ? `No posts match "${activeQuery.current}".` : 'No posts yet. Tap + to share something.'}
-            </Text>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.postCard}>
-              <TouchableOpacity
-                style={styles.authorRow}
-                onPress={() => router.push(`/user/${item.userId}` as any)}
-                accessibilityRole="button"
-                accessibilityLabel={`View ${item.authorName || 'this user'}'s profile`}
-              >
-                <Avatar name={item.authorName} uri={item.authorAvatarUrl} size={42} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.authorName} numberOfLines={1}>
-                    {item.authorName || 'Unknown user'}
-                  </Text>
-                  <Text style={styles.postTime}>{timeAgo(item.createdAt)}</Text>
+          pagingEnabled
+          snapToInterval={WINDOW_HEIGHT}
+          decelerationRate="fast"
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={2}
+          maxToRenderPerBatch={2}
+          windowSize={3}
+          removeClippedSubviews
+          getItemLayout={(_, index) => ({
+            length: WINDOW_HEIGHT,
+            offset: WINDOW_HEIGHT * index,
+            index,
+          })}
+          viewabilityConfig={reelViewabilityConfig}
+          onViewableItemsChanged={onReelViewableItemsChanged}
+          renderItem={({ item }) => {
+            const video = item.media?.find((media) => media.type === 'video');
+
+            if (!video) return null;
+
+            return (
+              <View style={styles.reelPage}>
+                <ReelPlayer
+                  uri={video.url}
+                  active={activeReelId === item._id}
+                  style={styles.reelVideo}
+                />
+
+                <View style={styles.reelOverlay}>
+                  <TouchableOpacity
+                    style={styles.reelAuthor}
+                    onPress={() => router.push(`/user/${item.userId}` as any)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${item.authorName || 'this user'}'s profile`}
+                  >
+                    <Avatar
+                      name={item.authorName}
+                      uri={item.authorAvatarUrl}
+                      size={42}
+                    />
+
+                    <Text style={styles.reelAuthorText}>
+                      {item.authorName || 'Unknown user'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {item.content ? (
+                    <Text style={styles.reelCaption} numberOfLines={4}>
+                      {item.content}
+                    </Text>
+                  ) : null}
+
+                  <View style={styles.reelActions}>
+                    <TouchableOpacity
+                      style={styles.reelAction}
+                      onPress={() => handleLike(item._id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.liked ? 'Unlike' : 'Like'} Reel`}
+                    >
+                      <Text style={{ fontSize: 28 }}>
+                        {item.liked ? '❤️' : '🤍'}
+                      </Text>
+                      <Text style={styles.reelActionText}>
+                        {item.likes}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.reelAction}
+                      onPress={() => router.push(`/post/${item._id}` as any)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Open Reel comments"
+                    >
+                      <Text style={{ fontSize: 28 }}>💬</Text>
+                      <Text style={styles.reelActionText}>
+                        {item.commentsCount}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.reelAction}
+                      onPress={() => handleReshare(item._id)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Reshare Reel"
+                    >
+                      <FeedActionIcon
+                        type="reshare"
+                        color={colors.white}
+                        size={25}
+                      />
+                      <Text style={styles.reelActionText}>Share</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </TouchableOpacity>
-
-              {item.title ? <Text style={styles.postTitle}>{item.title}</Text> : null}
-              {item.content ? <Text style={styles.postContent}>{item.content}</Text> : null}
-              {item.media && item.media.length > 0 ? <MediaStrip media={item.media} /> : null}
-
-              <View style={styles.postFooter}>
-                <TouchableOpacity
-                  style={styles.postAction}
-                  onPress={() => handleLike(item._id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${item.liked ? 'Unlike' : 'Like'}, ${item.likes} ${item.likes === 1 ? 'like' : 'likes'}`}
-                  accessibilityState={{ selected: !!item.liked }}
-                >
-                  <Text style={styles.likeButton}>
-                    {item.liked ? '❤️' : '🤍'} {item.likes}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.postAction}
-                  onPress={() => router.push(`/post/${item._id}` as any)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${item.commentsCount} ${item.commentsCount === 1 ? 'comment' : 'comments'}, view post`}
-                >
-                  <Text style={styles.commentCount}>💬 {item.commentsCount}</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.postAction}
-                  onPress={() => handleReshare(item._id)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Reshare post"
-                >
-                  <FeedActionIcon type="reshare" color={colors.textMuted} />
-                  <Text style={styles.actionLabel}>Reshare</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.postAction}
-                  onPress={() =>
-                    Alert.alert(
-                      'Hide post?',
-                      'This post will be removed from your feed.',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Hide', style: 'destructive', onPress: () => handleHide(item._id) },
-                      ]
-                    )
-                  }
-                  accessibilityRole="button"
-                  accessibilityLabel="Hide post"
-                >
-                  <FeedActionIcon type="hide" color={colors.textMuted} />
-                  <Text style={styles.actionLabel}>Hide</Text>
-                </TouchableOpacity>
               </View>
-            </View>
-          )}
+            );
+          }}
         />
       )}
 
