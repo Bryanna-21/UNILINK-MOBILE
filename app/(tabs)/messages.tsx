@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore, UserRole } from '../../src/store/authStore';
@@ -27,6 +27,15 @@ import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/Loadi
 // folded into this pass.
 
 type ConversationType = 'direct' | 'course' | 'group' | 'self';
+
+interface SuggestedPerson {
+  _id: string;
+  name: string;
+  username?: string | null;
+  avatarUrl?: string | null;
+  isFollowing?: boolean;
+  reason?: string;
+}
 
 interface Conversation {
   _id: string;
@@ -57,6 +66,10 @@ export default function MessagesScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isOpeningSavedMessages, setIsOpeningSavedMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<SuggestedPerson[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(true);
+  const [followingIds, setFollowingIds] = useState<Record<string, boolean>>({});
+  const [followPending, setFollowPending] = useState<Record<string, boolean>>({});
 
   const styles = useMemo(
     () =>
@@ -236,6 +249,96 @@ export default function MessagesScreen() {
           alignItems: 'center',
         },
         unreadBadgeText: { fontSize: 10, fontWeight: '800', color: colors.white },
+        suggestionsSection: {
+          paddingTop: Spacing.sm,
+          paddingBottom: Spacing.sm,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        suggestionsHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: Spacing.md,
+          marginBottom: Spacing.sm,
+        },
+        suggestionsTitle: {
+          fontSize: 13,
+          fontWeight: '800',
+          color: colors.text,
+        },
+        suggestionsHint: {
+          fontSize: 11,
+          color: colors.textMuted,
+        },
+        suggestionList: {
+          paddingHorizontal: Spacing.md,
+          gap: Spacing.sm,
+        },
+        suggestionCard: {
+          width: 150,
+          padding: Spacing.sm,
+          borderRadius: Radius.md,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        suggestionTop: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacing.sm,
+        },
+        suggestionAvatar: {
+          width: 36,
+          height: 36,
+          borderRadius: Radius.full,
+          backgroundColor: colors.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        suggestionAvatarImage: {
+          width: '100%',
+          height: '100%',
+          borderRadius: Radius.full,
+        },
+        suggestionAvatarText: {
+          color: colors.white,
+          fontWeight: '800',
+          fontSize: 13,
+        },
+        suggestionName: {
+          flex: 1,
+          fontSize: 12,
+          fontWeight: '800',
+          color: colors.text,
+        },
+        suggestionReason: {
+          fontSize: 10,
+          color: colors.textMuted,
+          marginTop: 2,
+        },
+        followButton: {
+          marginTop: Spacing.sm,
+          minHeight: 30,
+          borderRadius: Radius.sm,
+          backgroundColor: colors.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: Spacing.sm,
+        },
+        followingButton: {
+          backgroundColor: colors.background,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        followButtonText: {
+          color: colors.white,
+          fontSize: 11,
+          fontWeight: '800',
+        },
+        followingButtonText: {
+          color: colors.text,
+        },
         aiFloatingButton: {
           position: 'absolute',
           right: Spacing.md,
@@ -350,9 +453,178 @@ export default function MessagesScreen() {
     }, [loadConversations])
   );
 
+  const loadSuggestions = useCallback(async () => {
+    try {
+      const res = await api.get('/people/suggestions');
+      const list: SuggestedPerson[] = res.data?.data ?? [];
+      setSuggestions(list.slice(0, 8));
+      setFollowingIds(
+        Object.fromEntries(
+          list
+            .filter((person) => person.isFollowing)
+            .map((person) => [person._id, true])
+        )
+      );
+    } catch {
+      setSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSuggestions();
+    }, [loadSuggestions])
+  );
+
+  const handleFollowSuggestion = async (person: SuggestedPerson) => {
+    if (followPending[person._id]) return;
+
+    const wasFollowing = !!followingIds[person._id];
+
+    setFollowPending((prev) => ({ ...prev, [person._id]: true }));
+    setFollowingIds((prev) => ({ ...prev, [person._id]: !wasFollowing }));
+
+    try {
+      if (wasFollowing) {
+        await api.delete(`/follow/${person._id}`);
+      } else {
+        await api.post(`/follow/${person._id}`);
+      }
+
+      // The backend is the source of truth for suggestions.
+      // Re-fetch after a successful follow/unfollow so this list
+      // reflects the current database relationship.
+      await loadSuggestions();
+    } catch (err: any) {
+      if (!( !wasFollowing && err?.response?.status === 409 )) {
+        setFollowingIds((prev) => ({ ...prev, [person._id]: wasFollowing }));
+      }
+    } finally {
+      setFollowPending((prev) => ({ ...prev, [person._id]: false }));
+    }
+  };
+
+  const visibleSuggestions = suggestions.filter(
+    (person) => !followingIds[person._id]
+  );
+
+  const renderSuggestions = () => {
+    if (activeTab !== 'Messages') return null;
+    if (isLoadingSuggestions) {
+      return (
+        <View style={styles.suggestionsSection}>
+          <View style={styles.suggestionsHeader}>
+            <Text style={styles.suggestionsTitle}>People you may know</Text>
+          </View>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      );
+    }
+
+    if (visibleSuggestions.length === 0) return null;
+
+    return (
+      <View style={styles.suggestionsSection}>
+        <View style={styles.suggestionsHeader}>
+          <Text style={styles.suggestionsTitle}>People you may know</Text>
+          <Text style={styles.suggestionsHint}>Follow classmates</Text>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.suggestionList}
+        >
+          {visibleSuggestions.map((person) => {
+            const busy = !!followPending[person._id];
+
+            return (
+              <View key={person._id} style={styles.suggestionCard}>
+                <TouchableOpacity
+                  style={styles.suggestionTop}
+                  onPress={() => router.push(`/user/${person._id}` as any)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open ${person.name}'s profile`}
+                >
+                  <View
+                    style={styles.suggestionAvatar}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  >
+                    {person.avatarUrl ? (
+                      <Image
+                        source={{ uri: person.avatarUrl }}
+                        style={styles.suggestionAvatarImage}
+                      />
+                    ) : (
+                      <Text style={styles.suggestionAvatarText}>
+                        {(person.name || '?').charAt(0).toUpperCase()}
+                      </Text>
+                    )}
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.suggestionName} numberOfLines={1}>
+                      {person.name}
+                    </Text>
+                    {person.reason ? (
+                      <Text style={styles.suggestionReason} numberOfLines={1}>
+                        {person.reason}
+                      </Text>
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.followButton,
+                    followingIds[person._id] && styles.followingButton,
+                  ]}
+                  onPress={() => handleFollowSuggestion(person)}
+                  disabled={busy}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    followingIds[person._id]
+                      ? `Unfollow ${person.name}`
+                      : `Follow ${person.name}`
+                  }
+                  accessibilityState={{ busy }}
+                >
+                  {busy ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={
+                        followingIds[person._id]
+                          ? colors.text
+                          : colors.white
+                      }
+                    />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.followButtonText,
+                        followingIds[person._id] &&
+                          styles.followingButtonText,
+                      ]}
+                    >
+                      {followingIds[person._id] ? 'Following' : 'Follow'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     loadConversations();
+    loadSuggestions();
   };
 
   // Optimistic toggle — flips the UI immediately rather than waiting
@@ -496,6 +768,8 @@ export default function MessagesScreen() {
       ) : (
         <>
           <View style={{ flex: 1 }}>
+            {renderSuggestions()}
+
             {activeTab === 'Messages' ? (
               <TouchableOpacity
                 style={styles.savedMessagesRow}

@@ -1,12 +1,22 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Animated } from 'react-native';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
+import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
+import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 const POLL_INTERVAL_MS = 4000;
+
+const API_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  Constants.expoConfig?.extra?.apiUrl ??
+  'https://unilink-backend-1.onrender.com/api';
+
+const SOCKET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
 interface Message {
   _id: string;
@@ -30,7 +40,11 @@ export default function ChatDetailScreen() {
     'direct' | 'course' | 'group' | 'self' | null
   >(null);
   const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const typingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingOpacity = useRef(new Animated.Value(0.35)).current;
 
   const styles = useMemo(
     () =>
@@ -133,6 +147,26 @@ export default function ChatDetailScreen() {
         },
         sendButtonDisabled: { opacity: 0.5 },
         sendButtonText: { color: colors.white, fontWeight: '700' },
+        typingRow: {
+          paddingHorizontal: Spacing.md,
+          paddingBottom: Spacing.xs,
+          backgroundColor: colors.surface,
+        },
+        typingBubble: {
+          alignSelf: 'flex-start',
+          backgroundColor: colors.background,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.xs,
+        },
+        typingDots: {
+          color: colors.textMuted,
+          fontSize: 18,
+          fontWeight: '800',
+          letterSpacing: 2,
+        },
       }),
     [colors]
   );
@@ -178,18 +212,86 @@ export default function ChatDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
+
       loadConversationInfo();
       loadMessages(true);
       pollRef.current = setInterval(() => loadMessages(false), POLL_INTERVAL_MS);
-      return () => {
-        if (pollRef.current) clearInterval(pollRef.current);
+
+      const connectRealtime = async () => {
+        if (!id) return;
+
+        const token = await SecureStore.getItemAsync('unilink_token');
+
+        if (cancelled || !token) return;
+
+        const socket = io(SOCKET_BASE_URL, {
+          auth: { token },
+          transports: ['websocket'],
+        });
+
+        socketRef.current = socket;
+
+        socket.on('connect', () => {
+          socket.emit('conversation:join', id);
+        });
+
+        socket.on('typing:start', (payload: { conversationId?: string; userId?: string }) => {
+          if (
+            String(payload?.conversationId) === String(id) &&
+            String(payload?.userId) !== String(currentUserId)
+          ) {
+            setIsOtherTyping(true);
+          }
+        });
+
+        socket.on('typing:stop', (payload: { conversationId?: string; userId?: string }) => {
+          if (
+            String(payload?.conversationId) === String(id) &&
+            String(payload?.userId) !== String(currentUserId)
+          ) {
+            setIsOtherTyping(false);
+          }
+        });
       };
-    }, [id, loadConversationInfo])
+
+      connectRealtime();
+
+      return () => {
+        cancelled = true;
+
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+
+        if (typingStopTimerRef.current) {
+          clearTimeout(typingStopTimerRef.current);
+          typingStopTimerRef.current = null;
+        }
+
+        if (socketRef.current) {
+          socketRef.current.emit('typing:stop', id);
+          socketRef.current.emit('conversation:leave', id);
+          socketRef.current.disconnect();
+          socketRef.current = null;
+        }
+
+        setIsOtherTyping(false);
+      };
+    }, [id, loadConversationInfo, currentUserId])
   );
 
   const handleSend = async () => {
     if (!draft.trim() || isSending || !id) return;
     const text = draft.trim();
+
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+
+    socketRef.current?.emit('typing:stop', id);
     setDraft('');
     setIsSending(true);
     try {
@@ -201,6 +303,59 @@ export default function ChatDetailScreen() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  useEffect(() => {
+    if (!isOtherTyping) return;
+
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(typingOpacity, {
+          toValue: 1,
+          duration: 450,
+          useNativeDriver: true,
+        }),
+        Animated.timing(typingOpacity, {
+          toValue: 0.35,
+          duration: 450,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
+  }, [isOtherTyping, typingOpacity]);
+
+  const handleDraftChange = (value: string) => {
+    setDraft(value);
+
+    if (!id || !socketRef.current?.connected) return;
+
+    if (!value.trim()) {
+      socketRef.current.emit('typing:stop', id);
+
+      if (typingStopTimerRef.current) {
+        clearTimeout(typingStopTimerRef.current);
+        typingStopTimerRef.current = null;
+      }
+
+      return;
+    }
+
+    socketRef.current.emit('typing:start', id);
+
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+    }
+
+    typingStopTimerRef.current = setTimeout(() => {
+      socketRef.current?.emit('typing:stop', id);
+      typingStopTimerRef.current = null;
+    }, 1200);
   };
 
   return (
@@ -239,7 +394,7 @@ export default function ChatDetailScreen() {
 
       <StatusBanner
         status="real"
-        note="Messages are real and saved on the backend, but this screen checks for new ones every few seconds rather than receiving them instantly — there's no live push layer yet."
+        note="Messages are saved on the backend. New messages use a short polling fallback, while typing indicators update live."
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -302,13 +457,23 @@ export default function ChatDetailScreen() {
         />
       )}
 
+      {isOtherTyping ? (
+        <View style={styles.typingRow} accessibilityLabel="The other person is typing">
+          <View style={styles.typingBubble}>
+            <Animated.Text style={[styles.typingDots, { opacity: typingOpacity }]}>
+              •••
+            </Animated.Text>
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.composer}>
         <TextInput
           style={styles.input}
           placeholder="Type a message"
           placeholderTextColor={colors.textMuted}
           value={draft}
-          onChangeText={setDraft}
+          onChangeText={handleDraftChange}
           multiline
           accessibilityLabel="Message"
         />
