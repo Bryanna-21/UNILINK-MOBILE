@@ -280,7 +280,13 @@ export default function CommunityScreen() {
     try {
       const res = await api.get('/posts/feed', { params: q ? { q } : undefined });
       if (mine !== requestId.current) return;
-      setPosts(res.data?.data || []);
+      const nextPosts = Array.isArray(res.data?.data) ? [...res.data.data] : [];
+      nextPosts.sort(
+        (a, b) =>
+          new Date(b.createdAt || 0).getTime() -
+          new Date(a.createdAt || 0).getTime()
+      );
+      setPosts(nextPosts);
       setError(null);
     } catch (err: any) {
       if (mine !== requestId.current) return;

@@ -363,17 +363,21 @@ export default function ProfileScreen() {
   }), [colors]);
 
   const loadBasic = useCallback(async (silent = false) => {
-    if (!user?.id) return;
+    const userId = user?.id;
+    if (!userId) return;
     if (!silent) setLoading(true);
     try {
       const [meRes, postsRes, followersRes, followingRes] = await Promise.all([
         api.get('/auth/me'),
-        api.get(`/posts/user/${user.id}`),
-        api.get(`/follow/${user.id}/followers`),
-        api.get(`/follow/${user.id}/following`),
+        api.get(`/posts/user/${userId}`),
+        api.get(`/follow/${userId}/followers`),
+        api.get(`/follow/${userId}/following`),
       ]);
       const me = meRes.data?.user;
-      if (me) setUser({ ...user, ...me });
+      if (me) {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) setUser({ ...currentUser, ...me });
+      }
       setPosts(extractArray(postsRes));
       setFollowers(extractArray(followersRes));
       setFollowing(extractArray(followingRes));
@@ -382,7 +386,7 @@ export default function ProfileScreen() {
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [setUser, user]);
+  }, [setUser, user?.id]);
 
   const loadSecondary = useCallback(async (tab: 'reshared' | 'liked') => {
     setTabError('');

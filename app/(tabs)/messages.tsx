@@ -178,10 +178,25 @@ export default function MessagesScreen() {
           fontWeight: '700',
           color: colors.text,
         },
+        chatNameUnread: {
+          fontWeight: '900',
+        },
         chatPreview: {
           fontSize: 13,
           color: colors.textMuted,
           marginTop: 3,
+        },
+        chatPreviewUnread: {
+          color: colors.text,
+          fontWeight: '700',
+        },
+        unreadDot: {
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: colors.primary,
+          marginLeft: -4,
+          marginRight: 2,
         },
         pinMarker: {
           width: 6,
@@ -549,10 +564,22 @@ export default function MessagesScreen() {
                 <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
                   <Text style={styles.avatarText}>{displayTitle.charAt(0).toUpperCase()}</Text>
                 </View>
+                {unread > 0 ? (
+                  <View
+                    style={styles.unreadDot}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
+                ) : null}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.chatName}>{displayTitle}</Text>
+                  <Text style={[styles.chatName, unread > 0 && styles.chatNameUnread]}>
+                    {displayTitle}
+                  </Text>
                   {item.lastMessage ? (
-                    <Text style={styles.chatPreview} numberOfLines={1}>
+                    <Text
+                      style={[styles.chatPreview, unread > 0 && styles.chatPreviewUnread]}
+                      numberOfLines={1}
+                    >
                       {item.type !== 'direct' && item.lastMessage.senderId !== currentUserId
                         ? `${participantNames[item.lastMessage.senderId] || '...'}: ${item.lastMessage.preview}`
                         : item.lastMessage.senderId === currentUserId
