@@ -30,6 +30,7 @@ export const api = axios.create({
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('unilink_token');
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -47,7 +48,24 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await SecureStore.deleteItemAsync('unilink_token');
+      const message = String(error.response?.data?.message || '');
+      const url = error.config?.url || 'unknown endpoint';
+
+      console.warn('[auth] 401 from', url, '-', message || 'no server message');
+
+      // Only destroy the local session when the backend explicitly says
+      // the JWT itself is no longer valid. A 401 such as "No token
+      // provided" means the request was missing credentials; deleting
+      // the stored token in that situation turns one bad request into
+      // a complete local logout.
+      const invalidSession =
+        message === 'Invalid token' ||
+        message === 'Session expired. Please login again.';
+
+      if (invalidSession) {
+        await SecureStore.deleteItemAsync('unilink_token');
+      }
+
       return Promise.reject(error);
     }
 

@@ -14,8 +14,6 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as SecureStore from 'expo-secure-store';
-import axios from 'axios';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../api/client';
 import { useColors, Radius, Spacing } from '../constants/theme';
@@ -288,17 +286,25 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
       if (assets.length === 0) {
         await api.post('/posts/create', { content });
       } else {
-        const token = await SecureStore.getItemAsync('unilink_token');
         const formData = new FormData();
         if (content) formData.append('content', content);
+
         assets.forEach((asset) => {
-          formData.append('media', { uri: asset.uri, name: asset.fileName, type: asset.mimeType } as any);
+          formData.append(
+            'media',
+            {
+              uri: asset.uri,
+              name: asset.fileName,
+              type: asset.mimeType,
+            } as any
+          );
         });
-        await axios.post(`${api.defaults.baseURL}/posts/create`, formData, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : undefined,
-            'Content-Type': 'multipart/form-data',
-          },
+
+        // Use the shared API client so the normal auth interceptor
+        // attaches the current Bearer token. Do not manually set
+        // Content-Type here; Axios/React Native must add the multipart
+        // boundary automatically.
+        await api.post('/posts/create', formData, {
           timeout: UPLOAD_TIMEOUT_MS,
         });
       }

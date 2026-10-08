@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
-import { useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
@@ -45,6 +45,19 @@ export default function ChatDetailScreen() {
           backgroundColor: colors.surface,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
+        },
+        backButton: {
+          width: 40,
+          height: 40,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: Spacing.xs,
+        },
+        backButtonText: {
+          color: colors.text,
+          fontSize: 28,
+          lineHeight: 30,
+          fontWeight: '400',
         },
         chatHeaderAvatar: {
           width: 42,
@@ -192,8 +205,19 @@ export default function ChatDetailScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
-      {conversationType === 'self' ? (
-        <View style={styles.chatHeader}>
+      <View style={styles.chatHeader}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          accessibilityHint="Return to Messages"
+        >
+          <Text style={styles.backButtonText}>‹</Text>
+        </TouchableOpacity>
+
+        {conversationType === 'self' ? (
+          <>
           <View style={styles.chatHeaderAvatar} accessibilityElementsHidden>
             <Text style={styles.chatHeaderAvatarText}>S</Text>
           </View>
@@ -204,8 +228,14 @@ export default function ChatDetailScreen() {
               Private notes and messages to yourself
             </Text>
           </View>
-        </View>
-      ) : null}
+          </>
+        ) : (
+          <View style={styles.chatHeaderText}>
+            <Text style={styles.chatHeaderTitle}>Conversation</Text>
+            <Text style={styles.chatHeaderSubtitle}>Messages</Text>
+          </View>
+        )}
+      </View>
 
       <StatusBanner
         status="real"
@@ -220,7 +250,14 @@ export default function ChatDetailScreen() {
         <FlatList
           data={messages}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: Spacing.md, gap: Spacing.sm }}
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            { padding: Spacing.md, gap: Spacing.sm },
+            messages.length === 0 && {
+              flexGrow: 1,
+              justifyContent: 'center',
+            },
+          ]}
           ListEmptyComponent={
             <Text style={styles.emptyText} accessibilityRole="text">
               No messages yet. Say hello.

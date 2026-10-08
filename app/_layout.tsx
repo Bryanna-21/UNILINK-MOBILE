@@ -287,6 +287,31 @@ export default function RootLayout() {
           name="(tabs)"
           options={{ contentStyle: { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: 0 } }}
         />
+
+        {/* Secondary app routes that must open outside the tab navigator. */}
+        <Stack.Screen
+          name="chat/[id]"
+          options={{
+            headerShown: false,
+            contentStyle: {
+              backgroundColor: colors.background,
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+            },
+          }}
+        />
+
+        <Stack.Screen
+          name="messages/new"
+          options={{
+            headerShown: false,
+            contentStyle: {
+              backgroundColor: colors.background,
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+            },
+          }}
+        />
       </Stack>
     </>
   );
