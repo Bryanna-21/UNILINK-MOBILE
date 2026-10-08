@@ -99,6 +99,102 @@ export default function CourseDetailScreen() {
           marginTop: Spacing.lg,
           marginBottom: Spacing.xs,
         },
+        timetableWrap: {
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          overflow: 'hidden',
+          backgroundColor: colors.surface,
+        },
+        timetableHeaderRow: {
+          flexDirection: 'row',
+          backgroundColor: colors.primary,
+        },
+        timetableTimeHeader: {
+          width: 82,
+          minHeight: 46,
+          justifyContent: 'center',
+          paddingHorizontal: 6,
+          borderRightWidth: 1,
+          borderRightColor: colors.border,
+        },
+        timetableDayHeader: {
+          flex: 1,
+          minWidth: 72,
+          minHeight: 46,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: 4,
+          borderRightWidth: 1,
+          borderRightColor: colors.border,
+        },
+        timetableHeaderText: {
+          fontSize: 11,
+          fontWeight: '800',
+          color: colors.white,
+          textAlign: 'center',
+        },
+        timetableRow: {
+          flexDirection: 'row',
+          minHeight: 96,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        timetableTimeCell: {
+          width: 82,
+          justifyContent: 'center',
+          paddingHorizontal: 6,
+          borderRightWidth: 1,
+          borderRightColor: colors.border,
+          backgroundColor: colors.background,
+        },
+        timetableTimeText: {
+          fontSize: 11,
+          fontWeight: '800',
+          color: colors.textMuted,
+          textAlign: 'center',
+          lineHeight: 16,
+        },
+        timetableClassCell: {
+          flex: 1,
+          minWidth: 72,
+          padding: 5,
+          borderRightWidth: 1,
+          borderRightColor: colors.border,
+          justifyContent: 'center',
+        },
+        timetableClass: {
+          flex: 1,
+          justifyContent: 'center',
+          padding: 6,
+          borderRadius: Radius.sm,
+          backgroundColor: colors.primary,
+        },
+        timetableClassTime: {
+          fontSize: 9,
+          fontWeight: '700',
+          color: colors.white,
+          marginBottom: 2,
+        },
+        timetableClassLocation: {
+          fontSize: 10,
+          color: colors.white,
+          fontWeight: '600',
+        },
+        timetableEmpty: {
+          flex: 1,
+          minHeight: 84,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        timetableEmptyDot: {
+          width: 5,
+          height: 5,
+          borderRadius: 3,
+          backgroundColor: colors.border,
+        },
         card: {
           backgroundColor: colors.surface,
           marginHorizontal: Spacing.md,
@@ -107,15 +203,6 @@ export default function CourseDetailScreen() {
           borderRadius: Radius.md,
           borderWidth: 1,
           borderColor: colors.border,
-        },
-        itemText: {
-          fontSize: 14,
-          color: colors.text,
-        },
-        itemSubtext: {
-          fontSize: 12,
-          color: colors.textMuted,
-          marginTop: 3,
         },
         unitCode: {
           fontSize: 12,
@@ -421,26 +508,92 @@ export default function CourseDetailScreen() {
           </Text>
         </View>
       ) : (
-        timetable.map((entry) => (
-          <View
-            key={entry._id}
-            style={styles.card}
-            accessible
-            accessibilityLabel={`${entry.dayOfWeek}, ${entry.startTime} to ${entry.endTime}${
-              entry.location ? ', ' + entry.location : ''
-            }`}
-          >
-            <Text style={styles.itemText}>
-              {entry.dayOfWeek} · {entry.startTime}–{entry.endTime}
-            </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: Spacing.md }}
+        >
+          <View style={styles.timetableWrap}>
+            <View style={styles.timetableHeaderRow}>
+              <View style={styles.timetableTimeHeader}>
+                <Text style={styles.timetableHeaderText}>TIME</Text>
+              </View>
 
-            {entry.location ? (
-              <Text style={styles.itemSubtext}>
-                {entry.location}
-              </Text>
-            ) : null}
+              {DAYS.slice(0, 5).map((day) => (
+                <View key={day} style={styles.timetableDayHeader}>
+                  <Text style={styles.timetableHeaderText}>
+                    {day.slice(0, 3).toUpperCase()}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {[
+              ['07:00', '10:00'],
+              ['10:00', '13:00'],
+              ['13:00', '16:00'],
+              ['16:00', '19:00'],
+            ].map(([slotStart, slotEnd]) => (
+              <View
+                key={`${slotStart}-${slotEnd}`}
+                style={styles.timetableRow}
+              >
+                <View style={styles.timetableTimeCell}>
+                  <Text style={styles.timetableTimeText}>
+                    {slotStart}
+                  </Text>
+                  <Text style={styles.timetableTimeText}>
+                    {slotEnd}
+                  </Text>
+                </View>
+
+                {DAYS.slice(0, 5).map((day) => {
+                  const entry = timetable.find(
+                    (item) =>
+                      item.dayOfWeek === day &&
+                      item.startTime === slotStart
+                  );
+
+                  return (
+                    <View
+                      key={`${day}-${slotStart}`}
+                      style={styles.timetableClassCell}
+                    >
+                      {entry ? (
+                        <View
+                          style={styles.timetableClass}
+                          accessible
+                          accessibilityLabel={`${entry.dayOfWeek}, ${entry.startTime} to ${entry.endTime}${
+                            entry.location
+                              ? ', ' + entry.location
+                              : ''
+                          }`}
+                        >
+                          <Text style={styles.timetableClassTime}>
+                            {entry.startTime}–{entry.endTime}
+                          </Text>
+
+                          {entry.location ? (
+                            <Text
+                              style={styles.timetableClassLocation}
+                              numberOfLines={3}
+                            >
+                              {entry.location}
+                            </Text>
+                          ) : null}
+                        </View>
+                      ) : (
+                        <View style={styles.timetableEmpty}>
+                          <View style={styles.timetableEmptyDot} />
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
           </View>
-        ))
+        </ScrollView>
       )}
 
       {isLecturer ? (

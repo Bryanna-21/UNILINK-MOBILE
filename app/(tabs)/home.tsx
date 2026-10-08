@@ -46,6 +46,13 @@ interface Announcement {
   createdAt: string;
 }
 
+interface EventPreview {
+  _id: string;
+  title: string;
+  date: string;
+  location: string;
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const user = useAuthStore((s) => s.user);
@@ -53,8 +60,10 @@ export default function HomeScreen() {
   const [classesToday, setClassesToday] = useState<ClassToday[]>([]);
   const [attendance, setAttendance] = useState<AttendanceStatus[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [events, setEvents] = useState<EventPreview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [signingCourseId, setSigningCourseId] = useState<string | null>(null);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
@@ -214,6 +223,32 @@ export default function HomeScreen() {
           fontSize: 11,
           marginTop: 7,
         },
+        eventCard: {
+          backgroundColor: colors.surface,
+          marginHorizontal: Spacing.md,
+          marginTop: Spacing.sm,
+          padding: Spacing.md,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderLeftWidth: 4,
+          borderLeftColor: colors.secondary,
+        },
+        eventTitle: {
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: '800',
+        },
+        eventMeta: {
+          color: colors.textMuted,
+          fontSize: 12,
+          marginTop: 6,
+        },
+        eventLocation: {
+          color: colors.textMuted,
+          fontSize: 12,
+          marginTop: 4,
+        },
         viewAllText: {
           color: colors.primary,
           fontSize: 13,
@@ -224,6 +259,46 @@ export default function HomeScreen() {
       }),
     [colors]
   );
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let active = true;
+
+    const loadEvents = async () => {
+      setIsLoadingEvents(true);
+
+      try {
+        const res = await api.get('/events');
+        const data: EventPreview[] = Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+
+        if (!active) return;
+
+        setEvents(data.slice(0, 3));
+        await cacheResponse(`home_events_${user.id}`, data);
+      } catch {
+        const cached = await getCachedResponse<EventPreview[]>(
+          `home_events_${user.id}`
+        );
+
+        if (active && cached?.data) {
+          setEvents(cached.data.slice(0, 3));
+        }
+      } finally {
+        if (active) {
+          setIsLoadingEvents(false);
+        }
+      }
+    };
+
+    loadEvents();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   const loadDashboard = useCallback(async () => {
     if (!user?.id) return;
@@ -518,6 +593,75 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           ))
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.sectionTitle} accessibilityRole="header">
+            Upcoming Events
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/events' as any)}
+            accessibilityRole="button"
+            accessibilityLabel="View all upcoming events"
+          >
+            <Text style={styles.viewAllText}>View all</Text>
+          </TouchableOpacity>
+        </View>
+
+        {isLoadingEvents ? (
+          <>
+            <View style={styles.eventCard}>
+              <LoadingSkeleton width="62%" height={16} />
+              <LoadingSkeleton width="78%" height={12} style={{ marginTop: 9 }} />
+              <LoadingSkeleton width="52%" height={12} style={{ marginTop: 7 }} />
+            </View>
+            <View style={styles.eventCard}>
+              <LoadingSkeleton width="48%" height={16} />
+              <LoadingSkeleton width="72%" height={12} style={{ marginTop: 9 }} />
+              <LoadingSkeleton width="46%" height={12} style={{ marginTop: 7 }} />
+            </View>
+          </>
+        ) : events.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              No upcoming events at your institution.
+            </Text>
+          </View>
+        ) : (
+          events.map((event) => {
+            const eventDate = new Date(event.date);
+            const dateLabel = Number.isNaN(eventDate.getTime())
+              ? event.date
+              : eventDate.toLocaleString(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                });
+
+            return (
+              <TouchableOpacity
+                key={event._id}
+                style={styles.eventCard}
+                onPress={() => router.push(`/event/${event._id}` as any)}
+                accessibilityRole="button"
+                accessibilityLabel={`Event: ${event.title}`}
+              >
+                <Text style={styles.eventTitle} numberOfLines={2}>
+                  {event.title}
+                </Text>
+
+                <Text style={styles.eventMeta}>
+                  {dateLabel}
+                </Text>
+
+                <Text style={styles.eventLocation} numberOfLines={2}>
+                  📍 {event.location}
+                </Text>
+              </TouchableOpacity>
+            );
+          })
         )}
       </View>
 
