@@ -26,7 +26,7 @@ import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/Loadi
 // own screen and is intentionally left as a follow-up rather than
 // folded into this pass.
 
-type ConversationType = 'direct' | 'course' | 'group';
+type ConversationType = 'direct' | 'course' | 'group' | 'self';
 
 interface Conversation {
   _id: string;
@@ -55,6 +55,7 @@ export default function MessagesScreen() {
   const [participantRoles, setParticipantRoles] = useState<Record<string, UserRole>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isOpeningSavedMessages, setIsOpeningSavedMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const styles = useMemo(
@@ -122,6 +123,39 @@ export default function MessagesScreen() {
           paddingVertical: Spacing.sm,
           gap: Spacing.sm,
         },
+        savedMessagesRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          minHeight: 68,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          gap: Spacing.sm,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        savedMessagesAvatar: {
+          width: 46,
+          height: 46,
+          borderRadius: Radius.full,
+          backgroundColor: colors.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        savedMessagesAvatarText: {
+          color: colors.white,
+          fontWeight: '900',
+          fontSize: 17,
+        },
+        savedMessagesName: {
+          fontSize: 15,
+          fontWeight: '800',
+          color: colors.text,
+        },
+        savedMessagesSubtitle: {
+          fontSize: 13,
+          color: colors.textMuted,
+          marginTop: 3,
+        },
         avatar: {
           width: 46,
           height: 46,
@@ -145,9 +179,12 @@ export default function MessagesScreen() {
           color: colors.textMuted,
           marginTop: 3,
         },
-        pinIcon: {
-          fontSize: 11,
-          marginRight: -4,
+        pinMarker: {
+          width: 6,
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: colors.primary,
+          marginRight: 2,
         },
         chatTime: {
           fontSize: 11,
@@ -217,13 +254,18 @@ export default function MessagesScreen() {
 
   const getDisplayTitle = useCallback(
     (conv: Conversation) => {
+      if (conv.type === 'self') {
+        return 'Saved Messages';
+      }
+
       if (conv.type === 'course' || conv.type === 'group') {
         return conv.title || 'Untitled';
       }
+
       const otherId = getOtherParticipantId(conv);
       return participantNames[otherId] || '...';
     },
-    [getOtherParticipantId, participantNames]
+    [currentUserId, getOtherParticipantId, participantNames]
   );
 
   const loadConversations = useCallback(async () => {
@@ -312,14 +354,54 @@ export default function MessagesScreen() {
     }
   };
 
+  const handleOpenSavedMessages = async () => {
+    if (isOpeningSavedMessages) return;
+
+    const existing = conversations.find((item) => item.type === 'self');
+
+    if (existing?._id) {
+      router.push(`/chat/${existing._id}` as any);
+      return;
+    }
+
+    setIsOpeningSavedMessages(true);
+    try {
+      const res = await api.post('/messages/start', { self: true });
+      const conversation = res.data?.data;
+
+      if (!conversation?._id) {
+        throw new Error('Saved Messages conversation was not returned.');
+      }
+
+      setConversations((prev) => [
+        ...prev.filter((item) => item.type !== 'self'),
+        conversation,
+      ]);
+
+      router.push(`/chat/${conversation._id}` as any);
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Could not open Saved Messages.'
+      );
+    } finally {
+      setIsOpeningSavedMessages(false);
+    }
+  };
+
   const filteredConversations = useMemo(() => {
     let list: Conversation[];
     switch (activeTab) {
       case 'Unread':
-        list = conversations.filter((c) => (c.unreadCount || 0) > 0);
+        list = conversations.filter(
+          (c) => c.type !== 'self' && (c.unreadCount || 0) > 0
+        );
         break;
       case 'Communities':
-        list = conversations.filter((c) => c.type === 'course' || c.type === 'group');
+        list = conversations.filter(
+          (c) => c.type === 'course' || c.type === 'group'
+        );
         break;
       case 'Lecturers':
         list = conversations.filter((c) => {
@@ -330,13 +412,14 @@ export default function MessagesScreen() {
         break;
       case 'Messages':
       default:
-        list = conversations;
+        list = conversations.filter((c) => c.type !== 'self');
     }
-    // Pinned first, each group keeping its existing lastMessageAt
-    // order — a stable sort (Array.prototype.sort is stable per spec
-    // since ES2019) so this never re-shuffles conversations within
-    // the pinned or unpinned group on every render.
-    return [...list].sort((a, b) => Number(!!b.isPinned) - Number(!!a.isPinned));
+
+    // Pinned first, while preserving the existing conversation order
+    // within the pinned and unpinned groups.
+    return [...list].sort(
+      (a, b) => Number(!!b.isPinned) - Number(!!a.isPinned)
+    );
   }, [activeTab, conversations, participantRoles, getOtherParticipantId]);
 
   const formatTime = (iso: string) => {
@@ -393,10 +476,47 @@ export default function MessagesScreen() {
       {isLoading ? (
         <LoadingSkeletonList rows={4} />
       ) : (
-        <FlatList
+        <>
+          {activeTab === 'Messages' ? (
+            <TouchableOpacity
+              style={styles.savedMessagesRow}
+              onPress={handleOpenSavedMessages}
+              disabled={isOpeningSavedMessages}
+              accessibilityRole="button"
+              accessibilityLabel="Saved Messages"
+              accessibilityHint="Open your private Saved Messages conversation"
+              accessibilityState={{ disabled: isOpeningSavedMessages }}
+            >
+              <View
+                style={styles.savedMessagesAvatar}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              >
+                <Text style={styles.savedMessagesAvatarText}>S</Text>
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.savedMessagesName}>Saved Messages</Text>
+                <Text style={styles.savedMessagesSubtitle}>
+                  {isOpeningSavedMessages
+                    ? 'Opening…'
+                    : 'Message yourself'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ) : null}
+
+          <FlatList
           data={filteredConversations}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ paddingBottom: Spacing.xl }}
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            { paddingBottom: Spacing.xl },
+            filteredConversations.length === 0 && {
+              flexGrow: 1,
+              justifyContent: 'center',
+            },
+          ]}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
           ListEmptyComponent={
             <Text style={styles.emptyText} accessibilityRole="text">
@@ -416,9 +536,11 @@ export default function MessagesScreen() {
                 accessibilityHint="Double tap to open, long press to pin or unpin"
               >
                 {item.isPinned ? (
-                  <Text style={styles.pinIcon} accessibilityElementsHidden importantForAccessibility="no">
-                    📌
-                  </Text>
+                  <View
+                    style={styles.pinMarker}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
                 ) : null}
                 <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
                   <Text style={styles.avatarText}>{displayTitle.charAt(0).toUpperCase()}</Text>
@@ -452,7 +574,8 @@ export default function MessagesScreen() {
               </TouchableOpacity>
             );
           }}
-        />
+          />
+        </>
       )}
 
       <TouchableOpacity

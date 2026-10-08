@@ -26,7 +26,9 @@ export default function ChatDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [conversationType, setConversationType] = useState<'direct' | 'course' | 'group' | null>(null);
+  const [conversationType, setConversationType] = useState<
+    'direct' | 'course' | 'group' | 'self' | null
+  >(null);
   const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -34,6 +36,43 @@ export default function ChatDetailScreen() {
     () =>
       StyleSheet.create({
         container: { flex: 1, backgroundColor: colors.background },
+        chatHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          minHeight: 64,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.sm,
+          backgroundColor: colors.surface,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        chatHeaderAvatar: {
+          width: 42,
+          height: 42,
+          borderRadius: Radius.full,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: Spacing.sm,
+        },
+        chatHeaderAvatarText: {
+          color: colors.white,
+          fontSize: 17,
+          fontWeight: '900',
+        },
+        chatHeaderText: {
+          flex: 1,
+        },
+        chatHeaderTitle: {
+          color: colors.text,
+          fontSize: 16,
+          fontWeight: '800',
+        },
+        chatHeaderSubtitle: {
+          color: colors.textMuted,
+          fontSize: 12,
+          marginTop: 2,
+        },
         error: { color: colors.danger, textAlign: 'center', fontSize: 13, marginTop: Spacing.sm },
         emptyText: {
           textAlign: 'center',
@@ -111,9 +150,12 @@ export default function ChatDetailScreen() {
       const res = await api.get(`/messages/${id}/info`);
       const info = res.data?.data;
       setConversationType(info?.type ?? null);
+
       if (info?.type === 'direct' && Array.isArray(info.participantIds)) {
         const other = info.participantIds.find((pid: string) => pid !== currentUserId);
         setOtherParticipantId(other ?? null);
+      } else {
+        setOtherParticipantId(null);
       }
     } catch {
       // Non-fatal: read receipts simply won't show if this fails,
@@ -150,6 +192,21 @@ export default function ChatDetailScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
+      {conversationType === 'self' ? (
+        <View style={styles.chatHeader}>
+          <View style={styles.chatHeaderAvatar} accessibilityElementsHidden>
+            <Text style={styles.chatHeaderAvatarText}>S</Text>
+          </View>
+
+          <View style={styles.chatHeaderText}>
+            <Text style={styles.chatHeaderTitle}>Saved Messages</Text>
+            <Text style={styles.chatHeaderSubtitle}>
+              Private notes and messages to yourself
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
       <StatusBanner
         status="real"
         note="Messages are real and saved on the backend, but this screen checks for new ones every few seconds rather than receiving them instantly — there's no live push layer yet."
