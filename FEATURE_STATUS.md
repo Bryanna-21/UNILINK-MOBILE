@@ -11,6 +11,26 @@ This file is the source of truth for what's real. If a screen's
 in-app StatusBanner ever disagrees with this file, trust the banner
 first (it's harder to forget to update) but fix this file too.
 
+## Verified corrections (Oct 2026 audit of all three repos)
+
+This section overrides any older row below it that disagrees.
+
+| Item | Real status |
+|---|---|
+| Reshared / Liked / Hidden posts | Backend routes exist (`GET /posts/user/:userId/reshares`, `/posts/liked`, `/posts/hidden`, `POST/DELETE /posts/reshare/:id`, `POST/DELETE /posts/hidden/:id`). README-PATCH.txt claiming otherwise is obsolete and has been removed. |
+| Trusted contacts | Backend real (`/profile/trusted-contacts`). Mobile screen still to be confirmed. |
+| Push notifications | Backend real (`POST/DELETE /profile/push-token`, `push.util.js` used by emergency, admin and user notifications). Mobile registration is the remaining half. |
+| Emergency "Request Help" | Backend now persists an `EmergencyReport` (type `help_request`), notifies admins and audit-logs it. No longer a stub. |
+| Chat | Socket.io is wired into `chat/[id].tsx` (typing indicator, read-by). Polling remains as fallback. File/document attachments in chat are NOT built (backend `Message.fileUrl` exists, no upload route, no mobile picker). |
+| Following / people | Search by username, follow/unfollow, Following and Followers tabs, followed people listed in New Message: built. A separate mutual "friends" model does not exist; following is the current mechanism. |
+| Blocked users | List and unblock screen added (`settings/blocked.tsx`). Blocking from a profile already worked. |
+| Notes reader / Past paper reader | `app/notes/[id].tsx` and `app/paper/[id].tsx` were unreachable shells and have been deleted. The real screens are `course/[id]/notes.tsx` and `course/[id]/past-papers.tsx`. |
+| Lost & Found | Real (list, post with image, resolve). |
+| Event RSVP | Wired to `POST /events/:id/rsvp` and `GET /events/:id/my-rsvp`. |
+| Lecturer and admin mobile surfaces | Screens exist under `app/lecturer/*` and `app/admin/*`, plus lecturer and admin dashboard tabs. |
+
+Still shell: Settings > Privacy & Security (two-factor, active sessions, who can message me, download my data), Settings > Storage, Settings > Accessibility toggles, Financial Support (undecided by design).
+
 ## Foundation
 
 | Item | Status | Notes |

@@ -220,6 +220,19 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Blocked users</Text>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/blocked' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Manage blocked users"
+        >
+          <Text style={styles.rowText}>Manage blocked users</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Accounts</Text>
         <TouchableOpacity
           style={styles.row}
@@ -304,11 +317,10 @@ export default function SettingsScreen() {
             items: [
               'Two-factor authentication',
               'Active sessions',
-              'Blocked users',
               'Who can message me',
               'Download my data',
             ],
-            backendNote: 'Scoped but not yet built. Two-factor authentication and active-session listing extend existing OTP/auth infrastructure. Blocked users and messaging-privacy need new fields on the User model plus enforcement in message.controller.js. Download-my-data needs a dedicated export endpoint. (Delete account is real now: see the Account section.) None of these have a backend route yet — building these next, after this shell ships.',
+            backendNote: 'Scoped but not yet built. Two-factor authentication and active-session listing extend existing OTP/auth infrastructure. Messaging-privacy needs a new field on the User model plus enforcement in message.controller.js. (Blocked users is real now: see the Blocked users section.) Download-my-data needs a dedicated export endpoint. (Delete account is real now: see the Account section.) None of these have a backend route yet — building these next, after this shell ships.',
           },
           {
             title: 'Storage',
