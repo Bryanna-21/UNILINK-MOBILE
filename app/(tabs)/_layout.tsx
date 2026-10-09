@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
+import { EmergencyShortcut } from '../../src/components/EmergencyShortcut';
 import { useColors } from '../../src/constants/theme';
 import type { ColorValue } from 'react-native';
 
@@ -15,6 +16,7 @@ export default function TabsLayout() {
   const colors = useColors();
 
   return (
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -85,5 +87,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="explore" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
+    <EmergencyShortcut />
+    </View>
   );
 }

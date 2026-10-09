@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,21 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  Animated,
+  Linking,
+  Vibration,
 } from 'react-native';
 import { router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
+// SOS (Phase 1): press-and-hold 3s, then a 5s cancellable countdown, then POST
+// /emergency/report with type "sos" (backend already gives it high priority, alerts admins
+// and texts trusted contacts if SMS is configured). No GPS yet: that needs expo-location
+// (a native package, so a new EAS build). The person can type where they are instead.
+// Call buttons use the system dialer via tel: (no dependency).
+//
 // STATUS: REAL — calls POST /api/emergency/report on the live backend.
 // type must be exactly "medical" | "safety" | "abuse" (enforced by the
 // backend controller). Live location, trusted contacts, campus security
@@ -35,9 +44,89 @@ const EMERGENCY_TYPES = [
   { value: 'abuse', label: '🚫 Abuse', a11yLabel: 'Abuse' },
 ] as const;
 
+const HOLD_MS = 3000;
+const COUNTDOWN_FROM = 5;
+const FALLBACK_CONTACTS = [
+  { name: 'National Emergency', phone: '112' },
+  { name: 'Ambulance', phone: '999' },
+];
+
 export default function EmergencyScreen() {
   const colors = useColors();
   const styles = useEmergencyStyles(colors);
+
+  const [contacts, setContacts] = useState<{ name: string; phone: string }[]>(FALLBACK_CONTACTS);
+  const [sosPlace, setSosPlace] = useState('');
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [isSendingSos, setIsSendingSos] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdProgress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    api
+      .get('/emergency/contacts')
+      .then((res) => {
+        const list = res.data?.data;
+        if (Array.isArray(list) && list.length) setContacts(list);
+      })
+      .catch(() => {});
+    return () => {
+      if (holdTimer.current) clearTimeout(holdTimer.current);
+    };
+  }, []);
+
+  const sendSos = useCallback(async () => {
+    setIsSendingSos(true);
+    try {
+      const res = await api.post('/emergency/report', {
+        type: 'sos',
+        location: sosPlace.trim() || undefined,
+      });
+      const notified = res.data?.data?.notifiedContacts;
+      const extra = Array.isArray(notified) && notified.length ? ' Your trusted contacts were also alerted.' : '';
+      Alert.alert('SOS sent', 'Campus security has been alerted.' + extra);
+    } catch (err: any) {
+      Alert.alert(
+        'SOS could not be sent',
+        (err?.response?.data?.message || 'Check your connection.') + ' If you are in danger, call emergency services now.'
+      );
+    } finally {
+      setIsSendingSos(false);
+    }
+  }, [sosPlace]);
+
+  // Countdown: one tick per second; at 0 the alert is sent. Cancel sets countdown back to null.
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      setCountdown(null);
+      sendSos();
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, sendSos]);
+
+  const beginHold = () => {
+    if (countdown !== null || isSendingSos) return;
+    holdProgress.setValue(0);
+    Animated.timing(holdProgress, { toValue: 1, duration: HOLD_MS, useNativeDriver: false }).start();
+    holdTimer.current = setTimeout(() => {
+      holdTimer.current = null;
+      Vibration.vibrate(200);
+      holdProgress.setValue(0);
+      setCountdown(COUNTDOWN_FROM);
+    }, HOLD_MS);
+  };
+
+  const endHold = () => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+      holdProgress.stopAnimation();
+      holdProgress.setValue(0);
+    }
+  };
   const [type, setType] = useState<'medical' | 'safety' | 'abuse' | null>(null);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,8 +179,70 @@ export default function EmergencyScreen() {
     <ScrollView style={styles.container}>
       <StatusBanner
         status="real"
-        note="Emergency reports and Request Help both submit to the real backend. Live location & trusted contacts (emergency reports only) are not built yet."
+        note="SOS, emergency reports and Request Help all submit to the real backend. Live GPS location is not built yet; say where you are in the box below."
       />
+
+      <View style={styles.sosSection}>
+        {countdown !== null ? (
+          <View style={styles.countdownCard} accessibilityLiveRegion="assertive">
+            <Text style={styles.countdownNumber}>{countdown}</Text>
+            <Text style={styles.countdownText}>Sending SOS to campus security…</Text>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setCountdown(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel SOS"
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <Animated.View style={{ transform: [{ scale: holdProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.92] }) }] }}>
+              <TouchableOpacity
+                style={[styles.sosButton, isSendingSos && styles.submitButtonDisabled]}
+                onPressIn={beginHold}
+                onPressOut={endHold}
+                activeOpacity={0.85}
+                disabled={isSendingSos}
+                accessibilityRole="button"
+                accessibilityLabel="SOS. Press and hold for 3 seconds to send an emergency alert"
+                accessibilityHint="Holding for three seconds starts a five second countdown that you can cancel"
+              >
+                {isSendingSos ? <ActivityIndicator color={colors.white} /> : <Text style={styles.sosText}>SOS</Text>}
+              </TouchableOpacity>
+            </Animated.View>
+            <View style={styles.holdTrack}>
+              <Animated.View style={[styles.holdFill, { width: holdProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
+            </View>
+            <Text style={styles.sosHint}>Press and hold for 3 seconds. You can cancel during the countdown.</Text>
+            <TextInput
+              style={[styles.messageInput, { minHeight: 48, marginTop: Spacing.sm }]}
+              placeholder="Where are you? (optional, e.g. Library, 2nd floor)"
+              placeholderTextColor={colors.textMuted}
+              value={sosPlace}
+              onChangeText={setSosPlace}
+              accessibilityLabel="Where are you, optional"
+            />
+          </>
+        )}
+
+        <Text style={styles.callLabel}>CALL NOW</Text>
+        <View style={styles.callRow}>
+          {contacts.map((c) => (
+            <TouchableOpacity
+              key={c.name + c.phone}
+              style={styles.callButton}
+              onPress={() => Linking.openURL('tel:' + c.phone)}
+              accessibilityRole="button"
+              accessibilityLabel={'Call ' + c.name + ' on ' + c.phone}
+            >
+              <Text style={styles.callName}>{c.name}</Text>
+              <Text style={styles.callNumber}>{c.phone}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       <Text style={styles.title} accessibilityRole="header">
         Report an Emergency
@@ -290,6 +441,48 @@ function useEmergencyStyles(colors: ReturnType<typeof useColors>) {
           color: colors.textMuted,
           marginBottom: Spacing.md,
         },
+        sosSection: { alignItems: 'center', marginBottom: Spacing.lg },
+        sosButton: {
+          width: 168,
+          height: 168,
+          borderRadius: 84,
+          backgroundColor: colors.danger,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 8,
+          borderColor: colors.background === '#0A0A0A' ? '#5B1A1A' : '#FECACA',
+        },
+        sosText: { color: colors.white, fontSize: 34, fontWeight: '800', letterSpacing: 2 },
+        holdTrack: { width: 168, height: 6, borderRadius: 3, backgroundColor: colors.border, marginTop: Spacing.md, overflow: 'hidden' },
+        holdFill: { height: 6, backgroundColor: colors.danger },
+        sosHint: { fontSize: 13, color: colors.textMuted, textAlign: 'center', marginTop: Spacing.sm },
+        countdownCard: {
+          alignSelf: 'stretch',
+          alignItems: 'center',
+          backgroundColor: colors.danger,
+          borderRadius: Radius.md,
+          padding: Spacing.lg,
+        },
+        countdownNumber: { color: colors.white, fontSize: 64, fontWeight: '800' },
+        countdownText: { color: colors.white, fontSize: 15, fontWeight: '600', marginBottom: Spacing.md },
+        cancelButton: { backgroundColor: colors.white, borderRadius: Radius.md, paddingVertical: 14, paddingHorizontal: 40 },
+        cancelButtonText: { color: colors.danger, fontWeight: '800', fontSize: 16 },
+        callLabel: { alignSelf: 'flex-start', fontSize: 13, fontWeight: '700', color: colors.textMuted, marginTop: Spacing.lg },
+        callRow: { alignSelf: 'stretch', flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.sm },
+        callButton: {
+          flexGrow: 1,
+          minWidth: 100,
+          minHeight: 52,
+          borderRadius: Radius.md,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: Spacing.sm,
+        },
+        callName: { fontSize: 12, color: colors.textMuted },
+        callNumber: { fontSize: 16, fontWeight: '800', color: colors.text },
         helpButton: {
           backgroundColor: colors.primary,
           borderRadius: Radius.md,
