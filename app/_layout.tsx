@@ -10,6 +10,7 @@ import { useColors, Radius, Spacing } from '../src/constants/theme';
 import { initI18n } from '../src/i18n';
 import { promptBiometric } from '../src/utils/biometricAuth';
 import { LoadingSplash } from '../src/components/LoadingSplash';
+import { UpdateGate } from '../src/components/UpdateGate';
 import { registerForPushNotifications } from '../src/utils/pushNotifications';
 
 // STATUS: REAL — expo-updates is configured via `eas update:configure`
@@ -273,6 +274,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
+      <UpdateGate />
       <Stack
         screenOptions={{
           headerShown: false,
