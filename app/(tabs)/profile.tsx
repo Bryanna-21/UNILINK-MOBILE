@@ -418,7 +418,11 @@ export default function ProfileScreen() {
     setRefreshing(false);
   };
 
+  // Admin Tools: the admin dashboard exists as a hidden tab but nothing linked to it, so admins
+  // had no way in. Shown only to admin and superadmin accounts.
+  const isAdminRole = ['admin', 'superadmin'].includes(String(user?.role));
   const menuItems: MenuItem[] = [
+    ...(isAdminRole ? [{ label: 'Admin Tools', route: '/(tabs)/admin-dashboard' }] : []),
     { label: 'Following & Followers', route: '/profile/following' },
     { label: 'Find People', route: '/people' },
     { label: 'Achievements & Portfolio', route: '/profile/achievements' },

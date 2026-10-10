@@ -17,6 +17,9 @@ const LINKS = [
   { key: 'admins', title: 'Admin Management', desc: 'Create, edit, and remove administrator accounts.', path: '/admin/admins' },
   { key: 'units', title: 'Unit Catalog', desc: 'Manage the units lecturers can attach to courses.', path: '/admin/units' },
   { key: 'universities', title: 'Universities', desc: 'Register a new university.', path: '/admin/universities' },
+  { key: 'campuses', title: 'Campuses', desc: 'Manage the campuses of each university.', path: '/admin/campuses' },
+  { key: 'faculties', title: 'Faculties', desc: 'Manage the faculties of each university.', path: '/admin/faculties' },
+  { key: 'departments', title: 'Departments', desc: 'Manage the departments of each faculty.', path: '/admin/departments' },
   { key: 'reports', title: 'Emergency Reports', desc: 'Review, respond to, escalate, resolve, or dismiss reports.', path: '/admin/reports' },
 ] as const;
 
@@ -58,7 +61,7 @@ export default function AdminDashboardScreen() {
       </Text>
       <Text style={styles.greeting}>Hi, {user?.name?.split(' ')[0] || 'there'} 👋</Text>
 
-      <StatusBanner status="real" note="User directory, admin management, and unit catalog are all live." />
+      <StatusBanner status="real" note="User directory, admin management, unit catalog, and university structure are all live." />
 
       <View style={styles.list}>
         {LINKS.map((item) => (
