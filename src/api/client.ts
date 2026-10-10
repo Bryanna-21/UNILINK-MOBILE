@@ -5,10 +5,20 @@ import Constants from 'expo-constants';
 // Env-driven with a hardcoded fallback — set EXPO_PUBLIC_API_URL to override
 // (e.g. a local backend during development) without editing this file.
 // Falls back to the live Render backend, same one the web frontend uses.
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ??
-  Constants.expoConfig?.extra?.apiUrl ??
-  'https://unilink-backend-1.onrender.com/api';
+// `||` (not `??`) and trim: an EMPTY EXPO_PUBLIC_API_URL baked into an OTA bundle is not
+// nullish, so `??` would keep it and every request would fail with "Network Error".
+const API_BASE_URL = (
+  process.env.EXPO_PUBLIC_API_URL?.trim() ||
+  Constants.expoConfig?.extra?.apiUrl ||
+  'https://unilink-backend-1.onrender.com/api'
+).replace(/\/+$/, '');
+
+// The auth store registers this so a dead session can send the person back to login.
+// (client.ts cannot import the store: the store imports this file.)
+let onSessionInvalid: (() => void) | null = null;
+export const setSessionInvalidHandler = (fn: (() => void) | null) => {
+  onSessionInvalid = fn;
+};
 
 // Render free tier spins the backend down after ~15 min idle. The FIRST
 // request after a cold start can take 30-60s to wake it up. A normal
@@ -62,8 +72,15 @@ api.interceptors.response.use(
         message === 'Invalid token' ||
         message === 'Session expired. Please login again.';
 
-      if (invalidSession) {
+      // "No token provided" while the app still believes it is signed in means the token is
+      // gone but the saved user is not: a half-logged-in state that never heals by itself
+      // (every request then fails). Treat it as a dead session too.
+      const missingToken = message === 'No token provided';
+
+      if (invalidSession || missingToken) {
         await SecureStore.deleteItemAsync('unilink_token');
+        await SecureStore.deleteItemAsync('unilink_user');
+        onSessionInvalid?.();
       }
 
       return Promise.reject(error);

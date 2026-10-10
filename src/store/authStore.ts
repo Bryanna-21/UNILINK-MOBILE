@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
-import { api } from '../api/client';
+import { api, setSessionInvalidHandler } from '../api/client';
 import { clearOfflineCache } from '../utils/offlineCache';
 
 export type UserRole = 'student' | 'lecturer' | 'admin';
@@ -495,3 +495,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: held, pendingBiometricUnlock: false, _heldUser: null });
   },
 }));
+
+// A dead session (expired, revoked, or token missing) signs the person out locally so the
+// root layout sends them to login, instead of leaving them stuck on "No token provided".
+setSessionInvalidHandler(() => {
+  useAuthStore.setState({ user: null, pendingBiometricUnlock: false, _heldUser: null });
+});
