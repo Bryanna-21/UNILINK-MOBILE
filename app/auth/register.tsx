@@ -41,6 +41,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [universities, setUniversities] = useState<University[]>([]);
   const [universityId, setUniversityId] = useState('');
+  const [universityName, setUniversityName] = useState('');
   const [universityQuery, setUniversityQuery] = useState('');
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [campusId, setCampusId] = useState('');
@@ -50,23 +51,34 @@ export default function RegisterScreen() {
   const draftReady = useRef(false);
   const pendingCampus = useRef('');
   useEffect(() => {
-    loadDraft<{ name?: string; username?: string; email?: string; universityId?: string; campusId?: string }>('register').then((d) => {
+    loadDraft<{ name?: string; username?: string; email?: string; universityId?: string; universityName?: string; campusId?: string }>('register').then((d) => {
       if (d) {
         if (d.name) setName(d.name);
         if (d.username) setUsername(d.username);
         if (d.email) setEmail(d.email);
-        if (d.universityId) setUniversityId(d.universityId);
-        // The campus list reloads whenever the university changes and clears the choice,
-        // so the saved campus is applied once that list has loaded.
-        if (d.campusId) pendingCampus.current = d.campusId;
+        // Restore the selected university only when its display name was saved too.
+        // Older drafts without a name must reselect their university safely.
+        if (d.universityId && d.universityName) {
+          setUniversityId(d.universityId);
+          setUniversityName(d.universityName);
+          setUniversityQuery(d.universityName);
+          if (d.campusId) pendingCampus.current = d.campusId;
+        }
       }
       draftReady.current = true;
     });
   }, []);
   useEffect(() => {
     if (!draftReady.current) return;
-    saveDraft('register', { name, username, email, universityId, campusId });
-  }, [name, username, email, universityId, campusId]);
+    saveDraft('register', {
+      name,
+      username,
+      email,
+      universityId,
+      universityName,
+      campusId,
+    });
+  }, [name, username, email, universityId, universityName, campusId]);
   useEffect(() => {
     const p = pendingCampus.current;
     if (p && campuses.some((c: any) => String(c._id ?? c.id) === String(p))) {
@@ -74,34 +86,67 @@ export default function RegisterScreen() {
       pendingCampus.current = '';
     }
   }, [campuses]);
-  const [loadingUniversities, setLoadingUniversities] = useState(true);
+  const [loadingUniversities, setLoadingUniversities] = useState(false);
   const [loadingCampuses, setLoadingCampuses] = useState(false);
   const register = useAuthStore((s) => s.register);
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
 
-  const filteredUniversities = useMemo(() => {
-    const query = universityQuery.trim().toLowerCase();
+  const filteredUniversities = universities;
 
-    if (!query || universityId) {
-      return [];
+  // Search only when the user has entered at least two characters.
+  // Cleanup cancels pending debounce timers and ignores stale responses.
+  useEffect(() => {
+    const query = universityQuery.trim();
+    let cancelled = false;
+
+    if (universityId || query.length < 2) {
+      setUniversities([]);
+      setLoadingUniversities(false);
+      return () => {
+        cancelled = true;
+      };
     }
 
-    return universities
-      .filter((university) =>
-        university.name.toLowerCase().includes(query)
-      )
-      .slice(0, 8);
-  }, [universities, universityQuery, universityId]);
+    setLoadingUniversities(true);
 
-  // Public endpoint, no auth needed — a new user has no token yet.
-  useEffect(() => {
-    api
-      .get('/auth/universities')
-      .then((res) => setUniversities(res.data?.data ?? []))
-      .catch(() => setUniversities([]))
-      .finally(() => setLoadingUniversities(false));
-  }, []);
+    const timer = setTimeout(async () => {
+      try {
+        const response = await api.get('/auth/universities', {
+          params: { search: query },
+        });
+
+        if (!cancelled) {
+          const data = response.data?.data;
+          setUniversities(Array.isArray(data) ? data.slice(0, 8) : []);
+        }
+      } catch {
+        if (!cancelled) setUniversities([]);
+      } finally {
+        if (!cancelled) setLoadingUniversities(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [universityQuery, universityId]);
+
+  const handleUniversityQueryChange = (value: string) => {
+    setUniversityQuery(value);
+    setUniversityId('');
+    setUniversityName('');
+    setCampusId('');
+    setCampuses([]);
+  };
+
+  const handleUniversitySelect = (university: University) => {
+    setUniversityId(university._id);
+    setUniversityName(university.name);
+    setUniversityQuery(university.name);
+    setUniversities([]);
+  };
 
   useEffect(() => {
     setCampusId('');
@@ -320,20 +365,23 @@ export default function RegisterScreen() {
           />
 
           <Text style={styles.label}>University</Text>
-          {loadingUniversities ? (
-            <ActivityIndicator color={colors.primary} />
-          ) : universityId ? (
+          {universityId ? (
             <TouchableOpacity
               style={styles.universitySelected}
               onPress={() => {
                 setUniversityId('');
+                setUniversityName('');
                 setUniversityQuery('');
+                setUniversities([]);
+                setCampusId('');
+                setCampuses([]);
               }}
+              disabled={isLoading}
               accessibilityRole="button"
               accessibilityLabel="Change university"
             >
               <Text style={styles.universitySelectedText}>
-                {universities.find((u) => u._id === universityId)?.name || universityQuery}
+                {universityName || universityQuery}
               </Text>
               <Text style={styles.universityChangeText}>Change</Text>
             </TouchableOpacity>
@@ -344,23 +392,26 @@ export default function RegisterScreen() {
                 placeholder="Type your university name"
                 placeholderTextColor={colors.textMuted}
                 value={universityQuery}
-                onChangeText={setUniversityQuery}
+                onChangeText={handleUniversityQueryChange}
                 autoCapitalize="words"
                 autoCorrect={false}
                 editable={!isLoading}
                 accessibilityLabel="Search for university"
               />
 
-              {filteredUniversities.length > 0 && (
+              {universityQuery.trim().length < 2 ? (
+                <Text style={styles.helperText}>
+                  Enter at least 2 characters to search.
+                </Text>
+              ) : loadingUniversities ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : filteredUniversities.length > 0 ? (
                 <View style={styles.universitySuggestions}>
                   {filteredUniversities.map((university) => (
                     <TouchableOpacity
                       key={university._id}
                       style={styles.universitySuggestion}
-                      onPress={() => {
-                        setUniversityId(university._id);
-                        setUniversityQuery(university.name);
-                      }}
+                      onPress={() => handleUniversitySelect(university)}
                       accessibilityRole="button"
                       accessibilityLabel={`Select ${university.name}`}
                     >
@@ -370,9 +421,7 @@ export default function RegisterScreen() {
                     </TouchableOpacity>
                   ))}
                 </View>
-              )}
-
-              {universityQuery.trim() && filteredUniversities.length === 0 && (
+              ) : (
                 <Text style={styles.helperText}>
                   No matching universities found.
                 </Text>
