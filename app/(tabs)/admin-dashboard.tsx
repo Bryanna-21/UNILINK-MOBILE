@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { router } from 'expo-router';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
+import { AdminCounts } from '../../src/components/admin/AdminCounts';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 // STATUS: REAL — was a shell linking nowhere; now links into real
@@ -17,6 +18,7 @@ const LINKS = [
   { key: 'admins', title: 'Admin Management', desc: 'Create, edit, and remove administrator accounts.', path: '/admin/admins' },
   { key: 'units', title: 'Unit Catalog', desc: 'Manage the units lecturers can attach to courses.', path: '/admin/units' },
   { key: 'universities', title: 'Universities', desc: 'Register a new university.', path: '/admin/universities' },
+  { key: 'chat', title: 'Staff Chat', desc: 'Talk with the other admins and the superadmin.', path: '/admin/chat' },
   { key: 'campuses', title: 'Campuses', desc: 'Manage the campuses of each university.', path: '/admin/campuses' },
   { key: 'faculties', title: 'Faculties', desc: 'Manage the faculties of each university.', path: '/admin/faculties' },
   { key: 'departments', title: 'Departments', desc: 'Manage the departments of each faculty.', path: '/admin/departments' },
@@ -61,7 +63,8 @@ export default function AdminDashboardScreen() {
       </Text>
       <Text style={styles.greeting}>Hi, {user?.name?.split(' ')[0] || 'there'} 👋</Text>
 
-      <StatusBanner status="real" note="User directory, admin management, unit catalog, and university structure are all live." />
+      <><StatusBanner status="real" note="User directory, admin management, unit catalog, and university structure are all live." />
+        <AdminCounts /></>
 
       <View style={styles.list}>
         {LINKS.map((item) => (

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { loadDraft, saveDraft, clearDraft } from '../../src/utils/formDraft';
 import {
   View,
   Text,
@@ -43,6 +44,36 @@ export default function RegisterScreen() {
   const [universityQuery, setUniversityQuery] = useState('');
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [campusId, setCampusId] = useState('');
+
+  // Keep the non-secret answers if the app restarts mid-registration (an update, or the phone
+  // closing the app while the person checks their email). Passwords are never saved.
+  const draftReady = useRef(false);
+  const pendingCampus = useRef('');
+  useEffect(() => {
+    loadDraft<{ name?: string; username?: string; email?: string; universityId?: string; campusId?: string }>('register').then((d) => {
+      if (d) {
+        if (d.name) setName(d.name);
+        if (d.username) setUsername(d.username);
+        if (d.email) setEmail(d.email);
+        if (d.universityId) setUniversityId(d.universityId);
+        // The campus list reloads whenever the university changes and clears the choice,
+        // so the saved campus is applied once that list has loaded.
+        if (d.campusId) pendingCampus.current = d.campusId;
+      }
+      draftReady.current = true;
+    });
+  }, []);
+  useEffect(() => {
+    if (!draftReady.current) return;
+    saveDraft('register', { name, username, email, universityId, campusId });
+  }, [name, username, email, universityId, campusId]);
+  useEffect(() => {
+    const p = pendingCampus.current;
+    if (p && campuses.some((c: any) => String(c._id ?? c.id) === String(p))) {
+      setCampusId(p);
+      pendingCampus.current = '';
+    }
+  }, [campuses]);
   const [loadingUniversities, setLoadingUniversities] = useState(true);
   const [loadingCampuses, setLoadingCampuses] = useState(false);
   const register = useAuthStore((s) => s.register);
@@ -223,6 +254,7 @@ export default function RegisterScreen() {
       return;
     }
 
+    clearDraft('register');
     router.push({ pathname: '/auth/verify-otp', params: { userId: result.userId } });
   };
 

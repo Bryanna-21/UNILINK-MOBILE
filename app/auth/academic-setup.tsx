@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { loadDraft, saveDraft, clearDraft } from '../../src/utils/formDraft';
 import {
   KeyboardAvoidingView,
   TextInput,
@@ -64,6 +65,33 @@ export default function AcademicSetupScreen() {
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Keep the choices if the app restarts mid-setup (an update, or the phone closing the app).
+  const draftReady = useRef(false);
+  const pendingCampus = useRef('');
+  useEffect(() => {
+    loadDraft<{ universityId?: string; campusId?: string; courseId?: string; year?: number | null; semester?: number | null }>('academic').then((d) => {
+      if (d) {
+        if (d.universityId) setUniversityId(d.universityId);
+        if (d.campusId) pendingCampus.current = d.campusId;
+        if (d.courseId) setSelectedCourseId(d.courseId);
+        if (d.year) setSelectedYear(d.year);
+        if (d.semester) setSelectedSemester(d.semester);
+      }
+      draftReady.current = true;
+    });
+  }, []);
+  useEffect(() => {
+    if (!draftReady.current) return;
+    saveDraft('academic', { universityId, campusId, courseId: selectedCourseId, year: selectedYear, semester: selectedSemester });
+  }, [universityId, campusId, selectedCourseId, selectedYear, selectedSemester]);
+  useEffect(() => {
+    const p = pendingCampus.current;
+    if (p && campuses.some((c: any) => String(c._id ?? c.id) === String(p))) {
+      setCampusId(p);
+      pendingCampus.current = '';
+    }
+  }, [campuses]);
 
   const selectedCourse = courses.find(
     (course) => String(course._id) === String(selectedCourseId)
@@ -470,6 +498,7 @@ export default function AcademicSetupScreen() {
           new Date().toISOString(),
       });
 
+      clearDraft('academic');
       router.replace('/(tabs)/home');
     } catch (err: any) {
       setError(

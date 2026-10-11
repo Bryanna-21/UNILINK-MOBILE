@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Stack } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View, ActivityIndicator, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { AppState, View, ActivityIndicator, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Updates from 'expo-updates';
 import { useAuthStore } from '../src/store/authStore';
 import { useThemeStore } from '../src/store/themeStore';
@@ -19,9 +19,27 @@ import { registerForPushNotifications } from '../src/utils/pushNotifications';
 // This explicit check runs shortly after startup so the app can silently
 // download a newer production OTA bundle without delaying authentication,
 // navigation, or the initial render. Once the bundle is downloaded,
-// `reloadAsync()` applies it immediately rather than waiting for another
-// cold launch. Development/Expo Go launches are ignored.
+// it is applied when the app is sent to the background from a top-level tab, or on the
+// next cold launch. It is never applied mid-registration, mid-course-selection or while a
+// form or chat is open, because a restart there throws away what the person was doing.
+// Development/Expo Go launches are ignored.
 function useSilentUpdateCheck() {
+  const segments = useSegments() as string[];
+  const segmentsRef = useRef<string[]>(segments);
+  segmentsRef.current = segments;
+  const updateReadyRef = useRef(false);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'background' || !updateReadyRef.current) return;
+      const s = segmentsRef.current;
+      const onTopLevelTab = s[0] === '(tabs)' && s.length <= 2;
+      if (!onTopLevelTab) return;
+      Updates.reloadAsync().catch(() => {});
+    });
+    return () => sub.remove();
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -48,11 +66,11 @@ function useSilentUpdateCheck() {
           return;
         }
 
-        console.log('[updates] Update downloaded — applying now.');
+        console.log('[updates] Update downloaded — it will apply at a safe moment.');
 
-        // Apply the downloaded production OTA immediately.
-        // This replaces the running JS bundle with the new one.
-        await Updates.reloadAsync();
+        // Do NOT reload here: that restarts the app wherever the person is. The AppState
+        // listener above applies it when they leave from a top-level tab.
+        updateReadyRef.current = true;
       } catch (err) {
         // Updates are never allowed to break app startup.
         // Offline clients simply continue using their current bundle.
