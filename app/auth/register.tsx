@@ -283,14 +283,14 @@ export default function RegisterScreen() {
   );
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password || !confirmPassword || !universityId || !campusId) return;
+    if (!name.trim() || !email.trim() || !password || !confirmPassword || !universityId) return;
     const result = await register({
       name: name.trim(),
       email: email.trim(),
       password,
       confirmPassword,
       universityId,
-      campusId,
+      ...(campusId ? { campusId } : {}),
       ...(username.trim() ? { username: username.trim() } : {}),
     });
 
@@ -429,7 +429,7 @@ export default function RegisterScreen() {
             </>
           )}
 
-          <Text style={styles.label}>Campus *</Text>
+          <Text style={styles.label}>Campus (optional)</Text>
 
           {!universityId ? (
             <Text style={styles.helperText}>
@@ -479,12 +479,12 @@ export default function RegisterScreen() {
           ) : null}
 
           <TouchableOpacity
-            style={[styles.button, (isLoading || !universityId || !campusId) && styles.buttonDisabled]}
+            style={[styles.button, (isLoading || !universityId) && styles.buttonDisabled]}
             onPress={handleRegister}
-            disabled={isLoading || !universityId || !campusId}
+            disabled={isLoading || !universityId}
             accessibilityRole="button"
             accessibilityLabel="Sign up"
-            accessibilityState={{ disabled: isLoading || !universityId || !campusId, busy: isLoading }}
+            accessibilityState={{ disabled: isLoading || !universityId, busy: isLoading }}
           >
             {isLoading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Sign Up</Text>}
           </TouchableOpacity>

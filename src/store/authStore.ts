@@ -136,7 +136,7 @@ interface AuthState {
     password: string;
     confirmPassword: string;
     universityId: string;
-    campusId: string;
+    campusId?: string;
     username?: string;
   }) => Promise<{ success: true; userId: string; email: string; message?: string } | { success: false; message: string }>;
   verifyOtp: (userId: string, code: string) => Promise<AuthActionResult>;
