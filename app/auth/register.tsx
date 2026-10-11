@@ -380,7 +380,7 @@ export default function RegisterScreen() {
             </>
           )}
 
-          <Text style={styles.label}>Campus</Text>
+          <Text style={styles.label}>Campus *</Text>
 
           {!universityId ? (
             <Text style={styles.helperText}>
@@ -435,7 +435,7 @@ export default function RegisterScreen() {
             disabled={isLoading || !universityId || !campusId}
             accessibilityRole="button"
             accessibilityLabel="Sign up"
-            accessibilityState={{ disabled: isLoading, busy: isLoading }}
+            accessibilityState={{ disabled: isLoading || !universityId || !campusId, busy: isLoading }}
           >
             {isLoading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Sign Up</Text>}
           </TouchableOpacity>
