@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { FeedVideo, ReelVideo } from '../../src/components/SafeVideo';
 import { api } from '../../src/api/client';
 import { Avatar } from '../../src/components/Avatar';
 import { CreatePostSheet } from '../../src/components/CreatePostSheet';
@@ -141,17 +141,7 @@ function timeAgo(iso: string): string {
 }
 
 function InlineVideo({ uri, height }: { uri: string; height: number }) {
-  const colors = useColors();
-  const player = useVideoPlayer(uri, (p) => {
-    p.loop = false;
-  });
-
-  const mediaStyle = useMemo(
-    () => ({ width: '100%' as const, height, borderRadius: Radius.sm, backgroundColor: colors.border }),
-    [colors, height]
-  );
-
-  return <VideoView player={player} style={mediaStyle} nativeControls fullscreenOptions={{ enable: true }} />;
+  return <FeedVideo uri={uri} height={height} />;
 }
 
 // One attachment shows as before; several become a swipeable strip with a "2/4" counter,
@@ -166,27 +156,7 @@ function ReelPlayer({
   active: boolean;
   style: any;
 }) {
-  const player = useVideoPlayer(uri, (p) => {
-    p.loop = true;
-    p.muted = false;
-  });
-
-  useEffect(() => {
-    if (active) {
-      player.play();
-    } else {
-      player.pause();
-    }
-  }, [active, player]);
-
-  return (
-    <VideoView
-      player={player}
-      style={style}
-      contentFit="cover"
-      nativeControls={false}
-    />
-  );
+  return <ReelVideo uri={uri} active={active} style={style} />;
 }
 
 function MediaStrip({ media }: { media: PostMedia[] }) {
