@@ -10,7 +10,7 @@ export default function AdminDepartmentsScreen() {
       fields={[
         { key: 'name', label: 'Name', required: true },
         { key: 'code', label: 'Code' },
-        { key: 'facultyId', label: 'Faculty', ref: '/admin/faculties', required: true },
+        { key: 'facultyId', label: 'Faculty', ref: '/admin/options/faculties', required: true },
       ]}
       lines={[
         { label: 'Faculty', keys: ['faculty', 'facultyName', 'facultyId'] },

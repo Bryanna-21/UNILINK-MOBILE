@@ -10,7 +10,7 @@ export default function AdminFacultiesScreen() {
       fields={[
         { key: 'name', label: 'Name', required: true },
         { key: 'code', label: 'Code' },
-        { key: 'universityId', label: 'University', ref: '/admin/universities', required: true },
+        { key: 'universityId', label: 'University', ref: '/admin/options/universities', required: true },
       ]}
       lines={[{ label: 'University', keys: ['university', 'universityName', 'universityId'] }]}
     />
