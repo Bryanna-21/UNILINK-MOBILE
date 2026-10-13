@@ -252,7 +252,7 @@ export default function SettingsScreen() {
           style={styles.row}
           onPress={() => router.push('/settings/financial-support' as any)}
           accessibilityRole="button"
-          accessibilityLabel="Financial Support, coming soon"
+          accessibilityLabel="Financial Support"
         >
           <Text style={styles.rowText}>Financial Support</Text>
           <Text style={styles.rowChevron}>›</Text>
