@@ -16,6 +16,7 @@ const LINKS = [
   { key: 'exams', title: 'Exams', desc: 'Create, edit, publish, and manage exams.', path: '/lecturer/exams' },
   { key: 'submissions', title: 'Grade Submissions', desc: 'Grade exam submissions across all your exams.', path: '/lecturer/submissions' },
   { key: 'announcements', title: 'Announcements', desc: 'Post announcements to your students.', path: '/lecturer/announcements' },
+  { key: 'timetable', title: 'School Timetable', desc: 'Read the timetable your admin published, comment, and approve or object.', path: '/lecturer/timetables' },
   { key: 'reports', title: 'Emergency Reports', desc: 'Review, respond to, and escalate reports for your courses.', path: '/lecturer/reports' },
 ] as const;
 
