@@ -12,6 +12,7 @@ import { promptBiometric } from '../src/utils/biometricAuth';
 import { LoadingSplash } from '../src/components/LoadingSplash';
 import { UpdateGate } from '../src/components/UpdateGate';
 import { registerForPushNotifications } from '../src/utils/pushNotifications';
+import { useClassReminderSync } from '../src/utils/useClassReminderSync';
 
 // STATUS: REAL — expo-updates is configured via `eas update:configure`
 // (see app.json's updates.url/runtimeVersion and eas.json's channels).
@@ -258,6 +259,7 @@ export default function RootLayout() {
   }, [userId]);
 
   useSilentUpdateCheck();
+  useClassReminderSync();
 
   // Expo Router provides the SafeAreaProvider; these are the status-bar / navigation-bar sizes.
   const insets = useSafeAreaInsets();

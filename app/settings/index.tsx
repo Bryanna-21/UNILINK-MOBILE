@@ -220,6 +220,19 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Class reminders</Text>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/class-reminders' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Class reminders"
+        >
+          <Text style={styles.rowText}>Reminders before and at class time</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>Blocked users</Text>
         <TouchableOpacity
           style={styles.row}
