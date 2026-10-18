@@ -424,6 +424,7 @@ export default function ProfileScreen() {
   const menuItems: MenuItem[] = [
     ...(isAdminRole ? [{ label: 'Admin Tools', route: '/(tabs)/admin-dashboard' }] : []),
     ...(user?.role === 'lecturer' ? [{ label: 'Lecturer Tools', route: '/(tabs)/lecturer-dashboard' }] : []),
+    ...(user?.role === 'student' || user?.role === 'lecturer' ? [{ label: 'School Timetable', route: '/school-timetable' }] : []),
     { label: 'Following & Followers', route: '/profile/following' },
     { label: 'Find People', route: '/people' },
     { label: 'Achievements & Portfolio', route: '/profile/achievements' },

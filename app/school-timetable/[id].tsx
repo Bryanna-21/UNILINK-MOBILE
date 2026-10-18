@@ -12,24 +12,27 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { api } from '../../../src/api/client';
-import { useColors, Radius, Spacing } from '../../../src/constants/theme';
+import { api } from '../../src/api/client';
+import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
-// STATUS: REAL. One school timetable: read it, comment, and approve or object while it is open for
-// discussion (GET /school-timetables/:id, POST .../comments, PUT .../vote). You see vote totals and
-// your own vote, not how colleagues voted. Once finalized it is read-only.
+// STATUS: REAL. One school timetable. For two weeks after it is published, lecturers and students can
+// comment and approve or object (GET /school-timetables/:id, POST .../comments, PUT .../vote). You see
+// vote totals for lecturers and for students, and your own vote, not how others voted.
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 interface Entry { day: string; start: string; end: string; unitCode: string; unitName: string; lecturer: string; room: string }
 interface Comment { id: string; userName: string; role: string; text: string; version: number; createdAt: string; mine: boolean }
+interface Tally { approve: number; object: number; responded: number; pending: number }
 interface Detail {
   id: string;
   title: string;
   term: string;
   status: 'published' | 'finalized';
   version: number;
+  suggestionsCloseAt: string | null;
+  windowOpen: boolean;
   entries: Entry[];
-  tally: { approve: number; object: number; responded: number; pending: number };
+  tally: { lecturer: Tally; student: Tally };
   myVote: { vote: 'approve' | 'object'; reason: string } | null;
   comments: Comment[];
 }
@@ -134,7 +137,8 @@ export default function LecturerTimetableScreen() {
     }
   };
 
-  const open = data?.status === 'published';
+  const open = data?.windowOpen === true;
+  const closes = data?.suggestionsCloseAt ? new Date(data.suggestionsCloseAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const byDay = DAYS.map((d) => ({ day: d, rows: (data?.entries ?? []).filter((e) => e.day === d) })).filter((g) => g.rows.length);
 
   return (
@@ -150,7 +154,7 @@ export default function LecturerTimetableScreen() {
               {data.term ? `${data.term} · ` : ''}version {data.version}
             </Text>
             <View style={styles.banner}>
-              <Text style={styles.bannerText}>{open ? 'Open for discussion. Comment, and approve or object.' : 'This timetable is final. The discussion is closed.'}</Text>
+              <Text style={styles.bannerText}>{open ? `Open until ${closes}. Suggest edits in the discussion, and approve or object.` : data.status === 'finalized' ? 'This timetable is final. The discussion is closed.' : `The suggestion window closed on ${closes}. Your admin will finalize it soon.`}</Text>
             </View>
 
             <Text style={styles.section}>Timetable</Text>
@@ -174,7 +178,10 @@ export default function LecturerTimetableScreen() {
 
             <Text style={styles.section}>Your response</Text>
             <Text style={styles.tally}>
-              {data.tally.approve} approved · {data.tally.object} objected · {data.tally.pending} waiting
+              Lecturers: {data.tally.lecturer.approve} approved · {data.tally.lecturer.object} objected · {data.tally.lecturer.pending} waiting
+            </Text>
+            <Text style={styles.tally}>
+              Students: {data.tally.student.approve} approved · {data.tally.student.object} objected · {data.tally.student.pending} not yet
             </Text>
             {open ? (
               <>
@@ -203,7 +210,7 @@ export default function LecturerTimetableScreen() {
                 </TouchableOpacity>
               </>
             ) : (
-              <Text style={styles.empty}>{data.myVote ? (data.myVote.vote === 'approve' ? 'You approved this timetable.' : 'You objected to this timetable.') : 'You did not respond.'}</Text>
+              <Text style={styles.empty}>{data.myVote ? (data.myVote.vote === 'approve' ? 'You approved this timetable.' : 'You objected to this timetable.') : 'The window closed before you responded.'}</Text>
             )}
 
             <Text style={styles.section}>Discussion</Text>

@@ -4,8 +4,8 @@ import { Stack, router, useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
-// STATUS: REAL. The school timetables your university's admin has published for lecturers to
-// discuss (GET /school-timetables). Open one to read it, comment, and approve or object.
+// STATUS: REAL. The school timetables your university's admin has published (GET /school-timetables).
+// Lecturers and students have two weeks to comment and approve or object. Open one to read it.
 interface Item {
   id: string;
   title: string;
@@ -14,6 +14,8 @@ interface Item {
   version: number;
   rows: number;
   myVote: 'approve' | 'object' | null;
+  windowOpen: boolean;
+  suggestionsCloseAt: string | null;
 }
 
 export default function LecturerTimetablesScreen() {
@@ -74,22 +76,24 @@ export default function LecturerTimetablesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.primary} />}
         ListHeaderComponent={
           <>
-            <Text style={styles.note}>Published by your university's administration for lecturers to discuss. Read it, comment, and approve or object.</Text>
+            <Text style={styles.note}>Published by your university's administration. Lecturers and students have two weeks to suggest edits and to approve or object.</Text>
             {error && <Text style={styles.error}>{error}</Text>}
             {loading && <ActivityIndicator color={colors.primary} style={{ marginBottom: Spacing.md }} />}
           </>
         }
         ListEmptyComponent={!loading && !error ? <Text style={styles.empty}>No timetable has been published for discussion yet.</Text> : null}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => router.push(`/lecturer/timetable/${item.id}` as any)} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
+          <TouchableOpacity style={styles.card} onPress={() => router.push(`/school-timetable/${item.id}` as any)} accessibilityRole="button" accessibilityLabel={`Open ${item.title}`}>
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.meta}>
               {item.term ? `${item.term} · ` : ''}
               {item.rows} sessions · version {item.version}
             </Text>
             <View style={styles.row}>
-              <Text style={[styles.chip, item.status === 'published' ? styles.open : styles.final]}>{item.status === 'published' ? 'OPEN FOR DISCUSSION' : 'FINALIZED'}</Text>
-              {item.status === 'published' && (
+              <Text style={[styles.chip, item.windowOpen ? styles.open : styles.final]}>
+                {item.windowOpen && item.suggestionsCloseAt ? `OPEN UNTIL ${new Date(item.suggestionsCloseAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }).toUpperCase()}` : item.status === 'published' ? 'WINDOW CLOSED' : 'FINALIZED'}
+              </Text>
+              {item.windowOpen && (
                 <Text style={[styles.chip, item.myVote ? styles.voted : styles.waiting]}>
                   {item.myVote === 'approve' ? 'You approved' : item.myVote === 'object' ? 'You objected' : 'Your vote needed'}
                 </Text>
