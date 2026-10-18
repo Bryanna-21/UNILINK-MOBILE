@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Image, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
+import { ReportSheet } from '../../src/components/ReportSheet';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
@@ -61,6 +62,7 @@ export default function UserProfileScreen() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowActionPending, setIsFollowActionPending] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const styles = useMemo(
@@ -289,14 +291,17 @@ export default function UserProfileScreen() {
       </View>
 
       {!isOwnProfile ? (
-        <TouchableOpacity
-          style={{ alignSelf: 'center', marginTop: Spacing.sm, padding: Spacing.sm }}
-          onPress={handleBlock}
-          accessibilityRole="button"
-          accessibilityLabel={'Block ' + user.name}
-        >
-          <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Block</Text>
-        </TouchableOpacity>
+        <>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: Spacing.lg, marginTop: Spacing.sm }}>
+            <TouchableOpacity style={{ padding: Spacing.sm }} onPress={() => setReportOpen(true)} accessibilityRole="button" accessibilityLabel={'Report ' + user.name}>
+              <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Report</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ padding: Spacing.sm }} onPress={handleBlock} accessibilityRole="button" accessibilityLabel={'Block ' + user.name}>
+              <Text style={{ color: colors.danger, fontSize: 13, fontWeight: '600' }}>Block</Text>
+            </TouchableOpacity>
+          </View>
+          <ReportSheet visible={reportOpen} onClose={() => setReportOpen(false)} entityType="profile" entityId={String(id)} />
+        </>
       ) : null}
 
       <View style={styles.section}>

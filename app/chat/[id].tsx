@@ -7,6 +7,7 @@ import Constants from 'expo-constants';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
+import { ReportSheet } from '../../src/components/ReportSheet';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 const POLL_INTERVAL_MS = 4000;
@@ -41,6 +42,7 @@ export default function ChatDetailScreen() {
   >(null);
   const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [reportMessageId, setReportMessageId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const typingStopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -440,12 +442,18 @@ export default function ChatDetailScreen() {
               item.readBy?.includes(otherParticipantId);
             return (
               <View>
-                <View
+                <TouchableOpacity
+                  activeOpacity={isMine ? 1 : 0.85}
+                  onLongPress={isMine ? undefined : () => setReportMessageId(item._id)}
+                  delayLongPress={450}
                   style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleTheirs]}
                   accessibilityLabel={`${isMine ? 'You' : 'Them'}: ${item.text}`}
+                  accessibilityHint={isMine ? undefined : 'Press and hold to report this message'}
+                  accessibilityActions={isMine ? undefined : [{ name: 'report', label: 'Report this message' }]}
+                  onAccessibilityAction={isMine ? undefined : () => setReportMessageId(item._id)}
                 >
                   <Text style={[styles.bubbleText, isMine && styles.bubbleTextMine]}>{item.text}</Text>
-                </View>
+                </TouchableOpacity>
                 {isLastMineMessage && isSeen ? (
                   <Text style={styles.seenText} accessibilityLabel="Seen">
                     Seen
@@ -456,6 +464,8 @@ export default function ChatDetailScreen() {
           }}
         />
       )}
+
+      <ReportSheet visible={reportMessageId !== null} onClose={() => setReportMessageId(null)} entityType="message" entityId={reportMessageId || ''} />
 
       {isOtherTyping ? (
         <View style={styles.typingRow} accessibilityLabel="The other person is typing">
