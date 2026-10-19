@@ -20,6 +20,13 @@ export const setSessionInvalidHandler = (fn: (() => void) | null) => {
   onSessionInvalid = fn;
 };
 
+// Called when the server says the account is suspended or closed (403 ACCOUNT_SUSPENDED /
+// ACCOUNT_TERMINATED). The root layout points this at the Account standing screen.
+let onAccountBlocked: (() => void) | null = null;
+export const setAccountBlockedHandler = (fn: (() => void) | null) => {
+  onAccountBlocked = fn;
+};
+
 // Render free tier spins the backend down after ~15 min idle. The FIRST
 // request after a cold start can take 30-60s to wake it up. A normal
 // 15s timeout will fail that first call almost every time the app is
@@ -84,6 +91,14 @@ api.interceptors.response.use(
       }
 
       return Promise.reject(error);
+    }
+
+    if (error.response?.status === 403) {
+      const blockCode = error.response?.data?.code;
+      if (blockCode === 'ACCOUNT_SUSPENDED' || blockCode === 'ACCOUNT_TERMINATED') {
+        onAccountBlocked?.();
+        return Promise.reject(error);
+      }
     }
 
     const isTimeoutOrNetworkError =

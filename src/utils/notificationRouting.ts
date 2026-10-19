@@ -29,6 +29,8 @@ export function routeForNotification(data: NotificationData | null | undefined):
   const timetable = /^\/school-timetable\/([^/?#]+)$/.exec(link);
   if (timetable && ID.test(timetable[1])) return `/school-timetable/${timetable[1]}`;
 
+  if (type === 'moderation' || link === '/account-standing') return '/account-standing';
+
   if (type === 'opportunity' || link === '/settings/financial-support') return '/settings/financial-support';
   if (type === 'announcement' || link === '/announcements') return '/(tabs)/campus';
 

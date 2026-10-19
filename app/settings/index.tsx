@@ -217,6 +217,16 @@ export default function SettingsScreen() {
           <Text style={styles.rowText}>Community Standards</Text>
           <Text style={styles.rowChevron}>›</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/account-standing' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Account standing"
+        >
+          <Text style={styles.rowText}>Account standing</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
