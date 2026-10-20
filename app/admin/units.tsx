@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET/POST /api/admin/units, DELETE
 // /api/admin/units/:id all call the live backend, superadmin-only.
@@ -152,6 +153,7 @@ export default function AdminUnitsScreen() {
       </TouchableOpacity>
 
       <Modal visible={formVisible} animationType="slide" transparent>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Unit</Text>
@@ -169,7 +171,8 @@ export default function AdminUnitsScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

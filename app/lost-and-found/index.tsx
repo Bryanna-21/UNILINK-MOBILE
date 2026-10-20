@@ -22,6 +22,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET/POST /api/lost-and-found and PATCH
 // /api/lost-and-found/:id/resolve all call the live backend. Image
@@ -314,6 +315,7 @@ export default function LostAndFoundScreen() {
       </TouchableOpacity>
 
       <Modal visible={formVisible} animationType="slide" transparent>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <ScrollView>
@@ -399,7 +401,8 @@ export default function LostAndFoundScreen() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

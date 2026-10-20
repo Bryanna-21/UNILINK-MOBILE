@@ -14,6 +14,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET /courses/assignments/:id, POST
 // /courses/assignments/:assignmentId/submit, GET .../my-submission,
@@ -217,7 +218,8 @@ export default function AssignmentDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md, gap: Spacing.md }}>
+    <KeyboardSafe>
+<ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md, gap: Spacing.md }}>
       <StatusBanner status="real" note="Assignment and submissions are saved to the real backend." />
 
       <View style={styles.card}>
@@ -364,5 +366,6 @@ export default function AssignmentDetailScreen() {
         </View>
       )}
     </ScrollView>
+</KeyboardSafe>
   );
 }

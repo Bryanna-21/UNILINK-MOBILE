@@ -142,7 +142,7 @@ export default function LecturerTimetableScreen() {
   const byDay = DAYS.map((d) => ({ day: d, rows: (data?.entries ?? []).filter((e) => e.day === d) })).filter((g) => g.rows.length);
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <Stack.Screen options={{ title: data?.title || 'Timetable', headerShown: true }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {loading && <ActivityIndicator color={colors.primary} />}

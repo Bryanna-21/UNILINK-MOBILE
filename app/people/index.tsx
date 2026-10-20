@@ -13,6 +13,7 @@ import { Stack, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL, NEW. Find people by username (GET /people/search) and see suggestions
 // (GET /people/suggestions). "Follow" uses the existing POST/DELETE /follow/:userId.
@@ -214,7 +215,8 @@ export default function FindPeopleScreen() {
   const showSpinner = isSearchMode ? isSearching && results.length === 0 : isLoadingSuggestions;
 
   return (
-    <View style={styles.container}>
+    <KeyboardSafe>
+<View style={styles.container}>
       <Stack.Screen options={{ title: 'Find people', headerShown: true }} />
 
       <TextInput
@@ -260,5 +262,6 @@ export default function FindPeopleScreen() {
         />
       )}
     </View>
+</KeyboardSafe>
   );
 }

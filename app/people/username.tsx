@@ -4,6 +4,7 @@ import { Stack, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL, NEW. Change your username. Live availability check via
 // GET /people/username/check, save via PUT /people/me/username (the server enforces the
@@ -118,7 +119,8 @@ export default function UsernameScreen() {
       : { text: '', color: colors.textMuted };
 
   return (
-    <View style={styles.container}>
+    <KeyboardSafe>
+<View style={styles.container}>
       <Stack.Screen options={{ title: 'Username', headerShown: true }} />
 
       <Text style={styles.label}>Your username</Text>
@@ -157,5 +159,6 @@ export default function UsernameScreen() {
         {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.buttonText}>Save</Text>}
       </TouchableOpacity>
     </View>
+</KeyboardSafe>
   );
 }

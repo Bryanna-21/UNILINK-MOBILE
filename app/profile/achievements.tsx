@@ -16,6 +16,7 @@ import axios from 'axios';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — verified directly against UNILINK-BACKEND, not
 // inferred. GET /profile/achievements, GET/PATCH /profile/portfolio,
@@ -357,7 +358,8 @@ export default function AchievementsScreen() {
   }
 
   return (
-    <ScrollView
+    <KeyboardSafe>
+<ScrollView
       style={styles.container}
       refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => load(true)} />}
     >
@@ -613,5 +615,6 @@ export default function AchievementsScreen() {
         </>
       ) : null}
     </ScrollView>
+</KeyboardSafe>
   );
 }

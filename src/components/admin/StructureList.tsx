@@ -16,6 +16,7 @@ import { useFocusEffect } from 'expo-router';
 import { api } from '../../api/client';
 import { StatusBanner } from '../StatusBanner';
 import { useColors, Radius, Spacing } from '../../constants/theme';
+import KeyboardSafe from '../KeyboardSafe';
 
 // STATUS: REAL. One list/create/edit/delete screen reused for campuses, faculties and
 // departments. GET/POST /admin/<path>, PUT/DELETE /admin/<path>/:id, all superadmin-only on
@@ -219,6 +220,7 @@ export default function StructureList({ title, singular, path, note, fields, lin
       </TouchableOpacity>
 
       <Modal visible={formVisible} animationType="slide" transparent onRequestClose={() => setFormVisible(false)}>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>{editing ? `Edit ${singular}` : `New ${singular}`}</Text>
@@ -270,7 +272,8 @@ export default function StructureList({ title, singular, path, note, fields, lin
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

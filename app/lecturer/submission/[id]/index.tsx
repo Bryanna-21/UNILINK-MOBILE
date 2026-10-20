@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '../../../../src/api/client';
 import { StatusBanner } from '../../../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../../../src/constants/theme';
+import KeyboardSafe from '../../../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET /api/exams/submissions/:id and POST
 // /api/exams/submissions/:id/grade call the live backend built two
@@ -120,7 +121,8 @@ export default function GradeSubmissionScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md, paddingBottom: Spacing.xl * 2 }}>
+    <KeyboardSafe>
+<ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md, paddingBottom: Spacing.xl * 2 }}>
       <Text style={styles.title} accessibilityRole="header">
         {submission.exam.title}
       </Text>
@@ -171,6 +173,7 @@ export default function GradeSubmissionScreen() {
         {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveButtonText}>Save Grade</Text>}
       </TouchableOpacity>
     </ScrollView>
+</KeyboardSafe>
   );
 }
 

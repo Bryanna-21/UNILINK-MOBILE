@@ -4,6 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { api } from '../../../../src/api/client';
 import { StatusBanner } from '../../../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../../../src/constants/theme';
+import KeyboardSafe from '../../../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET /api/courses/assignments/:id,
 // GET /api/courses/assignments/:assignmentId/submissions, and
@@ -128,7 +129,8 @@ export default function AssignmentDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md }}>
+    <KeyboardSafe>
+<ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md }}>
       <Text style={styles.title} accessibilityRole="header">
         {assignment.title}
       </Text>
@@ -183,6 +185,7 @@ export default function AssignmentDetailScreen() {
         ))
       )}
     </ScrollView>
+</KeyboardSafe>
   );
 }
 

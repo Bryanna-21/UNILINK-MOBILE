@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET/POST /api/admin/admins, PUT/DELETE
 // /api/admin/admins/:id all call the live backend, superadmin-only
@@ -180,6 +181,7 @@ export default function AdminManagementScreen() {
       </TouchableOpacity>
 
       <Modal visible={formVisible} animationType="slide" transparent>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>{editingAdmin ? 'Edit Admin' : 'New Admin'}</Text>
@@ -213,7 +215,8 @@ export default function AdminManagementScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

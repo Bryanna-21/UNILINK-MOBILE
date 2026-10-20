@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET/POST /api/community/announcements call the live
 // backend. Without a courseId filter, GET returns every announcement
@@ -166,6 +167,7 @@ export default function LecturerAnnouncementsScreen() {
       </TouchableOpacity>
 
       <Modal visible={formVisible} animationType="slide" transparent>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Announcement</Text>
@@ -188,7 +190,8 @@ export default function LecturerAnnouncementsScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

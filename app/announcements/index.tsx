@@ -13,6 +13,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET /api/community/announcements, POST /api/community/announcements
 // (backend restricts creation to lecturer/admin roles - isStaff check
@@ -207,6 +208,7 @@ export default function AnnouncementsScreen() {
       )}
 
       <Modal visible={createOpen} animationType="slide" transparent>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard} accessibilityViewIsModal accessibilityRole="alert">
             <Text style={styles.modalTitle} accessibilityRole="header">
@@ -251,7 +253,8 @@ export default function AnnouncementsScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

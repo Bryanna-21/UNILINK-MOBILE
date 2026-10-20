@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, Switch } from 'react-native';
 import { api } from '../api/client';
 import { useColors, Radius, Spacing } from '../constants/theme';
+import KeyboardSafe from './KeyboardSafe';
 
 // STATUS: REAL. Report a message or a profile to UniLink administrators (POST /safety/reports). They
 // review it, decide under the Community Standards, and the outcome is recorded. The person reported
@@ -110,6 +111,7 @@ export function ReportSheet({ visible, onClose, entityType, entityId }: Props) {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+<KeyboardSafe>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           {done ? (
@@ -174,6 +176,7 @@ export function ReportSheet({ visible, onClose, entityType, entityId }: Props) {
           )}
         </View>
       </View>
-    </Modal>
+    </KeyboardSafe>
+</Modal>
   );
 }

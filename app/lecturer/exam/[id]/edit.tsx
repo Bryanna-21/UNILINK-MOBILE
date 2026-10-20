@@ -1,7 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import ExamForm from '../../../../src/components/ExamForm';
+import KeyboardSafe from '../../../../src/components/KeyboardSafe';
 
 export default function EditExamScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <ExamForm examId={id} />;
+  return <KeyboardSafe>
+<ExamForm examId={id} />
+</KeyboardSafe>;
 }

@@ -13,6 +13,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET /courses/cats/:id, GET /courses/cats/:catId/my-result,
 // POST /courses/cats/:catId/results (lecturer/admin, publishes/updates a
@@ -175,7 +176,8 @@ export default function CatDetailScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md, gap: Spacing.md }}>
+    <KeyboardSafe>
+<ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md, gap: Spacing.md }}>
       <StatusBanner status="real" note="CAT details and results are saved to the real backend." />
 
       <View style={styles.card}>
@@ -269,5 +271,6 @@ export default function CatDetailScreen() {
         </View>
       )}
     </ScrollView>
+</KeyboardSafe>
   );
 }

@@ -14,6 +14,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import LoadingSkeleton from '../../src/components/LoadingSkeleton';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 const DAYS = [
   'Monday',
@@ -472,7 +473,8 @@ export default function CourseDetailScreen() {
   ] as const;
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardSafe>
+<ScrollView style={styles.container}>
       <View style={styles.courseHeader}>
         {courseCode ? (
           <Text style={styles.courseCode}>{courseCode}</Text>
@@ -780,5 +782,6 @@ export default function CourseDetailScreen() {
 
       <View style={{ height: Spacing.xl }} />
     </ScrollView>
+</KeyboardSafe>
   );
 }

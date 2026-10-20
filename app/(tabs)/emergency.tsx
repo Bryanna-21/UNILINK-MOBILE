@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // SOS (Phase 1): press-and-hold 3s, then a 5s cancellable countdown, then POST
 // /emergency/report with type "sos" (backend already gives it high priority, alerts admins
@@ -176,7 +177,8 @@ export default function EmergencyScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardSafe>
+<ScrollView style={styles.container}>
       <StatusBanner
         status="real"
         note="SOS, emergency reports and Request Help all submit to the real backend. Live GPS location is not built yet; say where you are in the box below."
@@ -339,6 +341,7 @@ export default function EmergencyScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+</KeyboardSafe>
   );
 }
 

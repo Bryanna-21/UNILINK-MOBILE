@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET /api/admin/users, built last night, matching
 // last night's web Admin/Users.js work exactly. Hard-capped at 200
@@ -75,7 +76,8 @@ export default function AdminUsersScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardSafe>
+<View style={styles.container}>
       <FlatList
         data={users}
         keyExtractor={(item) => item.id}
@@ -123,6 +125,7 @@ export default function AdminUsersScreen() {
         }
       />
     </View>
+</KeyboardSafe>
   );
 }
 

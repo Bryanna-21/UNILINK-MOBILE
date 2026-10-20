@@ -13,6 +13,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET/POST /api/community/projects. No join/leave route exists
 // for Projects (unlike Clubs/Study Groups) — contributorIds is set
@@ -246,6 +247,7 @@ export default function ProjectsScreen() {
       )}
 
       <Modal visible={createOpen} animationType="slide" transparent>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard} accessibilityViewIsModal accessibilityRole="alert">
             <Text style={styles.modalTitle} accessibilityRole="header">
@@ -311,7 +313,8 @@ export default function ProjectsScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

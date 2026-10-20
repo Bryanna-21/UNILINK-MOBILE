@@ -15,6 +15,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColors, Radius, Spacing } from '../../../src/constants/theme';
 import { api } from '../../../src/api/client';
+import KeyboardSafe from '../../../src/components/KeyboardSafe';
 
 // STATUS: LIVE — POST /exams/:id/submit matches web's examService.js
 // submitExam(examId, answers) exactly: an array of { questionId, answer }
@@ -443,7 +444,8 @@ export default function TakeExamScreen() {
   const isLastQuestion = currentQuestion === exam.questions.length - 1;
 
   return (
-    <View style={styles.container}>
+    <KeyboardSafe>
+<View style={styles.container}>
       <View style={styles.header}>
         <View>
           <Text style={styles.examTitle} accessibilityRole="header">
@@ -613,5 +615,6 @@ export default function TakeExamScreen() {
         </View>
       </Modal>
     </View>
+</KeyboardSafe>
   );
 }

@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '../../../../src/api/client';
 import { StatusBanner } from '../../../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../../../src/constants/theme';
+import KeyboardSafe from '../../../../src/components/KeyboardSafe';
 
 // STATUS: REAL — POST /api/courses/:courseId/assignments calls the
 // live backend. dueDate uses plain ISO text input — no date picker
@@ -43,7 +44,8 @@ export default function NewAssignmentScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md }}>
+    <KeyboardSafe>
+<ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md }}>
       <Text style={styles.title} accessibilityRole="header">
         New Assignment
       </Text>
@@ -67,6 +69,7 @@ export default function NewAssignmentScreen() {
         {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveButtonText}>Post Assignment</Text>}
       </TouchableOpacity>
     </ScrollView>
+</KeyboardSafe>
   );
 }
 

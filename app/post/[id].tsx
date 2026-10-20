@@ -92,7 +92,7 @@ export default function PostCommentsScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.modalContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       <TouchableOpacity
         style={styles.backdrop}

@@ -5,6 +5,7 @@ import { api } from '../src/api/client';
 import { useAuthStore } from '../src/store/authStore';
 import { useColors, Radius, Spacing } from '../src/constants/theme';
 import { markStandingOpen } from '../src/utils/useAccountBlockRouting';
+import KeyboardSafe from '../src/components/KeyboardSafe';
 
 // STATUS: REAL. Shows the person's account standing (GET /safety/me/standing), every moderation
 // decision about them with the reason and the Community Standards section it cites, and lets them
@@ -138,7 +139,8 @@ export default function AccountStandingScreen() {
   const goodStanding = !block && (data?.actions ?? []).every((a) => a.status !== 'active' || a.actionType === 'warning' || a.actionType === 'content_removal') && (data?.restrictions.length ?? 0) === 0;
 
   return (
-    <ScrollView
+    <KeyboardSafe>
+<ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.primary} />}
@@ -235,5 +237,6 @@ export default function AccountStandingScreen() {
         )}
       </View>
     </ScrollView>
+</KeyboardSafe>
   );
 }

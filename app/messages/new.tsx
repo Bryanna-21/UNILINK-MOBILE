@@ -5,6 +5,7 @@ import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 interface Course {
   _id: string;
@@ -280,7 +281,8 @@ export default function NewConversationScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardSafe>
+<View style={styles.container}>
       <View style={styles.header}>
         {step === 'student' ? (
           <TouchableOpacity onPress={handleBack} accessibilityRole="button" accessibilityLabel="Back to Courses">
@@ -460,5 +462,6 @@ export default function NewConversationScreen() {
         </>
       )}
     </View>
+</KeyboardSafe>
   );
 }

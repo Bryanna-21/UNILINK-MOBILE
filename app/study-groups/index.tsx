@@ -14,6 +14,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
 import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET/POST /api/community/study-groups, POST /api/community/study-groups/:id/join.
 // Note: there is no /leave route for study groups on the backend
@@ -256,6 +257,7 @@ export default function StudyGroupsScreen() {
       )}
 
       <Modal visible={createOpen} animationType="slide" transparent>
+<KeyboardSafe>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard} accessibilityViewIsModal accessibilityRole="alert">
             <Text style={styles.modalTitle} accessibilityRole="header">
@@ -316,7 +318,8 @@ export default function StudyGroupsScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </KeyboardSafe>
+</Modal>
     </View>
   );
 }

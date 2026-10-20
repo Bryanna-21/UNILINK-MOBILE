@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Activi
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — POST /api/admin/universities calls the live
 // backend, superadmin-only. Create-only, on purpose: no
@@ -41,7 +42,8 @@ export default function AdminCreateUniversityScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md }}>
+    <KeyboardSafe>
+<ScrollView style={styles.container} contentContainerStyle={{ padding: Spacing.md }}>
       <Text style={styles.title} accessibilityRole="header">
         New University
       </Text>
@@ -66,6 +68,7 @@ export default function AdminCreateUniversityScreen() {
         {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveButtonText}>Create University</Text>}
       </TouchableOpacity>
     </ScrollView>
+</KeyboardSafe>
   );
 }
 
