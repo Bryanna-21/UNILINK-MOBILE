@@ -20,6 +20,8 @@ import { FeedVideo, ReelVideo } from '../../src/components/SafeVideo';
 import { api } from '../../src/api/client';
 import { Avatar } from '../../src/components/Avatar';
 import { CreatePostSheet } from '../../src/components/CreatePostSheet';
+import CommentsSheet from '../../src/components/CommentsSheet';
+import DocumentViewer from '../../src/components/DocumentViewer';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
@@ -177,45 +179,11 @@ function MediaStrip({ media }: { media: PostMedia[] }) {
     }
 
     if (m.type === 'document') {
+      // Opened inline: page 1 is visible at once and a swipe shows page 2 (see DocumentViewer).
       return (
-        <TouchableOpacity
-          style={[
-            itemStyle,
-            {
-              width: w,
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: Spacing.lg,
-              borderWidth: 1,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() => Linking.openURL(m.url)}
-          accessibilityRole="button"
-          accessibilityLabel="Open document"
-        >
-          <Text style={{ fontSize: 46 }}>📄</Text>
-          <Text
-            style={{
-              marginTop: Spacing.sm,
-              fontSize: 16,
-              fontWeight: '800',
-              color: colors.text,
-            }}
-          >
-            Document
-          </Text>
-          <Text
-            style={{
-              marginTop: 4,
-              fontSize: 13,
-              color: colors.textMuted,
-              textAlign: 'center',
-            }}
-          >
-            Tap to open
-          </Text>
-        </TouchableOpacity>
+        <View style={{ width: w }}>
+          <DocumentViewer media={m as any} />
+        </View>
       );
     }
 
@@ -288,8 +256,13 @@ export default function CampusScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Comments open in a sheet over the feed, so nobody leaves the place they were in.
+  const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
   const [feedMode, setFeedMode] = useState<'reels' | 'chronicles'>('chronicles');
   const [activeReelId, setActiveReelId] = useState<string | null>(null);
+  // Each reel page must be exactly as tall as the list it sits in. The list is shorter than the window
+  // (header, mode bar and tab bar take space), so a window-tall page ran off the screen.
+  const [reelHeight, setReelHeight] = useState(WINDOW_HEIGHT);
 
   const reels = useMemo(
     () =>
@@ -732,7 +705,7 @@ export default function CampusScreen() {
 
                     <TouchableOpacity
                       style={styles.postAction}
-                      onPress={() => router.push(`/post/${item._id}` as any)}
+                      onPress={() => setCommentsPostId(item._id)}
                       accessibilityRole="button"
                       accessibilityLabel={`${item.commentsCount} ${item.commentsCount === 1 ? 'comment' : 'comments'}, view post`}
                     >
@@ -786,10 +759,15 @@ export default function CampusScreen() {
       ) : (
         <FlatList
           style={styles.reelsList}
+          onLayout={(e) => {
+            const h = Math.round(e.nativeEvent.layout.height);
+            if (h > 0 && h !== reelHeight) setReelHeight(h);
+          }}
+          extraData={reelHeight}
           data={reels}
           keyExtractor={(item) => item._id}
           pagingEnabled
-          snapToInterval={WINDOW_HEIGHT}
+          snapToInterval={reelHeight}
           decelerationRate="fast"
           showsVerticalScrollIndicator={false}
           initialNumToRender={2}
@@ -797,8 +775,8 @@ export default function CampusScreen() {
           windowSize={3}
           removeClippedSubviews
           getItemLayout={(_, index) => ({
-            length: WINDOW_HEIGHT,
-            offset: WINDOW_HEIGHT * index,
+            length: reelHeight,
+            offset: reelHeight * index,
             index,
           })}
           viewabilityConfig={reelViewabilityConfig}
@@ -809,7 +787,7 @@ export default function CampusScreen() {
             if (!video) return null;
 
             return (
-              <View style={styles.reelPage}>
+              <View style={[styles.reelPage, { height: reelHeight }]}>
                 <ReelPlayer
                   uri={video.url}
                   active={activeReelId === item._id}
@@ -857,7 +835,7 @@ export default function CampusScreen() {
 
                     <TouchableOpacity
                       style={styles.reelAction}
-                      onPress={() => router.push(`/post/${item._id}` as any)}
+                      onPress={() => setCommentsPostId(item._id)}
                       accessibilityRole="button"
                       accessibilityLabel="Open Reel comments"
                     >
@@ -896,6 +874,14 @@ export default function CampusScreen() {
       >
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
+
+      <CommentsSheet
+        postId={commentsPostId}
+        onClose={() => setCommentsPostId(null)}
+        onPosted={(id) =>
+          setPosts((prev) => prev.map((p) => (p._id === id ? { ...p, commentsCount: (p.commentsCount ?? 0) + 1 } : p)))
+        }
+      />
 
       <CreatePostSheet
         visible={sheetOpen}

@@ -88,5 +88,6 @@ export function FeedVideo({ uri, height }: { uri: string; height: number }) {
 
 export function ReelVideo({ uri, active, style }: { uri: string; active: boolean; style: any }) {
   if (!active) return <View style={[style, { backgroundColor: '#000000' }]} />;
-  return <PlayingVideo uri={uri} style={style} loop cover controls={false} />;
+  // contain, not cover: the whole video is always visible (cover cropped it and ran past the screen)
+  return <PlayingVideo uri={uri} style={style} loop cover={false} controls={false} />;
 }

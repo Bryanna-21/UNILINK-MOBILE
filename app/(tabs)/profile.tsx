@@ -36,6 +36,7 @@ export default function ProfileScreen() {
   const [liked, setLiked] = useState<ProfilePost[]>([]);
   const [tabLoading, setTabLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [postsError, setPostsError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [tabError, setTabError] = useState('');
@@ -365,27 +366,38 @@ export default function ProfileScreen() {
   const loadBasic = useCallback(async (silent = false) => {
     const userId = user?.id;
     if (!userId) return;
-    if (!silent) setLoading(true);
-    try {
-      const [meRes, postsRes, followersRes, followingRes] = await Promise.all([
-        api.get('/auth/me'),
-        api.get(`/posts/user/${userId}`),
-        api.get(`/follow/${userId}/followers`),
-        api.get(`/follow/${userId}/following`),
-      ]);
-      const me = meRes.data?.user;
-      if (me) {
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser) setUser({ ...currentUser, ...me });
-      }
-      setPosts(extractArray(postsRes));
-      setFollowers(extractArray(followersRes));
-      setFollowing(extractArray(followingRes));
-    } catch {
-      // Keep already-loaded local state if a refresh fails.
-    } finally {
-      if (!silent) setLoading(false);
+    if (!silent) {
+      setLoading(true);
+      setPostsError('');
     }
+    // Every request stands on its own. Posts appear the moment they arrive, so one slow or failed
+    // request (the follower lists, say) can no longer keep the page on the loading shimmer. If posts
+    // themselves fail, a message and a retry button replace the shimmer.
+    const postsDone = api
+      .get(`/posts/user/${userId}`)
+      .then((res) => {
+        setPosts(extractArray(res));
+        setPostsError('');
+      })
+      .catch((err: any) => {
+        if (!silent) setPostsError(err?.response?.data?.message || 'Could not load posts.');
+      })
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
+    const others = [
+      api
+        .get('/auth/me')
+        .then((res) => {
+          const me = res.data?.user;
+          const currentUser = useAuthStore.getState().user;
+          if (me && currentUser) setUser({ ...currentUser, ...me });
+        })
+        .catch(() => {}),
+      api.get(`/follow/${userId}/followers`).then((res) => setFollowers(extractArray(res))).catch(() => {}),
+      api.get(`/follow/${userId}/following`).then((res) => setFollowing(extractArray(res))).catch(() => {}),
+    ];
+    await Promise.all([postsDone, ...others]);
   }, [setUser, user?.id]);
 
   const loadSecondary = useCallback(async (tab: 'reshared' | 'liked') => {
@@ -485,7 +497,7 @@ export default function ProfileScreen() {
             );
           })}
         </View>
-        {loading || tabLoading ? <LoadingSkeletonGrid rows={3} columns={3} /> : tabError ? <Text style={styles.error}>{tabError}</Text> : items.length === 0 ? <View style={styles.center}><Text style={styles.muted}>{activeTab === 'posts' ? 'No posts yet.' : activeTab === 'reshared' ? 'No reshares yet.' : 'No liked posts yet.'}</Text></View> : (
+        {loading || tabLoading ? <LoadingSkeletonGrid rows={3} columns={3} /> : activeTab === 'posts' && postsError && posts.length === 0 ? <View style={styles.center}><Text style={styles.error}>{postsError}</Text><TouchableOpacity onPress={() => loadBasic()} accessibilityRole="button" accessibilityLabel="Try loading posts again"><Text style={{ color: colors.primary, fontWeight: '700', marginTop: 8 }}>Try again</Text></TouchableOpacity></View> : tabError ? <Text style={styles.error}>{tabError}</Text> : items.length === 0 ? <View style={styles.center}><Text style={styles.muted}>{activeTab === 'posts' ? 'No posts yet.' : activeTab === 'reshared' ? 'No reshares yet.' : 'No liked posts yet.'}</Text></View> : (
           <View style={styles.grid}>
             {items.map((post) => {
               const image = post.media?.find((m) => m.type === 'image')?.url;
