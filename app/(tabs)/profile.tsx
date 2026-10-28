@@ -6,7 +6,7 @@ import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { LoadingSkeletonGrid } from '../../src/components/LoadingSkeleton';
 
-type PostMedia = { url: string; type: 'image' | 'video'; publicId?: string };
+type PostMedia = { url: string; type: 'image' | 'video' | 'document'; publicId?: string };
 type ProfilePost = {
   _id: string;
   userId: string;
@@ -502,6 +502,7 @@ export default function ProfileScreen() {
             {items.map((post) => {
               const image = post.media?.find((m) => m.type === 'image')?.url;
               const video = post.media?.some((m) => m.type === 'video');
+              const isDocument = post.media?.some((m) => m.type === 'document');
 
               return (
                 <TouchableOpacity
@@ -519,7 +520,7 @@ export default function ProfileScreen() {
                       />
                     ) : (
                       <>
-                        <Text style={styles.tileType}>{post.title ? 'Post' : 'Text'}</Text>
+                        <Text style={styles.tileType}>{isDocument ? 'Document' : post.title ? 'Post' : 'Text'}</Text>
                         <Text numberOfLines={5} style={styles.tileText}>
                           {post.title || post.content || 'Post'}
                         </Text>
@@ -527,6 +528,7 @@ export default function ProfileScreen() {
                     )}
 
                     {video ? <Text style={styles.tileMediaBadge}>▶</Text> : null}
+                    {isDocument ? <Text style={styles.tileMediaBadge}>📄</Text> : null}
                   </View>
                 </TouchableOpacity>
               );
