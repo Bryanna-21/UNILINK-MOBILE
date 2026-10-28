@@ -289,13 +289,13 @@ export default function CampusScreen() {
     }
   ).current;
 
+  // Chronicles holds what is written and shared as files: text, photos and documents.
+  // A post with a video belongs to Reels only.
   const chronicles = useMemo(
     () =>
       posts.filter((post) => {
         const media = post.media ?? [];
-        return !media.some(
-          (item) => item.type === 'video' || item.type === 'document'
-        );
+        return !media.some((item) => item.type === 'video');
       }),
     [posts]
   );
