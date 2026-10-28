@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,9 +23,11 @@ import { Radius, Spacing, useColors } from '../constants/theme';
 // shows those images. Tap a page to read it full screen. "Open original" is still there for anyone
 // who wants the actual file.
 //
-// Falls back to the old "Open document" card when there are no page images: a document posted before
-// pages were rendered, or one whose rendering failed. While the backend is still preparing the pages
-// it says so.
+// Next to the swipe there are Previous / Next arrows, so turning the page never depends on a gesture
+// alone (a vertical list can swallow a sideways swipe on some phones).
+//
+// When there are no page images the card says why and opens the original on tap, in the same card
+// every time: still being prepared, preparing failed, or an older post whose pages are not made yet.
 
 export interface DocumentMedia {
   url: string;
@@ -40,6 +42,7 @@ const DEFAULT_RATIO = 1.35; // height / width of a typical portrait page, until 
 
 export default function DocumentViewer({ media }: { media: DocumentMedia }) {
   const colors = useColors();
+  const listRef = useRef<FlatList<{ page: number; url: string }>>(null);
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const [width, setWidth] = useState(0);
@@ -67,6 +70,21 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
         },
         cardTitle: { marginTop: Spacing.sm, fontSize: 16, fontWeight: '800', color: colors.text, textAlign: 'center' },
         cardHint: { marginTop: 4, fontSize: 13, color: colors.textMuted, textAlign: 'center' },
+        nav: {
+          position: 'absolute',
+          top: '50%',
+          marginTop: -20,
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: 'rgba(15,23,42,0.72)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        navPrev: { left: Spacing.sm },
+        navNext: { right: Spacing.sm },
+        navDisabled: { opacity: 0.3 },
+        navText: { color: '#FFFFFF', fontSize: 26, lineHeight: 28, fontWeight: '700' },
         pager: { borderRadius: Radius.sm, overflow: 'hidden', backgroundColor: '#E9EAEE', borderWidth: 1, borderColor: colors.border },
         badge: {
           position: 'absolute',
@@ -93,24 +111,21 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
     [colors]
   );
 
-  // The backend is still turning the file into pages (it does this just after posting).
-  if (media.processingStatus === 'pending' && pages.length === 0) {
-    return (
-      <View style={styles.card}>
-        <ActivityIndicator color={colors.primary} />
-        <Text style={styles.cardTitle}>Preparing pages…</Text>
-        <Text style={styles.cardHint}>This takes a moment. Pull down to refresh.</Text>
-      </View>
-    );
-  }
-
-  // No page images (an older post, or rendering failed): the original behaviour.
+  // No page images. One card for every case, so a document never looks broken, and a tap always
+  // opens the original file.
   if (pages.length === 0) {
+    const pending = media.processingStatus === 'pending';
+    const failed = media.processingStatus === 'failed';
+    const hint = pending
+      ? 'Preparing the pages. Pull down to refresh in a moment, or tap to open the file now.'
+      : failed
+        ? 'The pages could not be prepared. Tap to open the file.'
+        : 'The pages are not ready yet. Tap to open the file.';
     return (
       <TouchableOpacity style={styles.card} onPress={openOriginal} accessibilityRole="button" accessibilityLabel={`Open ${name}`}>
-        <Text style={{ fontSize: 46 }}>📄</Text>
+        {pending ? <ActivityIndicator color={colors.primary} /> : <Text style={{ fontSize: 46 }}>📄</Text>}
         <Text style={styles.cardTitle} numberOfLines={2}>{name}</Text>
-        <Text style={styles.cardHint}>Tap to open</Text>
+        <Text style={styles.cardHint}>{hint}</Text>
       </TouchableOpacity>
     );
   }
@@ -124,6 +139,15 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
     if (next) Image.prefetch(next.url).catch(() => {});
   };
 
+  // The arrows. Same result as a swipe.
+  const goTo = (target: number) => {
+    const i = Math.max(0, Math.min(pages.length - 1, target));
+    setIndex(i);
+    listRef.current?.scrollToIndex({ index: i, animated: true });
+    const next = pages[i + 1];
+    if (next) Image.prefetch(next.url).catch(() => {});
+  };
+
   const fullHeight = window.height - insets.top - insets.bottom - 110;
 
   return (
@@ -132,6 +156,7 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
         <>
           <View style={styles.pager}>
             <FlatList
+              ref={listRef}
               horizontal
               pagingEnabled
               data={pages}
@@ -167,6 +192,28 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
             <View style={styles.badge} pointerEvents="none">
               <Text style={styles.badgeText}>{index + 1} / {pages.length}</Text>
             </View>
+            {pages.length > 1 && (
+              <>
+                <TouchableOpacity
+                  style={[styles.nav, styles.navPrev, index === 0 && styles.navDisabled]}
+                  onPress={() => goTo(index - 1)}
+                  disabled={index === 0}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous page"
+                >
+                  <Text style={styles.navText}>‹</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.nav, styles.navNext, index === pages.length - 1 && styles.navDisabled]}
+                  onPress={() => goTo(index + 1)}
+                  disabled={index === pages.length - 1}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next page"
+                >
+                  <Text style={styles.navText}>›</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
           <View style={styles.caption}>
             <Text style={styles.captionName} numberOfLines={1}>{name}{pages.length > 1 ? ' · swipe for more pages' : ''}</Text>
