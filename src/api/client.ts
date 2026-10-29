@@ -101,6 +101,15 @@ api.interceptors.response.use(
       }
     }
 
+    // 503 = the server is busy for a moment (it has just restarted for an update, or its database
+    // is reconnecting). That is NOT a bad login: the session is left alone, and the request is
+    // tried once more after a short pause.
+    if (error.response?.status === 503 && error.config && !error.config._retry503) {
+      error.config._retry503 = true;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      return api(error.config);
+    }
+
     const isTimeoutOrNetworkError =
       error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response;
 
