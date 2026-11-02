@@ -15,6 +15,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 const LINKS = [
   { key: 'users', title: 'Users', desc: 'Browse every user, any role.', path: '/admin/users' },
+  { key: 'roles', title: 'Make Lecturer / Admin', desc: 'Change a user\'s role directly.', path: '/admin/roles' },
   { key: 'admins', title: 'Admin Management', desc: 'Create, edit, and remove administrator accounts.', path: '/admin/admins' },
   { key: 'units', title: 'Unit Catalog', desc: 'Manage the units lecturers can attach to courses.', path: '/admin/units' },
   { key: 'universities', title: 'Universities', desc: 'Register a new university.', path: '/admin/universities' },
