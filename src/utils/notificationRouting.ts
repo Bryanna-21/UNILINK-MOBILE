@@ -35,6 +35,9 @@ export function routeForNotification(data: NotificationData | null | undefined):
   const post = /^\/post\/([^/?#]+)$/.exec(link);
   if (post && ID.test(post[1])) return `/post/${post[1]}`;
 
+  // A loud SOS alert goes only to admins; tapping it opens that report.
+  if (type === 'emergency_alert' && ID.test(str(d.reportId))) return `/admin/report/${str(d.reportId)}`;
+
   if (type === 'moderation' || link === '/account-standing') return '/account-standing';
 
   if (type === 'opportunity' || link === '/settings/financial-support') return '/settings/financial-support';

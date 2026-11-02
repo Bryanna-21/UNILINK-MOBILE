@@ -84,7 +84,11 @@ export default function EmergencyScreen() {
         location: sosPlace.trim() || undefined,
       });
       const notified = res.data?.data?.notifiedContacts;
-      const extra = Array.isArray(notified) && notified.length ? ' Your trusted contacts were also alerted.' : '';
+      // Only claim contacts were told when an SMS really went out.
+      const textedAny = Array.isArray(notified) && notified.some((n: any) => n?.smsStatus === 'sent');
+      const extra = textedAny
+        ? ' Your trusted contacts were also alerted.'
+        : ' No trusted contact was texted. Add contacts under "Trusted contacts".';
       Alert.alert('SOS sent', 'Campus security has been alerted.' + extra);
     } catch (err: any) {
       Alert.alert(
@@ -256,6 +260,14 @@ export default function EmergencyScreen() {
         accessibilityLabel="View my past reports"
       >
         <Text style={styles.myReportsLink}>View my reports →</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={() => router.push('/emergency/trusted-contacts' as any)}
+        accessibilityRole="button"
+        accessibilityLabel="Manage trusted contacts"
+      >
+        <Text style={styles.myReportsLink}>Trusted contacts →</Text>
       </TouchableOpacity>
 
       <View style={styles.typeRow} accessibilityRole="radiogroup">

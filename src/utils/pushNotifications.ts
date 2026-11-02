@@ -60,7 +60,8 @@ async function configureNotificationHandler(): Promise<typeof import('expo-notif
     Notifications.setNotificationHandler({
       handleNotification: async (notification) => {
         const type = notification.request.content.data?.type as string | undefined;
-        const muted = await isCategoryMuted(type);
+        // An SOS alert is never muted by a notification preference.
+        const muted = type === 'emergency_alert' ? false : await isCategoryMuted(type);
         return {
           shouldShowBanner: !muted,
           shouldShowList: !muted,
@@ -102,6 +103,18 @@ export async function registerForPushNotifications(): Promise<void> {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
         importance: Notifications.AndroidImportance.DEFAULT,
+      });
+      // The loud one. An SOS for an admin is sent on this channel (the server sets channelId
+      // "emergency"): maximum importance so it sounds and pops up, a long vibration, shown on the
+      // lock screen, and allowed through Do Not Disturb if the person has granted that.
+      await Notifications.setNotificationChannelAsync('emergency', {
+        name: 'Emergency alerts',
+        importance: Notifications.AndroidImportance.MAX,
+        sound: 'default',
+        vibrationPattern: [0, 600, 300, 600, 300, 600],
+        enableVibrate: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        bypassDnd: true,
       });
     }
 
