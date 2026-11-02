@@ -100,6 +100,16 @@ export async function registerForPushNotifications(): Promise<void> {
     }
 
     if (Platform.OS === 'android') {
+      // Incoming calls: maximum importance, a long vibration, shown on the lock screen. The server
+      // sends call pushes on this channel (channelId "calls").
+      await Notifications.setNotificationChannelAsync('calls', {
+        name: 'Calls',
+        importance: Notifications.AndroidImportance.MAX,
+        sound: 'default',
+        vibrationPattern: [0, 500, 300, 500, 300, 500],
+        enableVibrate: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
         importance: Notifications.AndroidImportance.DEFAULT,

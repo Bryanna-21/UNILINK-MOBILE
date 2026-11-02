@@ -25,6 +25,8 @@
     },
     "plugins": [
       "expo-router",
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
       "expo-secure-store",
       [
         "expo-splash-screen",

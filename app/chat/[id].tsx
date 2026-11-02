@@ -8,6 +8,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { ReportSheet } from '../../src/components/ReportSheet';
+import { CallButtons } from '../../src/calls/CallButtons';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 
 const POLL_INTERVAL_MS = 4000;
@@ -392,6 +393,7 @@ export default function ChatDetailScreen() {
             <Text style={styles.chatHeaderSubtitle}>Messages</Text>
           </View>
         )}
+        <CallButtons conversationId={typeof id === 'string' ? id : undefined} enabled={conversationType === 'direct'} />
       </View>
 
       <StatusBanner

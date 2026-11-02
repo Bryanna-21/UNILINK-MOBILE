@@ -38,6 +38,10 @@ export function routeForNotification(data: NotificationData | null | undefined):
   // A loud SOS alert goes only to admins; tapping it opens that report.
   if (type === 'emergency_alert' && ID.test(str(d.reportId))) return `/admin/report/${str(d.reportId)}`;
 
+  // Tapping an incoming-call push opens that call; a missed-call push opens the chat.
+  if (type === 'incoming_call' && ID.test(str(d.callId))) return `/call/${str(d.callId)}`;
+  if (type === 'missed_call' && ID.test(str(d.conversationId))) return `/chat/${str(d.conversationId)}`;
+
   if (type === 'moderation' || link === '/account-standing') return '/account-standing';
 
   if (type === 'opportunity' || link === '/settings/financial-support') return '/settings/financial-support';

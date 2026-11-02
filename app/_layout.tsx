@@ -15,6 +15,7 @@ import { registerForPushNotifications } from '../src/utils/pushNotifications';
 import { useClassReminderSync } from '../src/utils/useClassReminderSync';
 import { useNotificationTapRouting } from '../src/utils/useNotificationTapRouting';
 import { useAccountBlockRouting } from '../src/utils/useAccountBlockRouting';
+import { useIncomingCallWatcher } from '../src/calls/useIncomingCallWatcher';
 
 // STATUS: REAL — expo-updates is configured via `eas update:configure`
 // (see app.json's updates.url/runtimeVersion and eas.json's channels).
@@ -264,6 +265,7 @@ export default function RootLayout() {
   useClassReminderSync();
   useNotificationTapRouting();
   useAccountBlockRouting();
+  useIncomingCallWatcher();
 
   // Expo Router provides the SafeAreaProvider; these are the status-bar / navigation-bar sizes.
   const insets = useSafeAreaInsets();
