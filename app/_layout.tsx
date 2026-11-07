@@ -14,6 +14,7 @@ import { UpdateGate } from '../src/components/UpdateGate';
 import { registerForPushNotifications } from '../src/utils/pushNotifications';
 import { useClassReminderSync } from '../src/utils/useClassReminderSync';
 import { useNotificationTapRouting } from '../src/utils/useNotificationTapRouting';
+import { useEmergencyAlerts } from '../src/utils/useEmergencyAlerts';
 import { useAccountBlockRouting } from '../src/utils/useAccountBlockRouting';
 import { useIncomingCallWatcher } from '../src/calls/useIncomingCallWatcher';
 
@@ -264,6 +265,7 @@ export default function RootLayout() {
   useSilentUpdateCheck();
   useClassReminderSync();
   useNotificationTapRouting();
+  useEmergencyAlerts();
   useAccountBlockRouting();
   useIncomingCallWatcher();
 

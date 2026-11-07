@@ -23,17 +23,18 @@ import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 // screen's badge uses the real unreadCount from the API response.
 
 // The tabs, like Instagram's: everything, then people following you, likes and comments on your
-// posts, mentions, and academic updates. New messages are not here: they show on Messages.
-type Category = 'all' | 'followers' | 'activity' | 'mentions' | 'updates';
+// posts, mentions, and emergencies. Grades, exams and the like show under All. New messages are not
+// here: they show on Messages.
+type Category = 'all' | 'followers' | 'activity' | 'mentions' | 'emergency' | 'updates';
 const TABS: { key: Category; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'followers', label: 'Followers' },
   { key: 'activity', label: 'Likes & comments' },
   { key: 'mentions', label: 'Mentions & tags' },
-  { key: 'updates', label: 'Updates' },
+  { key: 'emergency', label: 'Emergency' },
 ];
 type Counts = Record<Category, number>;
-const NO_COUNTS: Counts = { all: 0, followers: 0, activity: 0, mentions: 0, updates: 0 };
+const NO_COUNTS: Counts = { all: 0, followers: 0, activity: 0, mentions: 0, emergency: 0, updates: 0 };
 
 type NotificationType =
   | 'grade_posted'
@@ -43,7 +44,8 @@ type NotificationType =
   | 'new_follower'
   | 'post_like'
   | 'post_comment'
-  | 'mention';
+  | 'mention'
+  | 'emergency_alert';
 
 interface AppNotification {
   _id: string;
@@ -64,6 +66,7 @@ const TYPE_LABEL: Record<string, string> = {
   post_like: 'Like',
   post_comment: 'Comment',
   mention: 'Mention',
+  emergency_alert: 'Emergency',
   announcement: 'Announcement',
   timetable: 'Timetable',
   opportunity: 'Opportunity',
@@ -91,6 +94,11 @@ function resolveMobileRoute(link?: string): string | null {
   // Followers go to that person's profile; likes, comments and mentions to the post.
   if (link.startsWith('/user/')) return `/user/${link.split('/')[2]}`;
   if (link.startsWith('/post/')) return `/post/${link.split('/')[2]}`;
+  // An emergency: the alert screen (numbers to call; staff can open the report from there).
+  if (link.startsWith('/emergency/')) {
+    const reportId = link.split('/')[2] ?? '';
+    if (/^[A-Za-z0-9_-]{6,64}$/.test(reportId)) return `/emergency/alert?reportId=${reportId}&ring=0`;
+  }
   return null;
 }
 
@@ -100,6 +108,7 @@ function n_category(type: string): Category | null {
   if (type === 'new_follower') return 'followers';
   if (type === 'post_like' || type === 'post_comment') return 'activity';
   if (type === 'mention') return 'mentions';
+  if (type === 'emergency_alert') return 'emergency';
   return 'updates';
 }
 

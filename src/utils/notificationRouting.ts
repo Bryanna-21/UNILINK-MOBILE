@@ -1,6 +1,8 @@
 // Decides which screen a tapped notification opens. Pure, and deliberately strict: only known
 // destinations are allowed, so a crafted notification can never send the app somewhere unexpected.
 
+import { emergencyAlertRoute } from './emergencyAlert';
+
 const ID = /^[A-Za-z0-9_-]{6,64}$/;
 
 export interface NotificationData {
@@ -20,6 +22,12 @@ export function routeForNotification(data: NotificationData | null | undefined):
 
   if (type === 'class_reminder' || type === 'schedule_change' || type === 'grade_posted' || type === 'new_assignment' || type === 'exam_published') {
     if (ID.test(courseId)) return `/course/${courseId}`;
+  }
+
+  // An emergency alert opens the alert screen with what the push carried.
+  if (type === 'emergency_alert') {
+    const alert = emergencyAlertRoute(d);
+    if (alert) return alert;
   }
 
   // A new message arrives as link "/messages/<conversationId>"; the chat screen lives at /chat/<id>.

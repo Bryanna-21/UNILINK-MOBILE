@@ -114,6 +114,16 @@ export async function registerForPushNotifications(): Promise<void> {
         name: 'default',
         importance: Notifications.AndroidImportance.DEFAULT,
       });
+      // The loud one, for emergency alerts: maximum importance, the default sound, a long
+      // vibration, and shown on the lock screen. The server sends these pushes on this channel.
+      await Notifications.setNotificationChannelAsync('emergency', {
+        name: 'Emergency alerts',
+        importance: Notifications.AndroidImportance.MAX,
+        sound: 'default',
+        enableVibrate: true,
+        vibrationPattern: [0, 800, 400, 800, 400, 800],
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
       // The loud one. An SOS for an admin is sent on this channel (the server sets channelId
       // "emergency"): maximum importance so it sounds and pops up, a long vibration, shown on the
       // lock screen, and allowed through Do Not Disturb if the person has granted that.
