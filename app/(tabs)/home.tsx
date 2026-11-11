@@ -19,6 +19,18 @@ const todayDateString = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+// What this phone already knows: the server confirmed attendance for a course on a given day.
+// Used when the server cannot be asked right now (just after an app or backend update, a slow
+// network), so people are not shown "Sign in" again for a course they have already signed today.
+// It only ever records a sign-in the server accepted, and only counts for the day it was made.
+const signedKey = (userId: string, courseId: string) => `attendance_signed_${userId}_${courseId}`;
+const rememberSigned = (userId: string, courseId: string, date: string) =>
+  cacheResponse(signedKey(userId, courseId), { date });
+async function wasSignedToday(userId: string, courseId: string, date: string): Promise<boolean> {
+  const saved = await getCachedResponse<{ date: string }>(signedKey(userId, courseId));
+  return saved?.data?.date === date;
+}
+
 interface ClassToday {
   _id: string;
   courseId: string;
@@ -330,9 +342,12 @@ export default function HomeScreen() {
           const todaysEntries = (scheduleRes.data?.data ?? []).filter(
             (entry: any) => entry.dayOfWeek === todayName
           );
-          const alreadySignedToday = (myAttendanceRes.data?.data ?? []).some(
+          const signedOnServer = (myAttendanceRes.data?.data ?? []).some(
             (a: any) => a.date === today
           );
+          if (signedOnServer) rememberSigned(user.id, course._id, today);
+          // The server's answer wins; if it could not be reached, trust what it confirmed earlier today.
+          const alreadySignedToday = signedOnServer || (await wasSignedToday(user.id, course._id, today));
 
           return {
             courseTitle: course.title,
@@ -382,7 +397,16 @@ export default function HomeScreen() {
 
       if (cached) {
         setClassesToday(cached.data.classesToday);
-        setAttendance(cached.data.attendance);
+        // A cached "signed" belongs to the day it was saved. Only today's confirmed sign-ins count.
+        const todayNow = todayDateString();
+        setAttendance(
+          await Promise.all(
+            cached.data.attendance.map(async (a) => ({
+              ...a,
+              signedToday: await wasSignedToday(user.id, a.courseId, todayNow),
+            }))
+          )
+        );
         setIsShowingOfflineData(true);
         setOfflineCacheAge(formatCacheAge(cached.cachedAt));
       } else {
@@ -456,6 +480,7 @@ export default function HomeScreen() {
     setSigningCourseId(courseId);
     try {
       await api.post(`/courses/${courseId}/attendance`, { date: todayDateString() });
+      if (user?.id) rememberSigned(user.id, courseId, todayDateString());
       Alert.alert('Signed', `Attendance recorded for ${courseTitle} today.`);
       setAttendance((prev) =>
         prev.map((a) => (a.courseId === courseId ? { ...a, signedToday: true } : a))
@@ -463,6 +488,7 @@ export default function HomeScreen() {
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 409) {
+        if (user?.id) rememberSigned(user.id, courseId, todayDateString());
         Alert.alert('Already signed', `You've already signed attendance for ${courseTitle} today.`);
         setAttendance((prev) =>
           prev.map((a) => (a.courseId === courseId ? { ...a, signedToday: true } : a))

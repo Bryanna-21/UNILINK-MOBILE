@@ -31,7 +31,7 @@ export default function ProfileScreen() {
   const [posts, setPosts] = useState<ProfilePost[]>([]);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'posts' | 'reshared' | 'liked'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'reshared' | 'liked'>('posts');
   const [reshared, setReshared] = useState<ProfilePost[]>([]);
   const [liked, setLiked] = useState<ProfilePost[]>([]);
   const [tabLoading, setTabLoading] = useState(false);
@@ -420,13 +420,13 @@ export default function ProfileScreen() {
   useFocusEffect(useCallback(() => { loadBasic(true); }, [loadBasic]));
 
   useEffect(() => {
-    if (activeTab !== 'posts') loadSecondary(activeTab);
+    if (activeTab === 'reshared' || activeTab === 'liked') loadSecondary(activeTab);
   }, [activeTab, loadSecondary]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await loadBasic(true);
-    if (activeTab !== 'posts') await loadSecondary(activeTab);
+    if (activeTab === 'reshared' || activeTab === 'liked') await loadSecondary(activeTab);
     setRefreshing(false);
   };
 
@@ -444,7 +444,18 @@ export default function ProfileScreen() {
     { label: 'Settings', route: '/settings' },
   ];
 
-  const items = activeTab === 'posts' ? posts : activeTab === 'reshared' ? reshared : liked;
+  // Each tab shows only its own kind, like Instagram: Posts holds text, photos and files,
+  // Reels holds only the videos (a video post is never in Posts). Reshared and Liked are collections
+  // and show whatever was reshared or liked.
+  const isVideoPost = (post: ProfilePost) => !!post.media?.some((m) => m.type === 'video');
+  const items =
+    activeTab === 'posts'
+      ? posts.filter((p) => !isVideoPost(p))
+      : activeTab === 'reels'
+        ? posts.filter(isVideoPost)
+        : activeTab === 'reshared'
+          ? reshared
+          : liked;
 
   return (
     <View style={styles.container}>
@@ -479,9 +490,9 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.edit} onPress={() => router.push('/profile/edit')} accessibilityRole="button"><Text style={styles.editText}>Edit Profile</Text></TouchableOpacity>
         </View>
         <View style={styles.tabs}>
-          {(['posts', 'reshared', 'liked'] as const).map((tab) => {
-            const icon = tab === 'posts' ? '▦' : tab === 'reshared' ? '↻' : '♡';
-            const label = tab === 'posts' ? 'Posts' : tab === 'reshared' ? 'Reshared' : 'Liked';
+          {(['posts', 'reels', 'reshared', 'liked'] as const).map((tab) => {
+            const icon = tab === 'posts' ? '▦' : tab === 'reels' ? '▶' : tab === 'reshared' ? '↻' : '♡';
+            const label = tab === 'posts' ? 'Posts' : tab === 'reels' ? 'Reels' : tab === 'reshared' ? 'Reshared' : 'Liked';
 
             return (
               <TouchableOpacity
@@ -497,7 +508,7 @@ export default function ProfileScreen() {
             );
           })}
         </View>
-        {loading || tabLoading ? <LoadingSkeletonGrid rows={3} columns={3} /> : activeTab === 'posts' && postsError && posts.length === 0 ? <View style={styles.center}><Text style={styles.error}>{postsError}</Text><TouchableOpacity onPress={() => loadBasic()} accessibilityRole="button" accessibilityLabel="Try loading posts again"><Text style={{ color: colors.primary, fontWeight: '700', marginTop: 8 }}>Try again</Text></TouchableOpacity></View> : tabError ? <Text style={styles.error}>{tabError}</Text> : items.length === 0 ? <View style={styles.center}><Text style={styles.muted}>{activeTab === 'posts' ? 'No posts yet.' : activeTab === 'reshared' ? 'No reshares yet.' : 'No liked posts yet.'}</Text></View> : (
+        {loading || tabLoading ? <LoadingSkeletonGrid rows={3} columns={3} /> : activeTab === 'posts' && postsError && posts.length === 0 ? <View style={styles.center}><Text style={styles.error}>{postsError}</Text><TouchableOpacity onPress={() => loadBasic()} accessibilityRole="button" accessibilityLabel="Try loading posts again"><Text style={{ color: colors.primary, fontWeight: '700', marginTop: 8 }}>Try again</Text></TouchableOpacity></View> : tabError ? <Text style={styles.error}>{tabError}</Text> : items.length === 0 ? <View style={styles.center}><Text style={styles.muted}>{activeTab === 'posts' ? 'No posts yet.' : activeTab === 'reels' ? 'No videos yet.' : activeTab === 'reshared' ? 'No reshares yet.' : 'No liked posts yet.'}</Text></View> : (
           <View style={styles.grid}>
             {items.map((post) => {
               const image = post.media?.find((m) => m.type === 'image')?.url;
@@ -520,7 +531,7 @@ export default function ProfileScreen() {
                       />
                     ) : (
                       <>
-                        <Text style={styles.tileType}>{isDocument ? 'Document' : post.title ? 'Post' : 'Text'}</Text>
+                        <Text style={styles.tileType}>{isDocument ? 'Document' : video ? 'Video' : post.title ? 'Post' : 'Text'}</Text>
                         <Text numberOfLines={5} style={styles.tileText}>
                           {post.title || post.content || 'Post'}
                         </Text>

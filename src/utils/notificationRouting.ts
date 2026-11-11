@@ -29,6 +29,12 @@ export function routeForNotification(data: NotificationData | null | undefined):
   const timetable = /^\/school-timetable\/([^/?#]+)$/.exec(link);
   if (timetable && ID.test(timetable[1])) return `/school-timetable/${timetable[1]}`;
 
+  // Followers, likes, comments and mentions: a person's profile, or the post it is about.
+  const person = /^\/user\/([^/?#]+)$/.exec(link);
+  if (person && ID.test(person[1])) return `/user/${person[1]}`;
+  const post = /^\/post\/([^/?#]+)$/.exec(link);
+  if (post && ID.test(post[1])) return `/post/${post[1]}`;
+
   if (type === 'moderation' || link === '/account-standing') return '/account-standing';
 
   if (type === 'opportunity' || link === '/settings/financial-support') return '/settings/financial-support';

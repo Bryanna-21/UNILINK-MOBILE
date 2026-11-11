@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBanner } from '../../src/components/StatusBanner';
@@ -22,7 +22,28 @@ import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 // shows a hardcoded "3" regardless of actual unread count. This
 // screen's badge uses the real unreadCount from the API response.
 
-type NotificationType = 'grade_posted' | 'new_assignment' | 'new_message' | 'exam_published';
+// The tabs, like Instagram's: everything, then people following you, likes and comments on your
+// posts, mentions, and academic updates. New messages are not here: they show on Messages.
+type Category = 'all' | 'followers' | 'activity' | 'mentions' | 'updates';
+const TABS: { key: Category; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'followers', label: 'Followers' },
+  { key: 'activity', label: 'Likes & comments' },
+  { key: 'mentions', label: 'Mentions & tags' },
+  { key: 'updates', label: 'Updates' },
+];
+type Counts = Record<Category, number>;
+const NO_COUNTS: Counts = { all: 0, followers: 0, activity: 0, mentions: 0, updates: 0 };
+
+type NotificationType =
+  | 'grade_posted'
+  | 'new_assignment'
+  | 'new_message'
+  | 'exam_published'
+  | 'new_follower'
+  | 'post_like'
+  | 'post_comment'
+  | 'mention';
 
 interface AppNotification {
   _id: string;
@@ -39,6 +60,15 @@ const TYPE_LABEL: Record<string, string> = {
   new_assignment: 'Assignment',
   new_message: 'Message',
   exam_published: 'Exam',
+  new_follower: 'Follower',
+  post_like: 'Like',
+  post_comment: 'Comment',
+  mention: 'Mention',
+  announcement: 'Announcement',
+  timetable: 'Timetable',
+  opportunity: 'Opportunity',
+  schedule_change: 'Schedule',
+  moderation: 'Account',
 };
 
 function formatDate(date: string) {
@@ -58,13 +88,28 @@ function resolveMobileRoute(link?: string): string | null {
   if (link.startsWith('/exams/')) return `/exams/${link.split('/')[2]}`;
   if (link.startsWith('/messages/')) return `/chat/${link.split('/')[2]}`;
   if (link.startsWith('/assignment/')) return link; // same shape both platforms
+  // Followers go to that person's profile; likes, comments and mentions to the post.
+  if (link.startsWith('/user/')) return `/user/${link.split('/')[2]}`;
+  if (link.startsWith('/post/')) return `/post/${link.split('/')[2]}`;
   return null;
+}
+
+// Which tab a notification belongs to (the same grouping the server uses).
+function n_category(type: string): Category | null {
+  if (type === 'new_message') return null;
+  if (type === 'new_follower') return 'followers';
+  if (type === 'post_like' || type === 'post_comment') return 'activity';
+  if (type === 'mention') return 'mentions';
+  return 'updates';
 }
 
 export default function NotificationsScreen() {
   const colors = useColors();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [category, setCategory] = useState<Category>('all');
+  const [counts, setCounts] = useState<Counts>(NO_COUNTS);
+  const unreadCount = counts[category];
+  const latestRequest = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +127,33 @@ export default function NotificationsScreen() {
         },
         title: { fontSize: 24, fontWeight: '800', color: colors.text },
         markAllLink: { fontSize: 13, fontWeight: '700', color: colors.primary },
+        tabRow: { paddingHorizontal: Spacing.md, gap: Spacing.sm, paddingBottom: Spacing.xs },
+        tab: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingVertical: 8,
+          paddingHorizontal: 14,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.surface,
+        },
+        tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+        tabText: { fontSize: 13, fontWeight: '700', color: colors.text },
+        tabTextActive: { color: colors.white },
+        tabBadge: {
+          minWidth: 18,
+          height: 18,
+          borderRadius: 9,
+          paddingHorizontal: 5,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        tabBadgeActive: { backgroundColor: colors.white },
+        tabBadgeText: { fontSize: 10, fontWeight: '800', color: colors.white },
+        tabBadgeTextActive: { color: colors.primary },
         card: {
           backgroundColor: colors.surface,
           marginHorizontal: Spacing.md,
@@ -110,20 +182,26 @@ export default function NotificationsScreen() {
   );
 
   const loadNotifications = useCallback(async (isRefresh = false) => {
+    // A slow answer for a tab you have already left must not overwrite the tab you are on.
+    const requestId = ++latestRequest.current;
     if (isRefresh) setIsRefreshing(true);
     else setIsLoading(true);
     setError(null);
     try {
-      const res = await api.get('/notifications');
+      const res = await api.get('/notifications', { params: { category } });
+      if (requestId !== latestRequest.current) return;
       setNotifications(res.data?.data ?? []);
-      setUnreadCount(res.data?.unreadCount ?? 0);
+      setCounts({ ...NO_COUNTS, ...(res.data?.counts ?? {}) });
     } catch (err: any) {
+      if (requestId !== latestRequest.current) return;
       setError(err?.response?.data?.message || 'Unable to load notifications.');
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (requestId === latestRequest.current) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
-  }, []);
+  }, [category]);
 
   useEffect(() => {
     loadNotifications();
@@ -136,7 +214,16 @@ export default function NotificationsScreen() {
         setNotifications((prev) =>
           prev.map((n) => (n._id === notification._id ? { ...n, read: true } : n))
         );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+        // One fewer unread in this notification's own tab, and in All.
+        setCounts((prev) => {
+          const own: Category =
+            n_category(notification.type) ?? 'updates';
+          return {
+            ...prev,
+            all: Math.max(0, prev.all - 1),
+            [own]: Math.max(0, prev[own] - 1),
+          };
+        });
       } catch {
         // Non-fatal, matches web's own behavior exactly: still navigate
         // even if marking read failed — the notification content is
@@ -150,9 +237,9 @@ export default function NotificationsScreen() {
 
   const handleMarkAllRead = async () => {
     try {
-      await api.patch('/notifications/read-all');
+      await api.patch('/notifications/read-all', null, { params: { category } });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      setUnreadCount(0);
+      loadNotifications(true); // the other tabs' counts changed too
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Could not mark all as read.');
     }
@@ -179,6 +266,30 @@ export default function NotificationsScreen() {
       </View>
       <StatusBanner status="real" note="Notifications are fetched live from your account." />
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
+        {TABS.map((tab) => {
+          const active = tab.key === category;
+          const count = counts[tab.key];
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, active && styles.tabActive]}
+              onPress={() => setCategory(tab.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${tab.label}${count > 0 ? `, ${count} unread` : ''}`}
+            >
+              <Text style={[styles.tabText, active && styles.tabTextActive]}>{tab.label}</Text>
+              {count > 0 ? (
+                <View style={[styles.tabBadge, active && styles.tabBadgeActive]}>
+                  <Text style={[styles.tabBadgeText, active && styles.tabBadgeTextActive]}>{count > 99 ? '99+' : count}</Text>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       {isLoading ? (
         <LoadingSkeletonList rows={5} />
       ) : error ? (
@@ -187,7 +298,9 @@ export default function NotificationsScreen() {
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.card}>
-          <Text style={styles.emptyText}>No notifications yet.</Text>
+          <Text style={styles.emptyText}>
+            {category === 'all' ? 'No notifications yet.' : `No ${TABS.find((t) => t.key === category)?.label.toLowerCase()} yet.`}
+          </Text>
         </View>
       ) : (
         notifications.map((n) => (
