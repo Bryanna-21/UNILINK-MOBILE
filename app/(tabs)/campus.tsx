@@ -22,6 +22,8 @@ import { Avatar } from '../../src/components/Avatar';
 import { CreatePostSheet } from '../../src/components/CreatePostSheet';
 import CommentsSheet from '../../src/components/CommentsSheet';
 import DocumentViewer from '../../src/components/DocumentViewer';
+import { audienceBadge, canReshare } from '../../src/utils/audience';
+import { savePostMedia } from '../../src/utils/savePost';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
@@ -113,6 +115,7 @@ interface PostMedia {
   url: string;
   type: 'image' | 'video' | 'document';
   publicId: string;
+  originalName?: string | null;
 }
 
 interface Post {
@@ -123,6 +126,8 @@ interface Post {
   title?: string;
   content?: string;
   media?: PostMedia[];
+  // Who the post is for (everyone, university, universities, followers, friends, people). Older posts have none.
+  audience?: string;
   likes: number;
   liked?: boolean;
   commentsCount: number;
@@ -161,7 +166,7 @@ function ReelPlayer({
   return <ReelVideo uri={uri} active={active} style={style} />;
 }
 
-function MediaStrip({ media }: { media: PostMedia[] }) {
+function MediaStrip({ media, postId }: { media: PostMedia[]; postId?: string }) {
   const colors = useColors();
   const [width, setWidth] = useState(0);
   const [index, setIndex] = useState(0);
@@ -182,7 +187,7 @@ function MediaStrip({ media }: { media: PostMedia[] }) {
       // Opened inline: page 1 is visible at once and a swipe shows page 2 (see DocumentViewer).
       return (
         <View style={{ width: w }}>
-          <DocumentViewer media={m as any} />
+          <DocumentViewer media={m as any} postId={postId} />
         </View>
       );
     }
@@ -450,6 +455,7 @@ export default function CampusScreen() {
         postFooter: {
           flexDirection: 'row',
           alignItems: 'center',
+          flexWrap: 'wrap',
           gap: Spacing.md,
           marginTop: Spacing.sm,
         },
@@ -580,6 +586,25 @@ export default function CampusScreen() {
     }
   };
 
+  // Saves every photo, video or document of a post to the phone (see src/utils/savePost.ts).
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const handleSave = async (post: Post) => {
+    if (savingId) return;
+    setSavingId(post._id);
+    try {
+      const result = await savePostMedia(post.authorName, post.media ?? []);
+      if (result.saved === 0) {
+        Alert.alert('Could not save', 'The files could not be downloaded. Check your connection and try again.');
+      } else if (result.failed > 0) {
+        Alert.alert('Saved with a problem', `${result.failed} of ${result.saved + result.failed} files could not be downloaded.`);
+      }
+    } catch {
+      Alert.alert('Could not save', 'Something went wrong while saving. Please try again.');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const handleHide = async (postId: string) => {
     try {
       await api.post(`/posts/hidden/${postId}`);
@@ -682,13 +707,13 @@ export default function CampusScreen() {
                       <Text style={styles.authorName} numberOfLines={1}>
                         {item.authorName || 'Unknown user'}
                       </Text>
-                      <Text style={styles.postTime}>{timeAgo(item.createdAt)}</Text>
+                      <Text style={styles.postTime}>{timeAgo(item.createdAt)}{audienceBadge(item.audience) ? ` · ${audienceBadge(item.audience)}` : ''}</Text>
                     </View>
                   </TouchableOpacity>
 
                   {item.title ? <Text style={styles.postTitle}>{item.title}</Text> : null}
                   {item.content ? <Text style={styles.postContent}>{item.content}</Text> : null}
-                  {item.media && item.media.length > 0 ? <MediaStrip media={item.media} /> : null}
+                  {item.media && item.media.length > 0 ? <MediaStrip media={item.media} postId={item._id} /> : null}
 
                   <View style={styles.postFooter}>
                     <TouchableOpacity
@@ -712,15 +737,30 @@ export default function CampusScreen() {
                       <Text style={styles.commentCount}>💬 {item.commentsCount}</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={styles.postAction}
-                      onPress={() => handleReshare(item._id)}
-                      accessibilityRole="button"
-                      accessibilityLabel="Reshare post"
-                    >
-                      <FeedActionIcon type="reshare" color={colors.textMuted} />
-                      <Text style={styles.actionLabel}>Reshare</Text>
-                    </TouchableOpacity>
+                    {canReshare(item.audience) ? (
+                      <TouchableOpacity
+                        style={styles.postAction}
+                        onPress={() => handleReshare(item._id)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Reshare post"
+                      >
+                        <FeedActionIcon type="reshare" color={colors.textMuted} />
+                        <Text style={styles.actionLabel}>Reshare</Text>
+                      </TouchableOpacity>
+                    ) : null}
+
+                    {item.media && item.media.length > 0 ? (
+                      <TouchableOpacity
+                        style={styles.postAction}
+                        onPress={() => handleSave(item)}
+                        disabled={savingId === item._id}
+                        accessibilityRole="button"
+                        accessibilityLabel="Save this post's files to your phone"
+                      >
+                        <Text style={styles.likeButton}>{savingId === item._id ? '…' : '⬇️'}</Text>
+                        <Text style={styles.actionLabel}>Save</Text>
+                      </TouchableOpacity>
+                    ) : null}
 
                     <TouchableOpacity
                       style={styles.postAction}

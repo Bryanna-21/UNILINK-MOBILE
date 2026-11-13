@@ -180,7 +180,7 @@ export default function UserProfileScreen() {
 
   // Starts (or reopens) a direct conversation with THIS user via
   // POST /messages/start { otherUserId }. The backend validates the
-  // target (same university, not deleted, not yourself).
+  // target (not deleted, not yourself, not blocked; any university).
   const handleMessage = async () => {
     if (!id || isStartingChat) return;
     setIsStartingChat(true);

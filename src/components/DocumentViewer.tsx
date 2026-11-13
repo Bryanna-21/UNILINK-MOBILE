@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { api } from '../api/client';
 import { Radius, Spacing, useColors } from '../constants/theme';
 
 // STATUS: REAL. A document in a post is shown OPEN: page 1 is visible straight away and a swipe
@@ -26,6 +27,10 @@ import { Radius, Spacing, useColors } from '../constants/theme';
 // Next to the swipe there are Previous / Next arrows, so turning the page never depends on a gesture
 // alone (a vertical list can swallow a sideways swipe on some phones).
 //
+// Pages are drawn on the server a few at a time, page 1 and 2 first. While a document is still being prepared
+// this component asks the server again every few seconds (when it knows the post id) and the pages appear by
+// themselves: nobody has to pull down to refresh. A long document is drawn up to 100 pages.
+//
 // When there are no page images the card says why and opens the original on tap, in the same card
 // every time: still being prepared, preparing failed, or an older post whose pages are not made yet.
 
@@ -33,14 +38,17 @@ export interface DocumentMedia {
   url: string;
   originalName?: string | null;
   pageCount?: number;
+  totalPages?: number;
   processingStatus?: 'pending' | 'ready' | 'failed';
   pages?: { page: number; url: string }[];
 }
 
+const POLL_EVERY_MS = 4000;
+const POLL_FOR_MS = 4 * 60 * 1000; // after this the card stops asking; opening the post again starts over
 const MAX_INLINE_HEIGHT = 460;
 const DEFAULT_RATIO = 1.35; // height / width of a typical portrait page, until the first page tells us
 
-export default function DocumentViewer({ media }: { media: DocumentMedia }) {
+export default function DocumentViewer({ media: given, postId }: { media: DocumentMedia; postId?: string }) {
   const colors = useColors();
   const listRef = useRef<FlatList<{ page: number; url: string }>>(null);
   const insets = useSafeAreaInsets();
@@ -51,7 +59,45 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
   const [fullscreen, setFullscreen] = useState(false);
   const [fullIndex, setFullIndex] = useState(0);
 
+  // What the server last told us about this document. It starts as the feed's copy and is refreshed while the
+  // document is still being prepared.
+  const [media, setMedia] = useState<DocumentMedia>(given);
+  useEffect(() => setMedia(given), [given]);
+
+  useEffect(() => {
+    if (!postId || media.processingStatus !== 'pending') return;
+    let stopped = false;
+    const startedAt = Date.now();
+    const timer = setInterval(async () => {
+      if (stopped) return;
+      if (Date.now() - startedAt > POLL_FOR_MS) {
+        clearInterval(timer);
+        return;
+      }
+      try {
+        const res = await api.get(`/posts/${postId}`);
+        const fresh = ((res.data?.data?.media ?? []) as DocumentMedia[]).find((m) => m.url === media.url);
+        if (stopped || !fresh) return;
+        // Only replace when something changed, so the page the person is reading does not flicker.
+        if ((fresh.pages?.length ?? 0) !== (media.pages?.length ?? 0) || fresh.processingStatus !== media.processingStatus) {
+          setMedia(fresh);
+        }
+      } catch {
+        // No connection right now; try again at the next tick.
+      }
+    }, POLL_EVERY_MS);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [postId, media.url, media.processingStatus, media.pages?.length]);
+
   const pages = useMemo(() => [...(media.pages ?? [])].sort((a, b) => a.page - b.page), [media.pages]);
+  // How many pages there will be once it is done (drawn so far can be fewer), and what the document really has.
+  const expected = Math.max(media.pageCount ?? 0, pages.length);
+  const stillPreparing = media.processingStatus === 'pending' && pages.length > 0;
+  const partlyFailed = media.processingStatus === 'failed' && pages.length > 0;
+  const longNote = media.totalPages && media.totalPages > expected ? `First ${expected} of ${media.totalPages} pages` : null;
   const name = media.originalName || 'Document';
   const openOriginal = () => Linking.openURL(media.url);
 
@@ -117,7 +163,7 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
     const pending = media.processingStatus === 'pending';
     const failed = media.processingStatus === 'failed';
     const hint = pending
-      ? 'Preparing the pages. Pull down to refresh in a moment, or tap to open the file now.'
+      ? 'Preparing the pages. Page 1 will appear here by itself, or tap to open the file now.'
       : failed
         ? 'The pages could not be prepared. Tap to open the file.'
         : 'The pages are not ready yet. Tap to open the file.';
@@ -174,7 +220,7 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
                   style={{ width, height }}
                   onPress={() => { setFullIndex(index); setFullscreen(true); }}
                   accessibilityRole="button"
-                  accessibilityLabel={`Page ${item.page} of ${pages.length}. Tap to read full screen`}
+                  accessibilityLabel={`Page ${item.page} of ${expected}. Tap to read full screen`}
                 >
                   <Image
                     source={{ uri: item.url }}
@@ -190,7 +236,7 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
               )}
             />
             <View style={styles.badge} pointerEvents="none">
-              <Text style={styles.badgeText}>{index + 1} / {pages.length}</Text>
+              <Text style={styles.badgeText}>{index + 1} / {expected}</Text>
             </View>
             {pages.length > 1 && (
               <>
@@ -216,7 +262,10 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
             )}
           </View>
           <View style={styles.caption}>
-            <Text style={styles.captionName} numberOfLines={1}>{name}{pages.length > 1 ? ' · swipe for more pages' : ''}</Text>
+            <Text style={styles.captionName} numberOfLines={1}>
+              {name}
+              {stillPreparing ? ' · preparing more pages…' : partlyFailed ? ' · some pages could not be prepared' : longNote ? ` · ${longNote}` : pages.length > 1 ? ' · swipe for more pages' : ''}
+            </Text>
             <TouchableOpacity onPress={openOriginal} accessibilityRole="button" accessibilityLabel="Open the original file">
               <Text style={styles.captionLink}>Open original</Text>
             </TouchableOpacity>
@@ -231,7 +280,7 @@ export default function DocumentViewer({ media }: { media: DocumentMedia }) {
               <Text style={styles.fullCloseText}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.fullTitle} numberOfLines={1}>{name}</Text>
-            <Text style={styles.fullCount}>{fullIndex + 1} / {pages.length}</Text>
+            <Text style={styles.fullCount}>{fullIndex + 1} / {expected}</Text>
           </View>
           <FlatList
             horizontal
