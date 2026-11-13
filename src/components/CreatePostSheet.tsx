@@ -17,6 +17,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '../api/client';
 import { useColors, Radius, Spacing } from '../constants/theme';
+import AudiencePicker from './AudiencePicker';
+import { AudienceValue, DEFAULT_AUDIENCE, audienceFields, audienceIsComplete, audienceOption, describeAudience } from '../utils/audience';
 
 // STATUS: REAL — the "+" post creator. Tapping + offers Text, Photo or Video; a post can
 // be any mix, up to 4 attachments, and needs only SOMETHING (no title is required).
@@ -55,11 +57,14 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
   const [assets, setAssets] = useState<PendingAsset[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Who the post is for. A new post is for the author's university until they choose otherwise.
+  const [audience, setAudience] = useState<AudienceValue>(DEFAULT_AUDIENCE);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const hasDraft = text.trim().length > 0 || assets.length > 0;
   const hasVideo = assets.some((a) => a.type === 'video');
   const hasDocument = assets.some((a) => a.type === 'document');
-  const canPost = hasDraft && !isPosting;
+  const canPost = hasDraft && !isPosting && audienceIsComplete(audience);
 
   // Opening the sheet: an unsent draft goes straight back to composing.
   useEffect(() => {
@@ -119,6 +124,21 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
           borderRadius: Radius.md,
           padding: Spacing.md,
         },
+        audienceRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacing.sm,
+          marginTop: Spacing.md,
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: Radius.md,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.md,
+        },
+        audienceLabel: { fontSize: 12, color: colors.textMuted },
+        audienceValue: { fontSize: 15, fontWeight: '700', color: colors.text },
+        audienceChange: { fontSize: 13, fontWeight: '800', color: colors.primary },
         counter: { alignSelf: 'flex-end', marginTop: 4, fontSize: 11, color: colors.textMuted },
         previewRow: { marginTop: Spacing.sm },
         thumbWrap: { marginRight: Spacing.sm, position: 'relative' },
@@ -287,6 +307,7 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
     setText('');
     setAssets([]);
     setError(null);
+    setAudience(DEFAULT_AUDIENCE);
     setStep('choose');
   };
 
@@ -301,10 +322,11 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
     setError(null);
     try {
       if (assets.length === 0) {
-        await api.post('/posts/create', { content });
+        await api.post('/posts/create', { content, ...audienceFields(audience) });
       } else {
         const formData = new FormData();
         if (content) formData.append('content', content);
+        Object.entries(audienceFields(audience)).forEach(([key, val]) => formData.append(key, val));
 
         assets.forEach((asset) => {
           formData.append(
@@ -327,6 +349,7 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
       }
       setText('');
       setAssets([]);
+      setAudience(DEFAULT_AUDIENCE);
       setStep('choose');
       onPosted();
       onClose();
@@ -438,6 +461,21 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
                 </ScrollView>
               )}
 
+              <TouchableOpacity
+                style={styles.audienceRow}
+                onPress={() => setPickerOpen(true)}
+                disabled={isPosting}
+                accessibilityRole="button"
+                accessibilityLabel={`Who can see this: ${describeAudience(audience)}. Tap to change`}
+              >
+                <Text style={{ fontSize: 22 }}>{audienceOption(audience.kind).icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.audienceLabel}>Who can see this</Text>
+                  <Text style={styles.audienceValue} numberOfLines={1}>{describeAudience(audience)}</Text>
+                </View>
+                <Text style={styles.audienceChange}>Change</Text>
+              </TouchableOpacity>
+
               <View style={styles.addRow}>
                 <TouchableOpacity
                   style={[styles.addButton, (isPosting || hasDocument || assets.length >= MAX_MEDIA_ITEMS) && styles.disabled]}
@@ -484,6 +522,7 @@ export function CreatePostSheet({ visible, onClose, onPosted }: Props) {
           )}
         </View>
       </KeyboardAvoidingView>
+      <AudiencePicker visible={pickerOpen} value={audience} onChange={setAudience} onClose={() => setPickerOpen(false)} />
     </Modal>
   );
 }

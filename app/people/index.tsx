@@ -17,7 +17,7 @@ import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL, NEW. Find people by username (GET /people/search) and see suggestions
 // (GET /people/suggestions). "Follow" uses the existing POST/DELETE /follow/:userId.
-// Search needs 3+ characters and only returns people at your own university.
+// Search needs 3+ characters and finds people at any university: following is universal.
 
 interface Person {
   _id: string;
@@ -254,7 +254,7 @@ export default function FindPeopleScreen() {
           ListEmptyComponent={
             <Text style={styles.emptyText} accessibilityRole="text">
               {isSearchMode
-                ? 'No one at your university has a username starting with "' + term + '".'
+                ? 'No one has a username starting with "' + term + '".'
                 : 'No suggestions yet. Try searching for a classmate\'s username.'}
             </Text>
           }
