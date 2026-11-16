@@ -5,6 +5,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { api } from '../../src/api/client';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { LoadingSkeletonGrid } from '../../src/components/LoadingSkeleton';
+import AvatarLightbox from '../../src/components/AvatarLightbox';
 
 type PostMedia = { url: string; type: 'image' | 'video' | 'document'; publicId?: string };
 type ProfilePost = {
@@ -29,6 +30,7 @@ export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const [posts, setPosts] = useState<ProfilePost[]>([]);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'reshared' | 'liked'>('posts');
@@ -472,7 +474,10 @@ export default function ProfileScreen() {
         </View>
         <View style={styles.cover}>{user?.coverUrl ? <Image source={{ uri: user.coverUrl }} style={styles.coverImage} resizeMode="cover" /> : null}</View>
         <View style={styles.profile}>
-          <View style={styles.avatar}>{user?.avatarUrl ? <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || '?'}</Text>}</View>
+          <TouchableOpacity onPress={() => setPhotoOpen(true)} accessibilityRole="button" accessibilityLabel="See your profile photo full size">
+            <View style={styles.avatar}>{user?.avatarUrl ? <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || '?'}</Text>}</View>
+          </TouchableOpacity>
+          <AvatarLightbox visible={photoOpen} name={user?.name} uri={user?.avatarUrl} onClose={() => setPhotoOpen(false)} />
           <Text style={styles.name}>{user?.name || 'Unknown'}</Text>
           {user?.username ? <Text style={styles.username}>@{user.username}</Text> : null}
           {user?.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}

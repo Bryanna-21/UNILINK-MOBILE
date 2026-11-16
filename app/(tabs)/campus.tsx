@@ -24,6 +24,8 @@ import CommentsSheet from '../../src/components/CommentsSheet';
 import DocumentViewer from '../../src/components/DocumentViewer';
 import { audienceBadge, canReshare } from '../../src/utils/audience';
 import { savePostMedia } from '../../src/utils/savePost';
+import PostMenu from '../../src/components/PostMenu';
+import { useAuthStore } from '../../src/store/authStore';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 
@@ -166,6 +168,8 @@ function ReelPlayer({
   return <ReelVideo uri={uri} active={active} style={style} />;
 }
 
+const FEED_PAGE = 20;
+
 function MediaStrip({ media, postId }: { media: PostMedia[]; postId?: string }) {
   const colors = useColors();
   const [width, setWidth] = useState(0);
@@ -255,6 +259,10 @@ const stripStyles = StyleSheet.create({
 export default function CampusScreen() {
   const colors = useColors();
   const [posts, setPosts] = useState<Post[]>([]);
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  // Paging: the feed comes 20 posts at a time. nextCursor is where the next page starts (null = no more).
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -496,7 +504,7 @@ export default function CampusScreen() {
   const loadFeed = useCallback(async (q: string) => {
     const mine = ++requestId.current;
     try {
-      const res = await api.get('/posts/feed', { params: q ? { q } : undefined });
+      const res = await api.get('/posts/feed', { params: { limit: FEED_PAGE, ...(q ? { q } : {}) } });
       if (mine !== requestId.current) return;
       const nextPosts = Array.isArray(res.data?.data) ? [...res.data.data] : [];
       nextPosts.sort(
@@ -505,6 +513,7 @@ export default function CampusScreen() {
           new Date(a.createdAt || 0).getTime()
       );
       setPosts(nextPosts);
+      setNextCursor(res.data?.nextCursor ?? null);
       setError(null);
     } catch (err: any) {
       if (mine !== requestId.current) return;
@@ -538,6 +547,28 @@ export default function CampusScreen() {
     const timer = setTimeout(() => loadFeed(activeQuery.current), 350);
     return () => clearTimeout(timer);
   }, [query, loadFeed]);
+
+  // The next 20 posts. Ignored if a search or refresh started while it was loading.
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || isLoadingMore) return;
+    const mine = requestId.current;
+    const q = activeQuery.current;
+    setIsLoadingMore(true);
+    try {
+      const res = await api.get('/posts/feed', { params: { limit: FEED_PAGE, before: nextCursor, ...(q ? { q } : {}) } });
+      if (mine !== requestId.current) return;
+      const more: Post[] = Array.isArray(res.data?.data) ? res.data.data : [];
+      setPosts((prev) => {
+        const seen = new Set(prev.map((p) => p._id));
+        return [...prev, ...more.filter((p) => !seen.has(p._id))];
+      });
+      setNextCursor(res.data?.nextCursor ?? null);
+    } catch {
+      // Keep what is on screen; scrolling to the end again tries once more.
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [nextCursor, isLoadingMore]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -689,6 +720,9 @@ export default function CampusScreen() {
               keyboardDismissMode="on-drag"
               contentContainerStyle={{ padding: Spacing.md, paddingBottom: 110, gap: Spacing.sm }}
               refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.6}
+              ListFooterComponent={isLoadingMore ? <ActivityIndicator style={{ marginVertical: Spacing.md }} color={colors.primary} /> : null}
               ListEmptyComponent={
                 <Text style={styles.emptyText} accessibilityRole="text">
                   {searching ? `No chronicles match "${activeQuery.current}".` : 'No chronicles yet. Tap + to share something.'}
@@ -762,6 +796,13 @@ export default function CampusScreen() {
                       </TouchableOpacity>
                     ) : null}
 
+                    <PostMenu
+                      post={item as any}
+                      isOwner={item.userId === currentUserId}
+                      onDeleted={() => setPosts((prev) => prev.filter((p) => p._id !== item._id))}
+                      onAudienceChanged={(a) => setPosts((prev) => prev.map((p) => (p._id === item._id ? { ...p, audience: a } : p)))}
+                    />
+
                     <TouchableOpacity
                       style={styles.postAction}
                       onPress={() =>
@@ -805,6 +846,8 @@ export default function CampusScreen() {
           }}
           extraData={reelHeight}
           data={reels}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
           keyExtractor={(item) => item._id}
           pagingEnabled
           snapToInterval={reelHeight}
@@ -885,19 +928,40 @@ export default function CampusScreen() {
                       </Text>
                     </TouchableOpacity>
 
+                    {canReshare(item.audience) ? (
+                      <TouchableOpacity
+                        style={styles.reelAction}
+                        onPress={() => handleReshare(item._id)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Reshare Reel"
+                      >
+                        <FeedActionIcon
+                          type="reshare"
+                          color={colors.white}
+                          size={25}
+                        />
+                        <Text style={styles.reelActionText}>Share</Text>
+                      </TouchableOpacity>
+                    ) : null}
+
                     <TouchableOpacity
                       style={styles.reelAction}
-                      onPress={() => handleReshare(item._id)}
+                      onPress={() => handleSave(item)}
+                      disabled={savingId === item._id}
                       accessibilityRole="button"
-                      accessibilityLabel="Reshare Reel"
+                      accessibilityLabel="Save this Reel to your phone"
                     >
-                      <FeedActionIcon
-                        type="reshare"
-                        color={colors.white}
-                        size={25}
-                      />
-                      <Text style={styles.reelActionText}>Share</Text>
+                      <Text style={{ fontSize: 26 }}>{savingId === item._id ? '…' : '⬇️'}</Text>
+                      <Text style={styles.reelActionText}>Save</Text>
                     </TouchableOpacity>
+
+                    <PostMenu
+                      post={item as any}
+                      isOwner={item.userId === currentUserId}
+                      color={colors.white}
+                      onDeleted={() => setPosts((prev) => prev.filter((p) => p._id !== item._id))}
+                      onAudienceChanged={(a) => setPosts((prev) => prev.map((p) => (p._id === item._id ? { ...p, audience: a } : p)))}
+                    />
                   </View>
                 </View>
               </View>

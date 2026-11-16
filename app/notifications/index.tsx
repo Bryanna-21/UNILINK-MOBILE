@@ -5,6 +5,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
+import { Avatar } from '../../src/components/Avatar';
 
 // STATUS: LIVE — GET /notifications, PATCH /notifications/:id/read,
 // PATCH /notifications/read-all all match web's userNotificationService.js
@@ -53,6 +54,9 @@ interface AppNotification {
   link?: string;
   read: boolean;
   createdAt: string;
+  // Who did it (a follow, like, comment or mention) with their profile photo.
+  actorName?: string | null;
+  actorAvatarUrl?: string | null;
 }
 
 const TYPE_LABEL: Record<string, string> = {
@@ -313,7 +317,10 @@ export default function NotificationsScreen() {
             accessibilityLabel={`${n.read ? '' : 'Unread. '}${TYPE_LABEL[n.type] ?? n.type}: ${n.title}${n.message ? '. ' + n.message : ''}. ${formatDate(n.createdAt)}`}
           >
             <View style={styles.cardTop}>
-              <Text style={styles.typeTag}>{TYPE_LABEL[n.type] ?? n.type}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {n.actorName ? <Avatar name={n.actorName} uri={n.actorAvatarUrl} size={30} /> : null}
+                <Text style={styles.typeTag}>{TYPE_LABEL[n.type] ?? n.type}</Text>
+              </View>
               {!n.read ? (
                 <View style={styles.unreadDot} accessibilityElementsHidden importantForAccessibility="no" />
               ) : null}
