@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import { Avatar } from '../../src/components/Avatar';
 import KeyboardSafe from '../../src/components/KeyboardSafe';
 
 // STATUS: REAL — GET /api/admin/users, built last night, matching
@@ -18,6 +19,7 @@ interface DirectoryUser {
   role: string;
   university: string | null;
   status: string;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 
@@ -65,7 +67,10 @@ export default function AdminUsersScreen() {
   const renderItem = ({ item }: { item: DirectoryUser }) => (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.userName}>{item.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+          <Avatar name={item.name} uri={item.avatarUrl} size={32} />
+          <Text style={styles.userName}>{item.name}</Text>
+        </View>
         <View style={styles.roleBadge}>
           <Text style={styles.roleBadgeText}>{capitalize(item.role)}</Text>
         </View>

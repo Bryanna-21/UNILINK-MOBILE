@@ -6,6 +6,7 @@ import { ReportSheet } from '../../src/components/ReportSheet';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import AvatarLightbox from '../../src/components/AvatarLightbox';
 
 // STATUS: REAL, NEW TONIGHT. This screen did not exist before — there
 // was no way to view anyone's profile except your own. Built to
@@ -56,6 +57,7 @@ export default function UserProfileScreen() {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   const [user, setUser] = useState<UserSummary | null>(null);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [posts, setPosts] = useState<UserPost[]>([]);
   const [isStartingChat, setIsStartingChat] = useState(false);
@@ -244,13 +246,16 @@ export default function UserProfileScreen() {
       <StatusBanner status="real" note="Profile, posts, achievements, follow status and direct messaging are all live." />
 
       <View style={styles.card}>
-        <View style={styles.avatar}>
-          {user.avatarUrl ? (
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
-          ) : (
-            <Text style={styles.avatarText}>{user.name?.charAt(0)?.toUpperCase() || '?'}</Text>
-          )}
-        </View>
+        <TouchableOpacity onPress={() => setPhotoOpen(true)} accessibilityRole="button" accessibilityLabel={`See ${user.name || 'their'} profile photo full size`}>
+          <View style={styles.avatar}>
+            {user.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>{user.name?.charAt(0)?.toUpperCase() || '?'}</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+        <AvatarLightbox visible={photoOpen} name={user.name} uri={user.avatarUrl} onClose={() => setPhotoOpen(false)} />
         <Text style={styles.name} accessibilityRole="header">
           {user.name}
         </Text>

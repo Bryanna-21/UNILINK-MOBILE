@@ -15,6 +15,7 @@ import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { useAuthStore } from '../../src/store/authStore';
+import { Avatar } from '../../src/components/Avatar';
 
 // STATUS: REAL — calls GET/POST /api/community/courses/:courseId/discussion
 // on the live backend. Fixed tonight, same as Comments earlier: the
@@ -32,6 +33,7 @@ interface DiscussionEntry {
   courseId: string;
   userId: string;
   authorName?: string;
+  authorAvatarUrl?: string | null;
   content: string;
   createdAt: string;
 }
@@ -174,7 +176,10 @@ export default function DiscussionScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`View ${isMe ? 'your' : (item.authorName || 'this user') + "'s"} profile`}
                 >
-                  <Text style={styles.replyAuthor}>{isMe ? 'You' : item.authorName || 'Unknown user'}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Avatar name={item.authorName} uri={item.authorAvatarUrl} size={30} />
+                    <Text style={styles.replyAuthor}>{isMe ? 'You' : item.authorName || 'Unknown user'}</Text>
+                  </View>
                 </TouchableOpacity>
                 <Text style={styles.replyText}>{item.content}</Text>
               </View>

@@ -14,6 +14,7 @@ import { useFocusEffect } from 'expo-router';
 import { api } from '../../src/api/client';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
+import { Avatar } from '../../src/components/Avatar';
 
 // STATUS: REAL. One shared room for admins and superadmins (GET/POST /staff-chat/messages).
 // Refreshes every 5 seconds while the screen is open; stops when you leave it.
@@ -21,7 +22,7 @@ interface Msg {
   id: string;
   text: string;
   createdAt: string;
-  sender: { id: string; name: string; role: string };
+  sender: { id: string; name: string; role: string; avatarUrl?: string | null };
   mine: boolean;
 }
 
@@ -145,9 +146,12 @@ export default function StaffChatScreen() {
             style={[styles.bubble, item.mine ? styles.mine : styles.theirs]}
           >
             {!item.mine && (
-              <Text style={styles.who}>
-                {item.sender.name} · {item.sender.role}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                <Avatar name={item.sender.name} uri={item.sender.avatarUrl} size={20} />
+                <Text style={[styles.who, { marginBottom: 0 }]}>
+                  {item.sender.name} · {item.sender.role}
+                </Text>
+              </View>
             )}
             <Text style={item.mine ? styles.textMine : styles.textTheirs}>{item.text}</Text>
             <Text style={[styles.time, item.mine && styles.timeMine]}>
