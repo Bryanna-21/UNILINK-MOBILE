@@ -345,13 +345,13 @@ export default function RegisterScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Password (min. 6 characters)"
+            placeholder="Password (min. 8 characters)"
             placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             editable={!isLoading}
-            accessibilityLabel="Password, minimum 6 characters"
+            accessibilityLabel="Password, minimum 8 characters"
           />
           <TextInput
             style={styles.input}
