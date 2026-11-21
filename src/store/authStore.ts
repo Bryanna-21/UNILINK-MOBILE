@@ -161,6 +161,8 @@ interface AuthState {
     confirmNewPassword: string
   ) => Promise<SimpleResult>;
   logout: () => Promise<void>;
+  // Ends every session of this account on every device (the server raises the account's token version).
+  logoutEverywhere: () => Promise<SimpleResult>;
   // Multi-account. switchAccount validates the saved session with the
   // server before swapping; addAccount signs out but KEEPS the account saved.
   switchAccount: (id: string) => Promise<SimpleResult>;
@@ -337,6 +339,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   confirmPasswordChange: async (code) => {
     try {
       const res = await api.post('/auth/confirm-password-change', { code });
+      // A changed password ends every session, including this one: sign out here so the person signs in again with the new one.
+      if (res.data?.signedOut) await get().logout();
       return { success: true, message: res.data.message };
     } catch (err: any) {
       return { success: false, message: err?.response?.data?.message || 'Could not confirm the password change.' };
@@ -369,6 +373,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: true, message: res.data.message };
     } catch (err: any) {
       return { success: false, message: err?.response?.data?.message || 'Could not reset the password.' };
+    }
+  },
+
+  logoutEverywhere: async () => {
+    try {
+      await api.post('/auth/logout-all');
+      await get().logout();
+      return { success: true, message: 'You have been signed out of all devices.' };
+    } catch (err: any) {
+      return { success: false, message: err?.response?.data?.message || 'Could not sign out of all devices. Please try again.' };
     }
   },
 

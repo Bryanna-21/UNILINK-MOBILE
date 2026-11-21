@@ -30,7 +30,7 @@
       "subtitle": "Join UniLink",
       "nameLabel": "Full name",
       "emailLabel": "Email",
-      "passwordLabel": "Password (min. 6 characters)",
+      "passwordLabel": "Password (min. 8 characters)",
       "confirmPasswordLabel": "Confirm password",
       "submit": "Sign Up",
       "haveAccount": "Already have an account?",

@@ -6,6 +6,7 @@ import { ShellScreen } from '../../src/components/ShellScreen';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/store/themeStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { SUPPORTED_LANGUAGES, TRANSLATED_LANGUAGES, changeLanguage, LanguageCode } from '../../src/i18n';
 import { isBiometricEnabled, isBiometricSupported, setBiometricEnabled } from '../../src/utils/biometricAuth';
 import {
@@ -56,6 +57,24 @@ export default function SettingsScreen() {
     })();
     getNotificationPrefs().then(setNotifPrefs);
   }, []);
+
+  const logoutEverywhere = useAuthStore((s) => s.logoutEverywhere);
+  const confirmSignOutEverywhere = () =>
+    Alert.alert(
+      'Sign out of all devices?',
+      'Every phone and browser signed in to your account will be signed out, including this one. Use this if you lost a device or think someone else has your password.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign out everywhere',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await logoutEverywhere();
+            if (!result.success) Alert.alert('Could not sign out', result.message);
+          },
+        },
+      ]
+    );
 
   const handleToggleBiometric = async (value: boolean) => {
     if (value && !biometricSupported) {
@@ -191,6 +210,11 @@ export default function SettingsScreen() {
           <Text style={styles.rowText}>Change password</Text>
           <Text style={styles.rowChevron}>›</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.row} onPress={confirmSignOutEverywhere} accessibilityRole="button" accessibilityLabel="Sign out of all devices">
+          <Text style={styles.rowText}>Sign out of all devices</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
         <View style={styles.row}>
           <Text style={styles.rowText}>
             {biometricSupported ? 'Unlock with Face ID / fingerprint' : 'Biometric unlock (unavailable)'}
@@ -207,6 +231,16 @@ export default function SettingsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Community & Safety</Text>
+
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/privacy' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Privacy Notice"
+        >
+          <Text style={styles.rowText}>Privacy Notice</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.row}

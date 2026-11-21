@@ -11,6 +11,7 @@ import { initI18n } from '../src/i18n';
 import { promptBiometric } from '../src/utils/biometricAuth';
 import { LoadingSplash } from '../src/components/LoadingSplash';
 import { UpdateGate } from '../src/components/UpdateGate';
+import PrivacyGate from '../src/components/PrivacyGate';
 import { registerForPushNotifications } from '../src/utils/pushNotifications';
 import { useClassReminderSync } from '../src/utils/useClassReminderSync';
 import { useNotificationTapRouting } from '../src/utils/useNotificationTapRouting';
@@ -299,6 +300,7 @@ export default function RootLayout() {
     <>
       <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
       <UpdateGate />
+      <PrivacyGate />
       <Stack
         screenOptions={{
           headerShown: false,

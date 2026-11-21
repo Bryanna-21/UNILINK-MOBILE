@@ -99,8 +99,8 @@ export default function ChangePasswordScreen() {
       setError('New passwords do not match');
       return;
     }
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters long');
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters long');
       return;
     }
 
@@ -179,13 +179,13 @@ export default function ChangePasswordScreen() {
               />
               <TextInput
                 style={styles.input}
-                placeholder="New password (min. 6 characters)"
+                placeholder="New password (min. 8 characters)"
                 placeholderTextColor={colors.textMuted}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
                 editable={!loading}
-                accessibilityLabel="New password, minimum 6 characters"
+                accessibilityLabel="New password, minimum 8 characters"
               />
               <TextInput
                 style={styles.input}
