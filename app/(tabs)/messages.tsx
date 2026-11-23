@@ -1,9 +1,10 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, ScrollView, Image, ActivityIndicator } from 'react-native';
 import { useFocusEffect, router } from 'expo-router';
 import { api } from '../../src/api/client';
 import { useAuthStore, UserRole } from '../../src/store/authStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
+import { useRealtimeStore } from '../../src/store/realtimeStore';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import UniLinkAIIcon from '../../src/components/UniLinkAIIcon';
 import LoadingSkeleton, { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
@@ -452,6 +453,15 @@ export default function MessagesScreen() {
       loadConversations();
     }, [loadConversations])
   );
+
+  // A new message arrived live: refresh the list at once instead of waiting for the next visit.
+  const liveMessageTick = useRealtimeStore((s) => s.messageTick);
+  const seenMessageTick = useRef(liveMessageTick);
+  useEffect(() => {
+    if (liveMessageTick === seenMessageTick.current) return;
+    seenMessageTick.current = liveMessageTick;
+    loadConversations();
+  }, [liveMessageTick, loadConversations]);
 
   const loadSuggestions = useCallback(async () => {
     try {

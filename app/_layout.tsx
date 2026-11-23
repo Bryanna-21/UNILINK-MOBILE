@@ -16,6 +16,9 @@ import { registerForPushNotifications } from '../src/utils/pushNotifications';
 import { useClassReminderSync } from '../src/utils/useClassReminderSync';
 import { useNotificationTapRouting } from '../src/utils/useNotificationTapRouting';
 import { useAccountBlockRouting } from '../src/utils/useAccountBlockRouting';
+import { useRealtimeNotifications } from '../src/utils/useRealtimeNotifications';
+import { useShakeToReport } from '../src/utils/useShakeToReport';
+import { InAppNotificationBanner } from '../src/components/InAppNotificationBanner';
 
 // STATUS: REAL — expo-updates is configured via `eas update:configure`
 // (see app.json's updates.url/runtimeVersion and eas.json's channels).
@@ -265,6 +268,8 @@ export default function RootLayout() {
   useClassReminderSync();
   useNotificationTapRouting();
   useAccountBlockRouting();
+  useRealtimeNotifications(); // live notifications while the app is open (push covers the rest)
+  useShakeToReport(); // shake the phone to report a problem
 
   // Expo Router provides the SafeAreaProvider; these are the status-bar / navigation-bar sizes.
   const insets = useSafeAreaInsets();
@@ -301,6 +306,7 @@ export default function RootLayout() {
       <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
       <UpdateGate />
       <PrivacyGate />
+      <InAppNotificationBanner />
       <Stack
         screenOptions={{
           headerShown: false,

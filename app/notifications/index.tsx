@@ -6,6 +6,7 @@ import { useColors, Radius, Spacing } from '../../src/constants/theme';
 import { api } from '../../src/api/client';
 import { LoadingSkeletonList } from '../../src/components/LoadingSkeleton';
 import { Avatar } from '../../src/components/Avatar';
+import { useRealtimeStore } from '../../src/store/realtimeStore';
 
 // STATUS: LIVE — GET /notifications, PATCH /notifications/:id/read,
 // PATCH /notifications/read-all all match web's userNotificationService.js
@@ -210,6 +211,23 @@ export default function NotificationsScreen() {
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  // A notification arrived live (or the counts changed on another device): refresh this tab quietly, with no spinner.
+  const liveTick = useRealtimeStore((s) => s.notificationTick);
+  const seenTick = useRef(liveTick);
+  useEffect(() => {
+    if (liveTick === seenTick.current) return;
+    seenTick.current = liveTick;
+    const requestId = ++latestRequest.current;
+    api
+      .get('/notifications', { params: { category } })
+      .then((res) => {
+        if (requestId !== latestRequest.current) return;
+        setNotifications(res.data?.data ?? []);
+        setCounts({ ...NO_COUNTS, ...(res.data?.counts ?? {}) });
+      })
+      .catch(() => {});
+  }, [liveTick]);
 
   const handlePress = async (notification: AppNotification) => {
     if (!notification.read) {

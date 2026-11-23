@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { api } from '../api/client';
 import { isCategoryMuted } from './notificationPrefs';
+import { isRealtimeConnected } from '../realtime/socket';
 
 // STATUS: REAL — closes a gap that was invisible from the backend
 // side: POST /profile/push-token and the actual Expo push-sending
@@ -60,11 +61,13 @@ async function configureNotificationHandler(): Promise<typeof import('expo-notif
     Notifications.setNotificationHandler({
       handleNotification: async (notification) => {
         const type = notification.request.content.data?.type as string | undefined;
-        const muted = await isCategoryMuted(type);
+        // While the live connection is up the in-app banner already shows this one (components/InAppNotificationBanner),
+        // so the phone's own banner would be a duplicate. With no live connection, push works exactly as before.
+        const hidden = (await isCategoryMuted(type)) || isRealtimeConnected();
         return {
-          shouldShowBanner: !muted,
-          shouldShowList: !muted,
-          shouldPlaySound: !muted,
+          shouldShowBanner: !hidden,
+          shouldShowList: !hidden,
+          shouldPlaySound: !hidden,
           shouldSetBadge: false,
         };
       },

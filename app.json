@@ -2,7 +2,7 @@
   "expo": {
     "name": "UniLink",
     "slug": "unilink-mobile",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "unilink",
@@ -17,7 +17,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "versionCode": 7
+      "versionCode": 8
     },
     "web": {
       "bundler": "metro",

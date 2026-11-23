@@ -9,6 +9,7 @@ import { useThemeStore } from '../../src/store/themeStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { SUPPORTED_LANGUAGES, TRANSLATED_LANGUAGES, changeLanguage, LanguageCode } from '../../src/i18n';
 import { isBiometricEnabled, isBiometricSupported, setBiometricEnabled } from '../../src/utils/biometricAuth';
+import { isShakeToReportEnabled, setShakeToReportEnabled } from '../../src/utils/shakePrefs';
 import {
   NOTIFICATION_CATEGORIES,
   NotificationCategoryKey,
@@ -42,6 +43,7 @@ export default function SettingsScreen() {
   const [biometricOn, setBiometricOn] = useState(false);
   const [checkingSupport, setCheckingSupport] = useState(true);
   const [notifPrefs, setNotifPrefs] = useState<Record<NotificationCategoryKey, boolean> | null>(null);
+  const [shakeOn, setShakeOn] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -56,6 +58,7 @@ export default function SettingsScreen() {
       setCheckingSupport(false);
     })();
     getNotificationPrefs().then(setNotifPrefs);
+    isShakeToReportEnabled().then(setShakeOn);
   }, []);
 
   const logoutEverywhere = useAuthStore((s) => s.logoutEverywhere);
@@ -298,6 +301,41 @@ export default function SettingsScreen() {
           accessibilityLabel="Switch account or log out"
         >
           <Text style={styles.rowText}>Switch account or log out</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Help and feedback</Text>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/settings/report-problem' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Report a problem"
+        >
+          <Text style={styles.rowText}>Report a problem or send an idea</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
+        <View style={styles.row}>
+          <Text style={[styles.rowText, { flex: 1, paddingRight: Spacing.md }]}>Shake to report a problem</Text>
+          <Switch
+            value={shakeOn}
+            onValueChange={(value) => {
+              setShakeOn(value);
+              setShakeToReportEnabled(value);
+            }}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.white}
+            accessibilityLabel="Shake to report a problem"
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => router.push('/coming-soon' as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Coming soon"
+        >
+          <Text style={styles.rowText}>Coming soon</Text>
           <Text style={styles.rowChevron}>›</Text>
         </TouchableOpacity>
       </View>

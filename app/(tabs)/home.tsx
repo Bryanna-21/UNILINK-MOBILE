@@ -8,6 +8,7 @@ import { cacheResponse, getCachedResponse, formatCacheAge } from '../../src/util
 import { useNetworkStatus } from '../../src/utils/useNetworkStatus';
 import LoadingSkeleton from '../../src/components/LoadingSkeleton';
 import Svg, { Path } from 'react-native-svg';
+import { useRealtimeStore } from '../../src/store/realtimeStore';
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -475,6 +476,12 @@ export default function HomeScreen() {
       .then((res) => setUnreadNotifCount(res.data?.unreadCount ?? 0))
       .catch(() => {});
   }, []);
+
+  // The bell badge follows the live count whenever the server tells us (a new notification, or one read elsewhere).
+  const liveUnread = useRealtimeStore((s) => s.unreadCount);
+  useEffect(() => {
+    if (liveUnread !== null) setUnreadNotifCount(liveUnread);
+  }, [liveUnread]);
 
   const handleSignAttendance = async (courseId: string, courseTitle: string) => {
     setSigningCourseId(courseId);
