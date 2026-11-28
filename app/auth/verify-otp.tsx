@@ -88,6 +88,7 @@ export default function VerifyOtpScreen() {
         buttonText: { color: colors.white, fontSize: 16, fontWeight: '700' },
         linkButton: { alignItems: 'center', marginTop: Spacing.sm },
         linkText: { color: colors.textMuted, fontSize: 14 },
+        helpText: { color: colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: Spacing.sm, lineHeight: 17 },
         resendText: { color: colors.primary, fontWeight: '700' },
         resendTextDisabled: { color: colors.textMuted, fontWeight: '700' },
       }),
@@ -185,6 +186,11 @@ export default function VerifyOtpScreen() {
               </Text>
             </Text>
           </TouchableOpacity>
+
+          <Text style={styles.helpText}>
+            Still nothing? Check your spam folder. If you already have an account with this email, no code is sent: sign in, or use
+            Forgot password on the sign-in screen.
+          </Text>
 
           <Link href="/auth/login" asChild>
             <TouchableOpacity style={styles.linkButton} accessibilityRole="link">

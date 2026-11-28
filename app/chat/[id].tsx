@@ -6,6 +6,7 @@ import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../../src/store/authStore';
+import { useRealtimeStore } from '../../src/store/realtimeStore';
 import { StatusBanner } from '../../src/components/StatusBanner';
 import { ReportSheet } from '../../src/components/ReportSheet';
 import { useColors, Radius, Spacing } from '../../src/constants/theme';
@@ -188,6 +189,14 @@ export default function ChatDetailScreen() {
       if (showSpinner) setIsLoading(false);
     }
   };
+
+  // A new message for THIS conversation arrived live (utils/useRealtimeNotifications.ts): fetch it now instead of waiting for the
+  // next 4-second poll. The poll stays as the safety net.
+  const liveMessage = useRealtimeStore((s) => s.lastMessage);
+  useEffect(() => {
+    if (liveMessage && liveMessage.conversationId === id) loadMessages(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveMessage]);
 
   // Fetched once per screen visit, not on every poll — a
   // conversation's type and participants don't change while you're
